@@ -2112,7 +2112,27 @@
        };
 
        const drawOne = () => { if(!gameState || gameState.library.length === 0) return; doDraw(1, gameState.library, gameState.hand); };
-       const passTurn = () => { if(!gameState) return; setGameState(prev => ({ ...prev, turn: prev.turn + 1, battlefield: prev.battlefield.map(c => ({...c, isTapped: false})) })); drawOne(); };
+       
+       const passTurn = () => { if(!gameState) return; setGameState(prev => ({ ...prev, turn: prev.turn + 1 })); drawOne(); };
+
+       const untapAll = () => { 
+           if(!gameState) return; 
+           setGameState(prev => ({ ...prev, battlefield: prev.battlefield.map(c => ({...c, isTapped: false})) })); 
+       };
+
+       const millCards = () => {
+           if(!gameState || gameState.library.length === 0) return;
+           const amount = parseInt(window.prompt("Quante carte vuoi millare?", "1"));
+           if(isNaN(amount) || amount <= 0) return;
+           
+           setGameState(prev => {
+              let newLib = [...prev.library];
+              let newGrave = [...prev.graveyard];
+              const actualAmount = Math.min(amount, newLib.length);
+              for(let i=0; i<actualAmount; i++) { newGrave.push(newLib.shift()); }
+              return { ...prev, library: newLib, graveyard: newGrave };
+           });
+       };
 
        const mulligan = () => {
           if(!gameState) return;
@@ -2154,7 +2174,7 @@
           return (
              <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl shadow-lg border border-gray-600 mt-4 backdrop-blur-sm space-y-6 animate-fade">
                <h2 className="text-3xl font-black text-center text-blue-400 drop-shadow-md">Tavolo Virtuale</h2>
-               <p className="text-xs text-center text-gray-300 font-bold mb-4 bg-gray-900 p-2 rounded border border-gray-700">📱 Sandbox manuale per pescare le mani iniziali e testare le aperture del mazzo.</p>
+               <p className="text-xs text-center text-gray-300 font-bold mb-4 bg-gray-900 p-2 rounded border border-gray-700">📱 Sandbox manuale per testare le aperture del mazzo.</p>
                {decks.length === 0 ? ( <p className="text-red-400 font-bold text-center">Nessun mazzo salvato.</p> ) : (
                   <div className="space-y-4">
                      <select value={selectedDeckId} onChange={e => setSelectedDeckId(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white font-bold outline-none">
@@ -2211,7 +2231,11 @@
              <div className="bg-black/80 text-white p-2 flex justify-between items-center border-b border-green-700 shadow-md h-[10dvh]">
                 <button onClick={() => setView('playtester')} className="bg-red-600 px-3 py-1 rounded font-bold text-xs shadow">Esci</button>
                 <div className="text-center"><h3 className="font-black text-sm uppercase text-yellow-500">Turno {gameState.turn}</h3></div>
-                <div className="flex gap-1"><button onClick={mulligan} className="bg-orange-600 px-2 py-1 rounded font-bold text-xs shadow">Mulligan</button><button onClick={passTurn} className="bg-blue-600 px-2 py-1 rounded font-bold text-xs shadow">Passa Turno</button></div>
+                <div className="flex gap-1 overflow-x-auto">
+                    <button onClick={untapAll} className="bg-emerald-600 px-2 py-1 rounded font-bold text-[10px] shadow whitespace-nowrap">Stappa</button>
+                    <button onClick={mulligan} className="bg-orange-600 px-2 py-1 rounded font-bold text-[10px] shadow whitespace-nowrap">Mulligan</button>
+                    <button onClick={passTurn} className="bg-blue-600 px-2 py-1 rounded font-bold text-[10px] shadow whitespace-nowrap">Passa</button>
+                </div>
              </div>
              <div className="bg-black/50 p-2 flex justify-between items-center h-[12dvh] overflow-x-auto gap-2">
                 <div className="flex gap-2 border-r border-green-800 pr-2 h-full items-center">
@@ -2219,6 +2243,7 @@
                 </div>
                 <div className="flex gap-2 pl-1 overflow-x-auto h-full items-center">
                    <button onClick={drawOne} className="h-full bg-indigo-900/80 rounded border border-indigo-500 flex items-center justify-center px-3 font-black shadow shrink-0">PESCA</button>
+                   <button onClick={millCards} className="h-full bg-purple-900/80 rounded border border-purple-500 flex items-center justify-center px-2 font-bold text-xs text-purple-200 shadow shrink-0">MILLA</button>
                    <div className="h-full bg-blue-900 rounded border border-blue-500 flex flex-col items-center justify-center px-2 cursor-pointer shrink-0 shadow-lg" onClick={() => setBrowsingZone('library')}><span className="text-[10px] font-bold text-blue-300">Mazzo</span><span className="font-black text-white">{gameState.library.length}</span></div>
                    <div className="h-full bg-gray-800 rounded border border-gray-500 flex flex-col items-center justify-center px-2 cursor-pointer shrink-0 shadow-lg" onClick={() => setBrowsingZone('graveyard')}><span className="text-[10px] font-bold text-gray-400">Cimitero</span><span className="font-black text-white">{gameState.graveyard.length}</span></div>
                    {gameState.exile.length > 0 && (<div className="h-full bg-gray-300 rounded border border-gray-500 flex flex-col items-center justify-center px-2 cursor-pointer shrink-0 shadow-lg" onClick={() => setBrowsingZone('exile')}><span className="text-[10px] font-bold text-gray-700">Esilio</span><span className="font-black text-black">{gameState.exile.length}</span></div>)}
