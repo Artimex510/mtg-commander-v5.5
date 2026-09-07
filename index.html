@@ -1157,9 +1157,9 @@
                     <div className="flex justify-between items-center bg-gray-900 rounded-lg p-3 border border-gray-700">
                        <span className="text-gray-400 font-bold px-2">{actionLabel === "Aggiungi" ? "Aggiungi Copie:" : "Copie Totali:"}</span>
                        <div className="flex items-center gap-3">
-                          <button onClick={()=>setQtyVal(Math.max(actionLabel==="Aggiungi"?1:0, qtyVal-1))} className="w-12 h-12 bg-red-600 hover:bg-red-500 rounded-lg font-bold text-2xl text-white shadow transition-colors">-</button>
-                          <input type="number" inputMode="numeric" min={actionLabel==="Aggiungi"?"1":"0"} max="999" value={qtyVal} onChange={e=>setQtyVal(parseInt(e.target.value) || 0)} className="w-16 h-12 bg-gray-900 border border-gray-600 rounded-lg text-white text-center text-2xl font-black outline-none focus:border-blue-500 transition-colors" />
-                          <button onClick={()=>setQtyVal(qtyVal+1)} className="w-12 h-12 bg-green-600 hover:bg-green-500 rounded-lg font-bold text-2xl text-white shadow transition-colors">+</button>
+                          <button onClick={()=>setQtyVal(Math.max(actionLabel==="Aggiungi"?1:0, Number(qtyVal)-1))} className="w-12 h-12 bg-red-600 hover:bg-red-500 rounded-lg font-bold text-2xl text-white shadow transition-colors">-</button>
+                          <input type="number" inputMode="numeric" min={actionLabel==="Aggiungi"?"1":"0"} max="999" value={qtyVal} onChange={e => setQtyVal(e.target.value === '' ? '' : parseInt(e.target.value))} onBlur={e => { if(e.target.value === '' || parseInt(e.target.value) < 0) setQtyVal(actionLabel==="Aggiungi"?1:0) }} onKeyDown={e => e.key === 'Enter' && e.target.blur()} className="w-16 h-12 bg-gray-900 border border-gray-600 rounded-lg text-white text-center text-2xl font-black outline-none focus:border-blue-500 transition-colors" />
+                          <button onClick={()=>setQtyVal(Number(qtyVal)+1)} className="w-12 h-12 bg-green-600 hover:bg-green-500 rounded-lg font-bold text-2xl text-white shadow transition-colors">+</button>   
                        </div>
                     </div>
                     <button onClick={actionFunc} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black text-lg py-4 rounded-xl shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all">
