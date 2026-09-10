@@ -356,7 +356,6 @@
                 {view === 'backup' && <BackupView navigate={navigate} />}
                 {(view === 'game' || view === 'game_active') && <GameUtility view={view} setView={setView} />}
                 {(view === 'playtester' || view === 'playtester_active') && <PlaytesterSandbox view={view} setView={setView} navigate={navigate} />}
-                {view === 'playonline' && <PlayOnlineView navigate={navigate} />}
                 {view === 'dice' && <DiceRoller />}
                 {view === 'rules' && <RulesAI />}
                 {view === 'playonline' && <PlayOnlineView navigate={navigate} />}
@@ -2420,14 +2419,25 @@
        );
     };
 
-    // --- TAVERNA MTG (ROUND 3: INVITI PRIVATI "FANTASMA") ---
+    // --- TAVERNA MTG (ROUND FINALE: INVITI FANTASMA + NICKNAME PRIVACY) ---
     const TavernaChat = ({ navigate }) => {
+        const user = auth.currentUser;
         const [messages, setMessages] = useState([]);
         const [newMessage, setNewMessage] = useState("");
         const [currentRoom, setCurrentRoom] = useState("global");
         const [roomInput, setRoomInput] = useState("");
-        const user = auth.currentUser;
+        
+        // NUOVO: Stato per il Nickname (Salvataggio in memoria locale)
+        const [nickname, setNickname] = useState(localStorage.getItem('chat_nickname') || "");
         const messagesEndRef = useRef(null);
+
+        // Inizializza il nome al primo caricamento se non c'è un nickname salvato
+        useEffect(() => {
+            if (user && !nickname) {
+                const defaultName = user.displayName || (user.email ? user.email.split('@')[0] : "Planeswalker");
+                setNickname(defaultName);
+            }
+        }, [user, nickname]);
 
         useEffect(() => {
             if (!user) return;
@@ -2454,6 +2464,16 @@
             return () => unsubscribe();
         }, [user, currentRoom]);
 
+        // NUOVA FUNZIONE: Cambia il Nickname con un click
+        const changeNickname = () => {
+            const newNick = window.prompt("Inserisci il tuo nuovo Nickname per la Taverna:", nickname);
+            if (newNick && newNick.trim() !== "") {
+                const finalNick = newNick.trim();
+                setNickname(finalNick);
+                localStorage.setItem('chat_nickname', finalNick);
+            }
+        };
+
         const sendMessage = async (e) => {
             e.preventDefault();
             if (!newMessage.trim() || !user) return;
@@ -2461,41 +2481,34 @@
             setNewMessage(""); 
             
             try {
-                const authorName = user.displayName || (user.email ? user.email.split('@')[0] : "Planeswalker");
                 const collectionPath = currentRoom === 'global' ? db.collection('global_chat') : db.collection('chat_rooms').doc(currentRoom).collection('messages');
-                
                 await collectionPath.add({
                     type: 'text',
                     text: text,
                     uid: user.uid,
-                    author: authorName,
+                    author: nickname, // Ora usa sempre il Nickname scelto!
                     timestamp: Date.now()
                 });
             } catch (err) { alert("Errore nell'invio."); }
         };
 
-        // NUOVA FUNZIONE: Invia un Invito Fantasma
         const inviteUser = async (targetUid, targetName) => {
             if (targetUid === user.uid) return;
             const confirm = window.confirm(`Vuoi invitare ${targetName} in una stanza privata per uno scambio?`);
             if (!confirm) return;
 
-            // Genera un codice stanza unico
             const secretRoom = `TRADE-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-            const authorName = user.displayName || (user.email ? user.email.split('@')[0] : "Planeswalker");
 
             try {
-                // Invia l'invito nella chat globale
                 await db.collection('global_chat').add({
                     type: 'invite',
                     roomCode: secretRoom,
                     uid: user.uid,
-                    author: authorName,
+                    author: nickname, // Ora usa sempre il Nickname scelto!
                     targetUid: targetUid,
                     targetName: targetName,
                     timestamp: Date.now()
                 });
-                // Entri direttamente tu che hai invitato
                 setCurrentRoom(secretRoom);
             } catch (err) { alert("Errore nell'invito."); }
         };
@@ -2514,12 +2527,11 @@
                 if(!pp) return;
                 localStorage.setItem('my_paypal_link', pp);
             }
-            const authorName = user.displayName || (user.email ? user.email.split('@')[0] : "Planeswalker");
             await db.collection('chat_rooms').doc(currentRoom).collection('messages').add({
                 type: 'text',
                 text: `💸 Ciao! Ecco il mio link per il pagamento sicuro: ${pp}`,
                 uid: user.uid,
-                author: authorName,
+                author: nickname, // Ora usa sempre il Nickname scelto!
                 timestamp: Date.now()
             });
         };
@@ -2571,6 +2583,11 @@
                                 <h2 className="text-lg font-black text-yellow-500 truncate">Stanza: {currentRoom}</h2>
                             </div>
                         )}
+                        
+                        {/* IL NUOVO TASTO NICKNAME IN ALTO A DESTRA */}
+                        <button onClick={changeNickname} className="ml-2 bg-gray-700 hover:bg-emerald-600 text-white px-3 py-1 rounded-full shadow text-[10px] font-bold border border-gray-500 truncate max-w-[120px] transition-colors" title="Cambia Nickname">
+                            👤 {nickname}
+                        </button>
                     </div>
 
                     {currentRoom === 'global' && (
@@ -2592,9 +2609,7 @@
                     {messages.length === 0 && <p className="text-center text-gray-500 font-bold mt-10">Nessun messaggio.</p>}
                     
                     {messages.map(m => {
-                        // LOGICA INVITI FANTASMA
                         if (m.type === 'invite') {
-                            // Se non sei né il mittente né il destinatario, il messaggio NON ESISTE sul tuo schermo!
                             if (m.uid !== user.uid && m.targetUid !== user.uid) return null;
 
                             return (
@@ -2604,8 +2619,6 @@
                                         <p className="text-white font-bold text-sm">
                                             {m.uid === user.uid ? `Hai invitato ${m.targetName} in privato.` : `${m.author} ti ha invitato in una stanza privata!`}
                                         </p>
-                                        
-                                        {/* Il tasto per entrare nella stanza */}
                                         <button onClick={() => setCurrentRoom(m.roomCode)} className="mt-3 bg-yellow-500 hover:bg-yellow-400 text-black font-black py-2 px-6 rounded-lg shadow-lg active:scale-95 transition-all">
                                             ENTRA NELLA STANZA
                                         </button>
@@ -2614,11 +2627,9 @@
                             );
                         }
 
-                        // MESSAGGI NORMALI
                         const isMe = m.uid === user.uid;
                         return (
                             <div key={m.id} className={`flex flex-col max-w-[85%] ${isMe ? 'self-end items-end' : 'self-start items-start'} animate-fade`}>
-                                {/* IL NOME DIVENTA CLICCABILE PER INVIARE L'INVITO */}
                                 <span 
                                     onClick={() => (currentRoom === 'global' && !isMe) ? inviteUser(m.uid, m.author) : null}
                                     className={`text-[10px] text-gray-400 font-bold mb-1 ml-1 ${currentRoom === 'global' && !isMe ? 'cursor-pointer hover:text-yellow-400 hover:underline' : ''}`}
@@ -2638,7 +2649,7 @@
 
                 <div className="bg-gray-900 border-t border-gray-700 p-2 px-4 text-center">
                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">
-                        ⚠️ Info Chat: Scrivi le carte tra parentesi quadre (es. <span className="text-emerald-400">[[Sol Ring]]</span>). <br/>
+                        ⚠️ Info Chat: Scrivi le carte tra parentesi (es. <span className="text-emerald-400">[[Sol Ring]]</span>). <br/>
                         <span className="text-yellow-400">💡 NOVITÀ: Clicca sul nome di un utente per invitarlo in privato!</span>
                     </p>
                 </div>
