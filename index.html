@@ -2568,7 +2568,7 @@
                     {/* Area Cambio Stanza (Mostrata solo in globale) */}
                     {currentRoom === 'global' && (
                         <form onSubmit={joinPrivateRoom} className="flex gap-2 mt-2">
-                            <input type="text" value={roomInput} onChange={e=>setRoomInput(e.target.value)} placeholder="Codice Stanza Privata..." className="flex-1 bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white font-bold text-sm outline-none focus:border-yellow-500" />
+                            <input type="text" value={roomInput} onChange={e=>setRoomInput(e.target.value)} placeholder="Inventa un codice (es. SCAMBIO1)..." className="flex-1 bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white font-bold text-sm outline-none focus:border-yellow-500" />
                             <button type="submit" disabled={!roomInput.trim()} className="bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white font-bold px-4 rounded shadow transition-colors text-sm">Entra</button>
                         </form>
                     )}
