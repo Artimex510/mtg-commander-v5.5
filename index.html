@@ -463,7 +463,17 @@
                            </div>
                         ))}
                      </div>
-                     <button onClick={checkoutSingles} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all">ACQUISTA SINGOLE SU CARDTRADER</button>
+                     <div className="flex flex-col gap-2 mt-4">
+   <button onClick={checkoutSingles} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl shadow transition-all">🛒 CARDTRADER</button>
+   <button onClick={() => {
+       if(cart.singles.length === 0) return alert("Carrello vuoto!");
+       const counts = {}; cart.singles.forEach(c => { counts[c.name] = (counts[c.name] || 0) + 1; });
+       const list = Object.keys(counts).map(name => `${counts[name]} ${name}`).join('\n');
+       navigator.clipboard.writeText(list);
+       alert("Lista copiata!\n\nTi porto su Cardmarket: vai su 'Wants' (Liste dei Desideri), crea una nuova lista e usa la funzione 'Importa'.");
+       window.open("https://www.cardmarket.com/it/Magic/Wants", "_blank");
+   }} className="w-full bg-[#1e4174] hover:bg-[#153059] text-white font-black py-3 rounded-xl shadow transition-all">🛒 CARDMARKET</button>
+</div>
                    </React.Fragment>
                 )}
              </div>
@@ -479,7 +489,16 @@
                                <h3 className="font-black text-white text-lg truncate w-3/4">{d.name}</h3>
                                <button onClick={()=>remove('decks', i)} className="text-red-500 font-black text-lg bg-red-900/30 px-3 py-1 rounded">✖</button>
                             </div>
-                            <button onClick={()=>checkoutDeck(d)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-lg shadow transition-all">ACQUISTA MAZZO SU CARDTRADER</button>
+                            <div className="flex gap-2 mt-2">
+   <button onClick={()=>checkoutDeck(d)} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-black py-2 rounded-lg shadow text-xs transition-all">CARDTRADER</button>
+   <button onClick={() => {
+       const counts = {}; d.cards.forEach(c => { counts[c.name] = (counts[c.name] || 0) + 1; });
+       const list = Object.keys(counts).map(name => `${counts[name]} ${name}`).join('\n');
+       navigator.clipboard.writeText(list);
+       alert(`Mazzo "${d.name}" copiato!\n\nTi porto su Cardmarket: vai su 'Wants', crea una nuova lista e 'Importa'.`);
+       window.open("https://www.cardmarket.com/it/Magic/Wants", "_blank");
+   }} className="flex-1 bg-[#1e4174] hover:bg-[#153059] text-white font-black py-2 rounded-lg shadow text-xs transition-all">CARDMARKET</button>
+</div>
                          </div>
                       ))}
                    </div>
