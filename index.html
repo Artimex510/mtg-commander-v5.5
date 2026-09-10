@@ -380,11 +380,20 @@
           <h3 className="text-3xl font-black text-red-500 drop-shadow-md">EDITION</h3>
           <p className="text-gray-400 mt-2 font-semibold">Your Ultimate Commander Companion</p>
         </div>
+        
+        {/* I 4 Pulsanti Principali */}
         <div className="grid grid-cols-2 gap-4 w-full max-w-md">
           <ActionCard icon="🎴" text="Crea Mazzo" onClick={() => navigate('deckbuilder')} color="bg-blue-900/80 hover:bg-blue-800" />
           <ActionCard icon="📚" text="I Miei Mazzi" onClick={() => navigate('mydecks')} color="bg-emerald-900/80 hover:bg-emerald-800" />
           <ActionCard icon="🔍" text="Scan Carte" onClick={() => navigate('cardsearch')} color="bg-indigo-900/80 hover:bg-indigo-800" />
           <ActionCard icon="⚔️" text="Life Tracker" onClick={() => navigate('game')} color="bg-red-900/80 hover:bg-red-800" />
+        </div>
+
+        {/* 5° Tasto: Donazione Ko-fi */}
+        <div className="w-full max-w-md mt-8 animate-fade">
+           <button onClick={() => window.open('https://ko-fi.com/artimex', '_blank')} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-4 rounded-xl shadow-[0_0_20px_rgba(202,138,4,0.4)] flex items-center justify-center gap-2 transition-all border border-yellow-400 active:scale-95">
+              ☕ SOSTIENI L'APP
+           </button>
         </div>
       </div>
     );
