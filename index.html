@@ -2435,7 +2435,7 @@
                     const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).reverse();
                     setMessages(msgs);
                     // Scorri in basso ai nuovi messaggi
-                    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+                    setTimeout(() => { if (messagesEndRef.current) messagesEndRef.current.scrollIntoView({ behavior: "smooth" }); }, 100);
                 });
 
             return () => unsubscribe();
