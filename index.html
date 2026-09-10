@@ -2411,26 +2411,32 @@
        );
     };
 
-    // --- TAVERNA MTG (CHAT GLOBALE CON SCRYFALL INTEGRATO) ---
+    // --- TAVERNA MTG (ROUND 2: CHAT GLOBALE + STANZE PRIVATE E SCAMBI) ---
     const TavernaChat = ({ navigate }) => {
         const [messages, setMessages] = useState([]);
         const [newMessage, setNewMessage] = useState("");
+        const [currentRoom, setCurrentRoom] = useState("global");
+        const [roomInput, setRoomInput] = useState("");
         const user = auth.currentUser;
         const messagesEndRef = useRef(null);
 
         useEffect(() => {
             if (!user) return;
             
-            // 1. Auto-Pulizia invisibile
-            const dueGiorniFa = Date.now() - (48 * 60 * 60 * 1000);
-            try {
-                db.collection('global_chat').where('timestamp', '<', dueGiorniFa).get().then(snap => {
-                    snap.forEach(doc => doc.ref.delete());
-                });
-            } catch(e) { console.log("Pulizia saltata"); }
+            const collectionPath = currentRoom === 'global' ? db.collection('global_chat') : db.collection('chat_rooms').doc(currentRoom).collection('messages');
 
-            // 2. Ascolta messaggi con protezione da errori
-            const unsubscribe = db.collection('global_chat')
+            // 1. Auto-Pulizia (Solo per la globale, per non cancellare gli storici degli scambi privati)
+            if (currentRoom === 'global') {
+                const dueGiorniFa = Date.now() - (48 * 60 * 60 * 1000);
+                try {
+                    collectionPath.where('timestamp', '<', dueGiorniFa).get().then(snap => {
+                        snap.forEach(doc => doc.ref.delete());
+                    });
+                } catch(e) { console.log("Pulizia saltata"); }
+            }
+
+            // 2. Ascolta i messaggi della stanza corrente
+            const unsubscribe = collectionPath
                 .orderBy('timestamp', 'desc')
                 .limit(50)
                 .onSnapshot(snapshot => {
@@ -2442,7 +2448,7 @@
                 });
 
             return () => unsubscribe();
-        }, [user]);
+        }, [user, currentRoom]);
 
         const sendMessage = async (e) => {
             e.preventDefault();
@@ -2451,9 +2457,10 @@
             setNewMessage(""); 
             
             try {
-                // Protezione aggiunta: se l'email manca non va in crash
                 const authorName = user.displayName || (user.email ? user.email.split('@')[0] : "Planeswalker");
-                await db.collection('global_chat').add({
+                const collectionPath = currentRoom === 'global' ? db.collection('global_chat') : db.collection('chat_rooms').doc(currentRoom).collection('messages');
+                
+                await collectionPath.add({
                     text: text,
                     uid: user.uid,
                     author: authorName,
@@ -2465,9 +2472,40 @@
             }
         };
 
-        // Magia: Trasforma le doppie parentesi [[Nome Carta]] in immagini
+        const joinPrivateRoom = (e) => {
+            e.preventDefault();
+            if(!roomInput.trim()) return;
+            setCurrentRoom(roomInput.trim().toUpperCase());
+            setRoomInput("");
+        };
+
+        const sendPayPalLink = async () => {
+            let pp = localStorage.getItem('my_paypal_link');
+            if(!pp) {
+                pp = window.prompt("Inserisci il tuo link PayPal (es. https://paypal.me/tuonome).\nVerrà salvato sul tuo dispositivo per i futuri scambi.");
+                if(!pp) return;
+                localStorage.setItem('my_paypal_link', pp);
+            }
+            
+            const authorName = user.displayName || (user.email ? user.email.split('@')[0] : "Planeswalker");
+            const collectionPath = db.collection('chat_rooms').doc(currentRoom).collection('messages');
+            
+            await collectionPath.add({
+                text: `💸 Ciao! Ecco il mio link per il pagamento sicuro: ${pp}`,
+                uid: user.uid,
+                author: authorName,
+                timestamp: Date.now()
+            });
+        };
+
+        const openShippingService = () => {
+            alert("Verrai reindirizzato a Packlink.it, un ottimo servizio per confrontare corrieri e prenotare ritiri a domicilio.");
+            window.open('https://www.packlink.it/', '_blank');
+        };
+
+        // Renderizza Carte e Link Cliccabili
         const renderMessageText = (text) => {
-            if (!text) return ""; // <-- PROTEZIONE CRITICA: previene il crash se il messaggio è vuoto o corrotto nel database
+            if (!text) return ""; 
             const parts = text.split(/\[\[(.*?)\]\]/g);
             return parts.map((part, i) => {
                 if (i % 2 === 1) { 
@@ -2481,8 +2519,15 @@
                             />
                         </span>
                     );
+                } else {
+                    // Trasforma i link (come paypal.me) in veri link cliccabili
+                    const urlRegex = /(https?:\/\/[^\s]+)/g;
+                    const textParts = part.split(urlRegex);
+                    return textParts.map((t, j) => {
+                        if (t.match(urlRegex)) return <a key={j} href={t} target="_blank" rel="noopener noreferrer" className="text-blue-300 font-bold underline hover:text-blue-200">{t}</a>;
+                        return <span key={j}>{t}</span>;
+                    });
                 }
-                return <span key={i}>{part}</span>;
             });
         };
 
@@ -2497,15 +2542,44 @@
 
         return (
             <div className="flex flex-col h-[calc(100vh-100px)] max-w-2xl mx-auto bg-gray-900 rounded-xl border border-gray-700 mt-2 overflow-hidden shadow-2xl animate-fade relative z-10">
-                <div className="bg-gray-800 p-4 border-b border-gray-700 shadow-md z-20 flex justify-between items-center">
-                    <div>
-                        <h2 className="text-2xl font-black text-emerald-400 drop-shadow-md">🍻 Taverna</h2>
-                        <p className="text-[11px] text-gray-300 font-bold">Scrivi <span className="text-yellow-400">[[Sol Ring]]</span> per mostrare la carta!</p>
+                
+                {/* Header Dinamico */}
+                <div className="bg-gray-800 p-4 border-b border-gray-700 shadow-md z-20">
+                    <div className="flex justify-between items-center mb-2">
+                        {currentRoom === 'global' ? (
+                            <h2 className="text-2xl font-black text-emerald-400 drop-shadow-md">🍻 Taverna Globale</h2>
+                        ) : (
+                            <div className="flex items-center gap-2 w-full">
+                                <button onClick={() => setCurrentRoom('global')} className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded shadow text-sm font-bold">⬅ Esci</button>
+                                <h2 className="text-lg font-black text-yellow-500 truncate">Stanza: {currentRoom}</h2>
+                            </div>
+                        )}
                     </div>
+
+                    {/* Area Cambio Stanza (Mostrata solo in globale) */}
+                    {currentRoom === 'global' && (
+                        <form onSubmit={joinPrivateRoom} className="flex gap-2 mt-2">
+                            <input type="text" value={roomInput} onChange={e=>setRoomInput(e.target.value)} placeholder="Codice Stanza Privata..." className="flex-1 bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white font-bold text-sm outline-none focus:border-yellow-500" />
+                            <button type="submit" disabled={!roomInput.trim()} className="bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white font-bold px-4 rounded shadow transition-colors text-sm">Entra</button>
+                        </form>
+                    )}
+
+                    {/* Tasti Azione Rapida (Mostrati solo nelle stanze private) */}
+                    {currentRoom !== 'global' && (
+                        <div className="flex gap-2 mt-3 pt-3 border-t border-gray-700">
+                            <button onClick={sendPayPalLink} className="flex-1 bg-[#003087] hover:bg-[#001c52] text-white font-black py-2 rounded shadow text-xs flex items-center justify-center gap-1 border border-[#0079C1]">
+                                💸 Invia PayPal
+                            </button>
+                            <button onClick={openShippingService} className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-black py-2 rounded shadow text-xs flex items-center justify-center gap-1">
+                                📦 Spedizioni
+                            </button>
+                        </div>
+                    )}
                 </div>
 
+                {/* Area Messaggi */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col bg-black/40 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-                    {messages.length === 0 && <p className="text-center text-gray-500 font-bold mt-10">Nessun messaggio. Rompi il ghiaccio!</p>}
+                    {messages.length === 0 && <p className="text-center text-gray-500 font-bold mt-10">Nessun messaggio in questa stanza.</p>}
                     {messages.map(m => {
                         const isMe = m.uid === user.uid;
                         return (
@@ -2520,12 +2594,20 @@
                     <div ref={messagesEndRef} />
                 </div>
 
+                {/* Info Box Regolamento */}
+                <div className="bg-gray-900 border-t border-gray-700 p-2 px-4 text-center">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">
+                        ⚠️ Info Chat: Per mostrare una carta scrivila tra parentesi quadre (es. <span className="text-emerald-400">[[Sol Ring]]</span>). Se in Italiano non appare, prova ad usare l'<span className="text-yellow-400">Inglese</span>!
+                    </p>
+                </div>
+
+                {/* Input Invio */}
                 <form onSubmit={sendMessage} className="p-3 bg-gray-800 border-t border-gray-700 flex gap-2 z-20">
                     <input 
                         type="text" 
                         value={newMessage} 
                         onChange={e=>setNewMessage(e.target.value)} 
-                        placeholder="Scrivi messaggio o [[Carta]]..." 
+                        placeholder="Scrivi messaggio o [[Carta in Inglese]]..." 
                         className="flex-1 bg-gray-900 border border-gray-600 rounded-full px-5 text-white font-bold outline-none focus:border-emerald-500 shadow-inner" 
                     />
                     <button type="submit" disabled={!newMessage.trim()} className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-600 disabled:opacity-50 w-12 h-12 rounded-full flex items-center justify-center text-white font-black shadow-lg transition-all active:scale-95">➤</button>
