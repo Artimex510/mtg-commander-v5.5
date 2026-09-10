@@ -311,6 +311,7 @@
                       <MenuBtn icon="🎴" text="Deckbuilding" onClick={() => navigate('deckbuilder')} />
                       <MenuBtn icon="📚" text="I Miei Mazzi" onClick={() => navigate('mydecks')} />
                       <MenuBtn icon="🛒" text="Carrello" onClick={() => navigate('cart')} />
+                      <MenuBtn icon="🌐" text="Gioca Online" onClick={() => navigate('playonline')} />
                       <MenuBtn icon="🃏" text="Testa Mazzo" onClick={() => navigate('playtester')} />
                       <MenuBtn icon="✨" text="Proxy Creator" onClick={() => navigate('proxycreator')} />
                       <MenuBtn icon="🖼️" text="Le Mie Proxy" onClick={() => navigate('myproxies')} />
@@ -347,6 +348,7 @@
                 {view === 'backup' && <BackupView navigate={navigate} />}
                 {(view === 'game' || view === 'game_active') && <GameUtility view={view} setView={setView} />}
                 {(view === 'playtester' || view === 'playtester_active') && <PlaytesterSandbox view={view} setView={setView} navigate={navigate} />}
+                {view === 'playonline' && <PlayOnlineView navigate={navigate} />}
                 {view === 'dice' && <DiceRoller />}
                 {view === 'rules' && <RulesAI />}
               </main>
@@ -2318,6 +2320,68 @@
       );
     };
 
+    // --- GIOCA ONLINE (ENDSTEP HUB) ---
+    const PlayOnlineView = ({navigate}) => {
+       const [decks, setDecks] = useState([]);
+       const [selectedDeckId, setSelectedDeckId] = useState("");
+
+       useEffect(() => { 
+           setDecks(JSON.parse(localStorage.getItem('mtg_decks') || '[]')); 
+       }, []);
+
+       const handlePlay = () => {
+          if(!selectedDeckId) return alert("Seleziona un mazzo dalla tendina prima di continuare!");
+          const d = decks.find(x => x.id.toString() === selectedDeckId);
+          if(!d) return;
+
+          // Raggruppa le carte per nome e conta le quantità per formattare la lista
+          const deckMap = {};
+          d.cards.forEach(c => {
+              const key = c.name;
+              deckMap[key] = (deckMap[key] || 0) + 1;
+          });
+          const listText = Object.keys(deckMap).map(name => `${deckMap[name]} ${name}`).join('\n');
+
+          navigator.clipboard.writeText(listText);
+          alert(`Lista del mazzo "${d.name}" copiata negli appunti!\n\nOra verrai reindirizzato su Endstep.cc.\nFai il Login e fai "Incolla" per importare il tuo mazzo in un secondo!`);
+          window.open("https://endstep.cc", "_blank");
+       };
+
+       return (
+          <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl shadow-lg border border-gray-600 mt-4 backdrop-blur-sm space-y-6 animate-fade">
+             <div className="text-center">
+                <h2 className="text-3xl font-black text-indigo-400 drop-shadow-md mb-2">Gioca Online</h2>
+                <p className="text-xs text-gray-300 font-bold bg-gray-900 p-3 rounded border border-gray-700 shadow-inner">
+                   Sfida altri giocatori importando il tuo mazzo direttamente su <b className="text-indigo-400">Endstep.cc</b>!
+                </p>
+             </div>
+
+             {decks.length === 0 ? (
+                <p className="text-red-400 font-bold text-center bg-red-900/30 p-3 rounded">Nessun mazzo salvato. Creane uno nel Deckbuilder prima di giocare!</p>
+             ) : (
+                <div className="space-y-4">
+                   <label className="block text-gray-300 font-bold text-sm">1. Seleziona il Mazzo da esportare:</label>
+                   <select value={selectedDeckId} onChange={e => setSelectedDeckId(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded p-4 text-white font-bold outline-none shadow-inner">
+                      <option value="">Scegli un Mazzo...</option>
+                      {decks.map(d => <option key={d.id} value={d.id}>{d.name} ({d.format})</option>)}
+                   </select>
+
+                   <button onClick={handlePlay} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-xl shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-all flex justify-center items-center gap-2">
+                      📋 COPIA LISTA E VAI SU ENDSTEP
+                   </button>
+                </div>
+             )}
+
+             <div className="border-t border-gray-700 pt-6 space-y-3 mt-4">
+                <p className="text-center text-gray-400 text-xs font-bold mb-2">Non hai ancora un account su Endstep?</p>
+                <button onClick={() => window.open("https://endstep.cc", "_blank")} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg shadow border border-gray-600 transition-colors">
+                   🌐 Apri Sito per Registrarti
+                </button>
+             </div>
+          </div>
+       );
+    };
+    
     const CardSearchExplorer = ({navigate}) => {
       const [query, setQuery] = useState("");
       const [oracleText, setOracleText] = useState("");
