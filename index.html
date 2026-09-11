@@ -2792,7 +2792,7 @@
                                         <p className="text-xs text-gray-400">{card.type_line}</p>
                                     </div>
                                     <div className="text-right">
-                                        <span className="bg-emerald-800 text-emerald-200 px-2 py-1 rounded font-black shadow">{card.prices?.eur ? `€${card.prices.eur}` : 'N/D'}</span>
+                                        <span className="bg-emerald-800 text-emerald-200 px-2 py-1 rounded font-black shadow">{card.prices && card.prices.eur ? `€${card.prices.eur}` : 'N/D'}</span>
                                     </div>
                                 </div>
                             ))}
