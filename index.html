@@ -2023,16 +2023,50 @@
         </div>
       );
 
+            // --- LOGICA GRIGLIA INTELLIGENTE ---
       const gridClass = players.length <= 2 ? 'grid-cols-2 grid-rows-1' : (players.length <= 4 ? 'grid-cols-2 grid-rows-2' : 'grid-cols-3 grid-rows-2');
+      
       return (
         <div className="fixed inset-0 z-[100] bg-black flex flex-col h-[100dvh] w-[100dvw]">
           <button onClick={() => setView('game')} className="absolute top-2 left-2 z-[110] bg-black/60 px-4 py-2 rounded-full text-white text-xs border border-white/20 font-bold shadow-lg backdrop-blur-md">✖ Esci Partita</button>
           <div className={`flex-1 grid ${gridClass} gap-1 h-full w-full p-1`}>
-             {players.map(p => <PlayerCard key={p.id} player={p} updateStat={updateStat} updateMana={updateMana} toggleImmunity={toggleImmunity} opponents={players.filter(op => op.id !== p.id)} updatePlayerConfig={updatePlayerConfig} />)}
+             {players.map((p, index) => {
+                 // Stile base della casella
+                 let wrapperClass = "w-full h-full"; 
+                 
+                 // DISPOSIZIONE PER 3 GIOCATORI (P3 a destra a tutto schermo)
+                 if (players.length === 3) {
+                     if (index === 0) wrapperClass += " col-start-1 row-start-1"; // P1 in alto a sinistra
+                     if (index === 1) wrapperClass += " col-start-1 row-start-2"; // P2 in basso a sinistra
+                     if (index === 2) wrapperClass += " col-start-2 row-start-1 row-span-2"; // P3 prende tutta la colonna destra
+                 }
+                 // DISPOSIZIONE PER 5 GIOCATORI (P5 a destra a tutto schermo)
+                 else if (players.length === 5) {
+                     if (index === 0) wrapperClass += " col-start-1 row-start-1"; // P1 in alto a sinistra
+                     if (index === 1) wrapperClass += " col-start-2 row-start-1"; // P2 in alto al centro
+                     if (index === 2) wrapperClass += " col-start-1 row-start-2"; // P3 in basso a sinistra
+                     if (index === 3) wrapperClass += " col-start-2 row-start-2"; // P4 in basso al centro
+                     if (index === 4) wrapperClass += " col-start-3 row-start-1 row-span-2"; // P5 prende tutta la colonna destra
+                 }
+
+                 return (
+                     <div key={p.id} className={wrapperClass}>
+                         <PlayerCard 
+                            player={p} 
+                            updateStat={updateStat} 
+                            updateMana={updateMana} 
+                            toggleImmunity={toggleImmunity} 
+                            opponents={players.filter(op => op.id !== p.id)} 
+                            updatePlayerConfig={updatePlayerConfig} 
+                         />
+                     </div>
+                 );
+             })}
           </div>
         </div>
       );
     };
+    
 
     const PlayerCard = ({ player, updateStat, updateMana, toggleImmunity, opponents, updatePlayerConfig }) => {
       const [viewMode, setViewMode] = useState('life'); 
