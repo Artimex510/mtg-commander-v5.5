@@ -309,6 +309,7 @@
                       <MenuBtn icon={<Icons.Home/>} text="Home" onClick={() => navigate('home')} />
                       <MenuBtn icon="🔍" text="Database & Scan" onClick={() => navigate('cardsearch')} />
                       <MenuBtn icon="🎴" text="Deckbuilding" onClick={() => navigate('deckbuilder')} />
+                      <MenuBtn icon="🛠️" text="Strumenti Pro" onClick={() => navigate('protools')} />
                       <MenuBtn icon="📚" text="I Miei Mazzi" onClick={() => navigate('mydecks')} />
                       <MenuBtn icon="🛒" text="Carrello" onClick={() => navigate('cart')} />
                       <MenuBtn icon="🌐" text="Gioca Online" onClick={() => navigate('playonline')} />
@@ -360,6 +361,7 @@
                 {view === 'rules' && <RulesAI />}
                 {view === 'playonline' && <PlayOnlineView navigate={navigate} />}
                 {view === 'taverna' && <TavernaChat navigate={navigate} />}
+                {view === 'protools' && <ProTools navigate={navigate} activeDeck={activeDeck} />}
               </main>
             </div>
           )}
@@ -2658,6 +2660,145 @@
                     <input type="text" value={newMessage} onChange={e=>setNewMessage(e.target.value)} placeholder="Scrivi messaggio o [[Carta]]..." className="flex-1 bg-gray-900 border border-gray-600 rounded-full px-5 text-white font-bold outline-none focus:border-emerald-500 shadow-inner" />
                     <button type="submit" disabled={!newMessage.trim()} className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-600 disabled:opacity-50 w-12 h-12 rounded-full flex items-center justify-center text-white font-black shadow-lg transition-all active:scale-95">➤</button>
                 </form>
+            </div>
+        );
+    }
+
+    // --- STRUMENTI PRO: BUDGETIZZATORE E COMBO FINDER ---
+    const ProTools = ({ navigate, activeDeck }) => {
+        const [targetCard, setTargetCard] = useState("");
+        const [budgetResults, setBudgetResults] = useState([]);
+        const [loading, setLoading] = useState(false);
+        const [error, setError] = useState("");
+
+        // LOGICA COMBO FINDER
+        const findCombos = () => {
+            if (!activeDeck || !activeDeck.cards || activeDeck.cards.length === 0) {
+                alert("Devi prima selezionare o creare un mazzo in 'I Miei Mazzi' per cercare le combo!");
+                return;
+            }
+            // Formatta la lista per Spellbook
+            const deckListStr = activeDeck.cards.map(c => `1 ${c.name}`).join('\n');
+            navigator.clipboard.writeText(deckListStr).then(() => {
+                alert("🪄 Lista del mazzo copiata negli appunti!\n\nTi sto portando su Commander Spellbook. Fai 'Incolla' nel loro box di ricerca per scoprire tutte le combo infinite nascoste nel tuo mazzo.");
+                window.open('https://commanderspellbook.com/find-my-combos/', '_blank');
+            }).catch(err => alert("Errore nel copiare la lista. Riprova."));
+        };
+
+        // LOGICA BUDGETIZZATORE
+        const findCheapAlternatives = async (e) => {
+            e.preventDefault();
+            if (!targetCard.trim()) return;
+            setLoading(true);
+            setError("");
+            setBudgetResults([]);
+
+            try {
+                // 1. Trova la carta originale per capire cos'è
+                const res = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(targetCard)}`);
+                if (!res.ok) throw new Error("Carta non trovata. Scrivi il nome in inglese correttamente.");
+                const cardData = await res.json();
+
+                // 2. Estrai Tipo e Colore
+                const typeLine = cardData.type_line || "";
+                let typeQuery = "";
+                if (typeLine.includes("Creature")) typeQuery = "t:creature";
+                else if (typeLine.includes("Enchantment")) typeQuery = "t:enchantment";
+                else if (typeLine.includes("Artifact")) typeQuery = "t:artifact";
+                else if (typeLine.includes("Instant")) typeQuery = "t:instant";
+                else if (typeLine.includes("Sorcery")) typeQuery = "t:sorcery";
+                else if (typeLine.includes("Planeswalker")) typeQuery = "t:planeswalker";
+                else typeQuery = "t:land";
+
+                const colorQuery = cardData.colors && cardData.colors.length > 0 ? `c<=${cardData.colors.join('')}` : "c:c";
+
+                // 3. Cerca carte simili a meno di 3€, ordinate per popolarità su EDHREC
+                const searchQ = `${typeQuery} ${colorQuery} eur<3 -name:"${cardData.name}" sort:edhrec`;
+                const altRes = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(searchQ)}`);
+                if (!altRes.ok) throw new Error("Nessuna alternativa economica trovata per questi parametri.");
+                const altData = await altRes.json();
+                
+                // Prendi le prime 5 migliori alternative
+                setBudgetResults(altData.data.slice(0, 5));
+            } catch (err) {
+                setError(err.message);
+            }
+            setLoading(false);
+        };
+
+        return (
+            <div className="flex flex-col h-[calc(100vh-100px)] max-w-2xl mx-auto bg-gray-900 rounded-xl border border-gray-700 mt-2 overflow-y-auto shadow-2xl animate-fade relative z-10 p-4 space-y-8">
+                
+                {/* INTESTAZIONE */}
+                <div className="text-center border-b border-gray-700 pb-4">
+                    <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-emerald-500 drop-shadow-md">🛠️ Strumenti Pro</h2>
+                    <p className="text-gray-400 text-sm font-bold mt-1">Sblocca il vero potenziale del tuo deckbuilding.</p>
+                </div>
+
+                {/* SEZIONE 1: COMBO FINDER */}
+                <div className="bg-gray-800 rounded-xl p-5 border border-gray-600 shadow-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                        <span className="text-3xl">♾️</span>
+                        <h3 className="text-xl font-black text-white">Analizzatore Combo</h3>
+                    </div>
+                    <p className="text-gray-300 text-sm font-semibold mb-4">Scopri se hai inserito involontariamente combinazioni per mana infinito, danni letali o turni extra. Il sistema copierà il mazzo attualmente attivo e userà il database di Commander Spellbook.</p>
+                    
+                    {activeDeck ? (
+                        <div className="bg-emerald-900/40 border border-emerald-500 p-3 rounded-lg mb-4">
+                            <p className="text-emerald-400 font-bold text-sm">Mazzo caricato: <span className="text-white">{activeDeck.name}</span></p>
+                        </div>
+                    ) : (
+                        <div className="bg-red-900/40 border border-red-500 p-3 rounded-lg mb-4">
+                            <p className="text-red-400 font-bold text-sm">Nessun mazzo attivo. Selezionane uno dalla tua libreria.</p>
+                        </div>
+                    )}
+                    
+                    <button onClick={findCombos} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all">
+                        🔍 CERCA COMBO NEL MAZZO
+                    </button>
+                </div>
+
+                {/* SEZIONE 2: BUDGETIZZATORE */}
+                <div className="bg-gray-800 rounded-xl p-5 border border-gray-600 shadow-lg mb-10">
+                    <div className="flex items-center gap-3 mb-3">
+                        <span className="text-3xl">📉</span>
+                        <h3 className="text-xl font-black text-white">Il Budgetizzatore</h3>
+                    </div>
+                    <p className="text-gray-300 text-sm font-semibold mb-4">Una carta costa troppo? Scrivi il nome qui sotto. L'app cercherà le 5 alternative più usate in Commander con lo stesso colore e tipo che costano <span className="text-yellow-400">&lt; 3€</span>.</p>
+                    
+                    <form onSubmit={findCheapAlternatives} className="flex flex-col gap-3">
+                        <input 
+                            type="text" 
+                            value={targetCard} 
+                            onChange={e=>setTargetCard(e.target.value)} 
+                            placeholder="es. Rhystic Study, Smothering Tithe..." 
+                            className="w-full bg-gray-900 border border-gray-600 rounded px-4 py-3 text-white font-bold outline-none focus:border-yellow-500 shadow-inner" 
+                        />
+                        <button type="submit" disabled={!targetCard.trim() || loading} className="w-full bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white font-black py-3 rounded-lg shadow-lg transition-all">
+                            {loading ? "RICERCA IN CORSO..." : "TROVA ALTERNATIVE ECONOMICHE"}
+                        </button>
+                    </form>
+
+                    {error && <p className="text-red-400 font-bold text-sm mt-4 text-center">{error}</p>}
+
+                    {/* Risultati Budget */}
+                    {budgetResults.length > 0 && (
+                        <div className="mt-6 space-y-3">
+                            <h4 className="text-emerald-400 font-black mb-2 border-b border-gray-700 pb-2">Risultati Suggeriti:</h4>
+                            {budgetResults.map(card => (
+                                <div key={card.id} className="bg-gray-900 p-3 rounded-lg border border-gray-600 flex justify-between items-center">
+                                    <div>
+                                        <p className="text-white font-bold">{card.name}</p>
+                                        <p className="text-xs text-gray-400">{card.type_line}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="bg-emerald-800 text-emerald-200 px-2 py-1 rounded font-black shadow">{card.prices?.eur ? `€${card.prices.eur}` : 'N/D'}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
         );
     }
