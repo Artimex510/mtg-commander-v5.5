@@ -1701,8 +1701,50 @@
 
     // --- DECK ANALYSIS E CONDIVISIONE ---
     const DeckAnalysis = ({deck, navigate}) => {
-      const [showQR, setShowQR] = useState(false);
+      // --- INIZIO LOGICA STRUMENTI AVANZATI ---
+    const [showBudgetModal, setShowBudgetModal] = useState(false);
+    const [targetBudget, setTargetBudget] = useState("");
 
+    const handleTop5Budget = () => {
+        if (!deck || !deck.cards) return;
+        const format = deck.format || "Commander";
+        const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
+        
+        const prompt = `Agisci come un giocatore esperto di Magic: The Gathering.\nAnalizza questa lista di un mazzo formato ${format}:\n\n${deckListStr}\n\nTrova le 5 carte più costose di questo mazzo e suggerisci 5 carte alternative per ognuna di esse. Le alternative devono essere molto economiche ma perfettamente integrabili per sinergia e strategia nel mazzo. Rispondi in italiano.`;
+        
+        navigator.clipboard.writeText(prompt).then(() => {
+            alert("🪄 Prompt copiato!\n\nTi sto portando su Gemini. Fai 'Incolla' nella chat per ricevere l'analisi gratuita delle tue carte costose.");
+            window.open('https://gemini.google.com/', '_blank');
+        });
+    };
+
+    const handleFullDeckBudget = (e) => {
+        e.preventDefault();
+        if (!targetBudget || !deck || !deck.cards) return;
+        
+        const format = deck.format || "Commander";
+        const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
+        
+        const prompt = `Agisci come un giocatore esperto di Magic: The Gathering.\nAnalizza questa lista di un mazzo formato ${format}:\n\n${deckListStr}\n\nIl mio obiettivo è abbassare il costo totale del mazzo facendolo rientrare in un budget MASSIMO di ${targetBudget}€, mantenendolo però competitivo e sinergico. Suggeriscimi esattamente quali carte costose tagliare e con quali alternative economiche sostituirle. Spiega brevemente il perché. Rispondi in italiano.`;
+        
+        navigator.clipboard.writeText(prompt).then(() => {
+            setShowBudgetModal(false);
+            alert(`🪄 Prompt per Budget ${targetBudget}€ copiato!\n\nTi sto portando su Gemini. Fai 'Incolla' nella chat per ricevere la tua lista modificata.`);
+            window.open('https://gemini.google.com/', '_blank');
+        });
+    };
+
+    const handleComboSpellbook = () => {
+        if (!deck || !deck.cards) return;
+        const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
+        
+        navigator.clipboard.writeText(deckListStr).then(() => {
+            alert("🪄 Lista del mazzo copiata!\n\nTi sto portando su Commander Spellbook. Fai 'Incolla' nel loro box di ricerca per scoprire le combo infinite del tuo mazzo.");
+            window.open('https://commanderspellbook.com/find-my-combos/', '_blank');
+        });
+    };
+    // --- FINE LOGICA STRUMENTI AVANZATI ---
+      
       if(!deck) return null;
 
       const cmds = deck.cards.filter(c => c.isCommander);
@@ -1824,7 +1866,58 @@
 
              <div className="space-y-3">
                <button onClick={shareDeck} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-[0_0_10px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2 transition-all">📲 Invia ad un Amico</button>
-               <button onClick={generateQR} className="w-full bg-gray-100 hover:bg-white text-black font-bold py-4 rounded-xl shadow-[0_0_10px_rgba(255,255,255,0.4)] flex items-center justify-center gap-2 transition-all">🔲 Mostra QR Code</button>
+               {/* --- INIZIO SEZIONE STRUMENTI AVANZATI (COMBO & BUDGET) --- */}
+                <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 shadow-lg mt-6">
+                    <h3 className="text-xl font-black text-white mb-2 flex items-center gap-2">🛠️ Strumenti Avanzati</h3>
+                    <p className="text-gray-400 text-xs font-bold mb-4">Usa l'Intelligenza Artificiale e i Database esterni per potenziare il tuo mazzo a costo zero.</p>
+                    
+                    <div className="flex flex-col gap-3">
+                        {/* BOTTONE COMBO */}
+                        <button onClick={handleComboSpellbook} className="w-full bg-purple-700 hover:bg-purple-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">
+                            ♾️ CERCA COMBO INFINITE
+                        </button>
+
+                        {/* BOTTONE TOP 5 CARTE */}
+                        <button onClick={handleTop5Budget} className="w-full bg-blue-700 hover:bg-blue-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">
+                            📉 ALTERNATIVE TOP 5 CARTE
+                        </button>
+                        
+                        {/* BOTTONE BUDGET INTERO MAZZO */}
+                        <button onClick={() => setShowBudgetModal(true)} className="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">
+                            💰 BUDGETIZZA INTERO MAZZO
+                        </button>
+                    </div>
+                </div>
+
+                {/* MODALE INSERIMENTO BUDGET (SI APRE QUANDO CLICCHI IL TASTO INDIGO A SCOMPARSA) */}
+                {showBudgetModal && (
+                    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade">
+                        <div className="bg-gray-800 border-2 border-indigo-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
+                            <button onClick={() => setShowBudgetModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
+                            
+                            <h3 className="text-xl font-black text-white mb-2">Imposta il tuo Target</h3>
+                            <p className="text-gray-300 text-xs font-bold mb-4">Quanto vuoi spendere al massimo per questo mazzo?</p>
+                            
+                            <form onSubmit={handleFullDeckBudget} className="flex flex-col gap-4">
+                                <div className="relative">
+                                    <span className="absolute left-4 top-3 text-white font-black">€</span>
+                                    <input 
+                                        type="number" 
+                                        value={targetBudget} 
+                                        onChange={e => setTargetBudget(e.target.value)} 
+                                        placeholder="es. 50" 
+                                        className="w-full bg-gray-900 border border-gray-600 rounded-lg pl-8 pr-4 py-3 text-white font-bold outline-none focus:border-indigo-500" 
+                                        required 
+                                    />
+                                </div>
+                                <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-lg shadow-lg transition-all active:scale-95">
+                                    GENERA PROMPT & VAI SU GEMINI
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+                {/* --- FINE SEZIONE STRUMENTI AVANZATI --- */}
                {deck.format === 'commander' && ( <button onClick={openEdhrec} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all mt-6">🛡️ Sinergie su EDHREC</button> )}
                <button onClick={copyPrompt} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all">🤖 Copia Prompt IA</button>
                <button onClick={copyList} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl shadow border border-gray-600 flex items-center justify-center gap-2 mt-2 transition-colors">📋 Copia solo Lista Testuale</button>
@@ -2786,13 +2879,24 @@
                         <div className="mt-6 space-y-3">
                             <h4 className="text-emerald-400 font-black mb-2 border-b border-gray-700 pb-2">Risultati Suggeriti:</h4>
                             {budgetResults.map(card => (
-                                <div key={card.id} className="bg-gray-900 p-3 rounded-lg border border-gray-600 flex justify-between items-center">
-                                    <div>
-                                        <p className="text-white font-bold">{card.name}</p>
+                                <div key={card.id} className="bg-gray-900 p-3 rounded-lg border border-gray-600 flex justify-between items-center group">
+                                    <div 
+                                        className="flex-1 cursor-pointer" 
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(card.name);
+                                            alert(`"${card.name}" copiato negli appunti! Ora puoi incollarlo nel Deckbuilder.`);
+                                        }} 
+                                        title="Clicca per copiare il nome"
+                                    >
+                                        <p className="text-white font-bold group-hover:text-yellow-400 transition-colors flex items-center gap-2">
+                                            {card.name} <span className="text-[12px]">📋</span>
+                                        </p>
                                         <p className="text-xs text-gray-400">{card.type_line}</p>
                                     </div>
-                                    <div className="text-right">
-                                        <span className="bg-emerald-800 text-emerald-200 px-2 py-1 rounded font-black shadow">{card.prices && card.prices.eur ? `€${card.prices.eur}` : 'N/D'}</span>
+                                    <div className="text-right pl-2">
+                                        <span className="bg-emerald-800 text-emerald-200 px-2 py-1 rounded font-black shadow whitespace-nowrap">
+                                            {card.prices && card.prices.eur ? `€${card.prices.eur}` : 'N/D'}
+                                        </span>
                                     </div>
                                 </div>
                             ))}
