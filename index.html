@@ -1700,231 +1700,321 @@
     };
 
     // --- DECK ANALYSIS E CONDIVISIONE ---
+    // --- DECK ANALYSIS E CONDIVISIONE ---
     const DeckAnalysis = ({deck, navigate}) => {
-      // --- INIZIO LOGICA STRUMENTI AVANZATI ---
-    const [showBudgetModal, setShowBudgetModal] = useState(false);
-    const [targetBudget, setTargetBudget] = useState("");
-
-    const handleTop5Budget = () => {
-        if (!deck || !deck.cards) return;
-        const format = deck.format || "Commander";
-        const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
+        const [showBudgetModal, setShowBudgetModal] = useState(false);
+        const [targetBudget, setTargetBudget] = useState("");
         
-        const prompt = `Agisci come un giocatore esperto di Magic: The Gathering.\nAnalizza questa lista di un mazzo formato ${format}:\n\n${deckListStr}\n\nTrova le 5 carte più costose di questo mazzo e suggerisci 5 carte alternative per ognuna di esse. Le alternative devono essere molto economiche ma perfettamente integrabili per sinergia e strategia nel mazzo. Rispondi in italiano.`;
-        
-        navigator.clipboard.writeText(prompt).then(() => {
-            alert("🪄 Prompt copiato!\n\nTi sto portando su Gemini. Fai 'Incolla' nella chat per ricevere l'analisi gratuita delle tue carte costose.");
-            window.open('https://gemini.google.com/', '_blank');
-        });
-    };
+        // Stati Modale Alternative Bracket
+        const [showAltModal, setShowAltModal] = useState(false);
+        const [altTarget, setAltTarget] = useState(null);
+        const [altResults, setAltResults] = useState([]);
+        const [altLoading, setAltLoading] = useState(false);
 
-    const handleFullDeckBudget = (e) => {
-        e.preventDefault();
-        if (!targetBudget || !deck || !deck.cards) return;
-        
-        const format = deck.format || "Commander";
-        const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
-        
-        const prompt = `Agisci come un giocatore esperto di Magic: The Gathering.\nAnalizza questa lista di un mazzo formato ${format}:\n\n${deckListStr}\n\nIl mio obiettivo è abbassare il costo totale del mazzo facendolo rientrare in un budget MASSIMO di ${targetBudget}€, mantenendolo però competitivo e sinergico. Suggeriscimi esattamente quali carte costose tagliare e con quali alternative economiche sostituirle. Spiega brevemente il perché. Rispondi in italiano.`;
-        
-        navigator.clipboard.writeText(prompt).then(() => {
-            setShowBudgetModal(false);
-            alert(`🪄 Prompt per Budget ${targetBudget}€ copiato!\n\nTi sto portando su Gemini. Fai 'Incolla' nella chat per ricevere la tua lista modificata.`);
-            window.open('https://gemini.google.com/', '_blank');
-        });
-    };
+        if(!deck) return null;
 
-    const handleComboSpellbook = () => {
-        if (!deck || !deck.cards) return;
-        const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
-        
-        navigator.clipboard.writeText(deckListStr).then(() => {
-            alert("🪄 Lista del mazzo copiata!\n\nTi sto portando su Commander Spellbook. Fai 'Incolla' nel loro box di ricerca per scoprire le combo infinite del tuo mazzo.");
-            window.open('https://commanderspellbook.com/find-my-combos/', '_blank');
-        });
-    };
-    // --- FINE LOGICA STRUMENTI AVANZATI ---
-      
-      if(!deck) return null;
-
-      const cmds = deck.cards.filter(c => c.isCommander);
-      const cmdName = cmds.length > 0 ? cmds[0].name : "Nessun Comandante Selezionato";
-      
-      const totalCards = deck.cards.filter(c => !c.isSideboard && !c.isCompanion).length;
-      const lands = deck.cards.filter(c => c.type && c.type.toLowerCase().includes('land') && !c.isSideboard && !c.isCompanion).length;
-      const avgCMC = deck.cards.filter(c => !c.isSideboard && !c.isCompanion).reduce((acc, c) => acc + (c.cmc || 0), 0) / (totalCards || 1);
-
-      const curve = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, '6+':0};
-      let maxCurve = 0; const colorCounts = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
-      
-      deck.cards.forEach(c => {
-         if(c.isSideboard || c.isCompanion) return;
-         if(c.type && !c.type.toLowerCase().includes('land')) {
-            let cmc = c.cmc || 0; if (cmc >= 6) curve['6+']++; else curve[cmc]++;
-         }
-         if (c.colors && c.colors.length > 0) { c.colors.forEach(col => { if(colorCounts[col] !== undefined) colorCounts[col]++; }); } 
-         else if (c.type && !c.type.toLowerCase().includes('land')) { colorCounts['C']++; }
-      });
-      Object.values(curve).forEach(v => { if(v > maxCurve) maxCurve = v; });
-      let maxColor = 0; Object.values(colorCounts).forEach(v => { if(v > maxColor) maxColor = v; });
-
-      const formatEdhrec = (name) => name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
-      const openEdhrec = () => {
-         if (cmds.length === 0) return alert("Questo mazzo non ha un Comandante salvato!");
-         window.open(`https://edhrec.com/commanders/${formatEdhrec(cmds[0].name)}`, '_blank');
-      };
-
-      const listText = deck.cards.map(c => `1 ${c.name}`).join('\n');
-      const copyPrompt = () => {
-         const prompt = `Agisci come un Master professionista e Deckbuilder esperto di Magic: The Gathering.\nFormato: ${deck.format || 'Commander'}. ${deck.format==='commander'? `Comandante: ${cmdName}.`:''}\nAnalizza curva di mana, banlist e dammi consigli su cosa tagliare e aggiungere.\nLista:\n${listText}`;
-         navigator.clipboard.writeText(prompt); alert("Prompt copiato! Incollalo su ChatGPT o Gemini.");
-      };
-      const copyList = () => { navigator.clipboard.writeText(listText); alert("Lista carte copiata!"); };
-
-      const shareDeck = async () => {
-         const shareData = { title: `Mazzo MTG: ${deck.name}`, text: `Ecco il mio mazzo "${deck.name}":\n\n${listText}`, };
-         if (navigator.share) { try { await navigator.share(shareData); } catch(e) {} } 
-         else { copyList(); alert("Copiato negli appunti! Ora puoi incollarlo dove vuoi."); }
-      };
-
-      const generateQR = () => {
-         if(window.QRCode) {
-            window.QRCode.toDataURL(listText, { errorCorrectionLevel: 'L', width: 250, margin: 2 }, function (err, url) {
-               if (err) { alert("Errore: la lista è troppo lunga per un singolo QR code! Prova a condividerla via WhatsApp."); } 
-               else {
-                  const img = new Image(); img.src = url; img.className = "mb-4 border-4 border-gray-200 rounded";
-                  const modal = document.createElement("div"); modal.className = "fixed inset-0 bg-black/95 z-[9999] flex flex-col items-center justify-center p-4 animate-fade"; modal.onclick = () => document.body.removeChild(modal);
-                  const container = document.createElement("div"); container.className = "bg-white p-6 rounded-xl flex flex-col items-center shadow-2xl"; container.onclick = (e) => e.stopPropagation();
-                  const title = document.createElement("h3"); title.className = "text-black font-black text-xl mb-2 text-center"; title.innerText = "QR Code Mazzo";
-                  const sub = document.createElement("p"); sub.className = "text-gray-600 text-xs mb-4 text-center font-bold"; sub.innerText = "Fai inquadrare questo codice dalla fotocamera di un amico. Copierà la lista in automatico!";
-                  const btn = document.createElement("button"); btn.className = "w-full bg-red-600 text-white font-bold py-3 rounded-xl shadow-md"; btn.innerText = "Chiudi"; btn.onclick = () => document.body.removeChild(modal);
-                  container.appendChild(title); container.appendChild(sub); container.appendChild(img); container.appendChild(btn); modal.appendChild(container); document.body.appendChild(modal);
-               }
+        const handleTop5Budget = () => {
+            const format = deck.format || "Commander";
+            const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
+            const prompt = `Agisci come un giocatore esperto di Magic: The Gathering.\nAnalizza questa lista di un mazzo formato ${format}:\n\n${deckListStr}\n\nTrova le 5 carte più costose di questo mazzo e suggerisci 5 carte alternative per ognuna di esse. Le alternative devono essere molto economiche ma perfettamente integrabili per sinergia e strategia nel mazzo. Rispondi in italiano.`;
+            navigator.clipboard.writeText(prompt).then(() => {
+                alert("🪄 Prompt copiato!\n\nTi sto portando su Gemini. Fai 'Incolla' nella chat per ricevere l'analisi gratuita delle tue carte costose.");
+                window.open('https://gemini.google.com/', '_blank');
             });
-         } else { alert("Libreria QR non caricata."); }
-      };
+        };
 
-      return (
-         <div className="max-w-2xl mx-auto space-y-4">
-           <button onClick={() => navigate('mydecks')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-2 shadow transition-colors">⬅ Indietro ai Mazzi</button>
-           <div className="bg-gray-800/90 p-6 rounded-xl border border-gray-600 shadow-xl backdrop-blur-sm">
-             <h2 className="text-3xl font-black text-white mb-1 drop-shadow-md">{deck.name}</h2>
-             <p className="text-gray-300 font-bold mb-6">Formato: <span className="text-blue-400 uppercase">{deck.format || 'Commander'}</span></p>
+        const handleFullDeckBudget = (e) => {
+            e.preventDefault();
+            if (!targetBudget) return;
+            const format = deck.format || "Commander";
+            const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
+            const prompt = `Agisci come un giocatore esperto di Magic: The Gathering.\nAnalizza questa lista di un mazzo formato ${format}:\n\n${deckListStr}\n\nIl mio obiettivo è abbassare il costo totale del mazzo facendolo rientrare in un budget MASSIMO di ${targetBudget}€, mantenendolo però competitivo e sinergico. Suggeriscimi esattamente quali carte costose tagliare e con quali alternative economiche sostituirle. Spiega brevemente il perché. Rispondi in italiano.`;
+            navigator.clipboard.writeText(prompt).then(() => {
+                setShowBudgetModal(false);
+                alert(`🪄 Prompt per Budget ${targetBudget}€ copiato!\n\nTi sto portando su Gemini. Fai 'Incolla' nella chat per ricevere la tua lista modificata.`);
+                window.open('https://gemini.google.com/', '_blank');
+            });
+        };
 
-             <div className="grid grid-cols-3 gap-2 mb-6 text-center">
-               <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
-                  <p className="text-xs text-gray-400 font-bold uppercase">Carte (Main)</p>
-                  <p className={`text-2xl font-black ${totalCards===100 ? 'text-green-400':'text-red-400'}`}>{totalCards}</p>
-               </div>
-               <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
-                  <p className="text-xs text-gray-400 font-bold uppercase">Terre</p>
-                  <p className="text-2xl font-black text-white">{lands}</p>
-               </div>
-               <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
-                  <p className="text-xs text-gray-400 font-bold uppercase">CMC Medio</p>
-                  <p className="text-2xl font-black text-blue-400">{avgCMC.toFixed(2)}</p>
-               </div>
-             </div>
+        const handleComboSpellbook = () => {
+            const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
+            navigator.clipboard.writeText(deckListStr).then(() => {
+                alert("🪄 Lista del mazzo copiata!\n\nTi sto portando su Commander Spellbook. Fai 'Incolla' nel loro box di ricerca per scoprire le combo infinite del tuo mazzo.");
+                window.open('https://commanderspellbook.com/find-my-combos/', '_blank');
+            });
+        };
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-               <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner">
-                 <h3 className="text-sm font-bold text-blue-400 mb-4 text-center uppercase">Curva Mana (No Terre)</h3>
-                 <div className="flex items-end gap-2 h-28">
-                    {Object.keys(curve).map(k => {
-                       const hPerc = maxCurve === 0 ? 0 : (curve[k] / maxCurve) * 100;
-                       return (
-                         <div key={k} className="flex-1 flex flex-col items-center justify-end h-full">
-                           <span className="text-[10px] text-gray-300 font-bold mb-1">{curve[k]}</span>
-                           <div className="w-full bg-gradient-to-t from-blue-700 to-blue-400 rounded-t-sm" style={{ height: `${hPerc}%` }}></div>
-                           <span className="text-[10px] text-gray-400 mt-1 font-bold">{k}</span>
-                         </div>
-                       );
-                    })}
+        // --- INIZIO LOGICA BRACKET COMMANDER UFFICIALE (54 CARTE B4) ---
+        const GAMECHANGERS = [
+            "Drannith Magistrate", "Enlightened Tutor", "Humility", "Serra's Sanctum", "Smothering Tithe", "Teferi's Protection", "Trouble in Pairs",
+            "Consecrated Sphinx", "Cyclonic Rift", "Expropriate", "Force of Will", "Fierce Guardianship", "Gifts Ungiven", "Intuition", "Jin-Gitaxias, Core Augur", "Mystical Tutor", "Narset, Parter of Veils", "Rhystic Study", "Sway of the Stars", "Thassa's Oracle", "Urza, Lord High Artificer",
+            "Bolas's Citadel", "Braids, Cabal Minion", "Demonic Tutor", "Imperial Seal", "Necropotence", "Opposition Agent", "Orcish Bowmasters", "Tergrid, God of Fright", "Vampiric Tutor",
+            "Ad Nauseam", "Deflecting Swat", "Gamble", "Jeska's Will", "Underworld Breach",
+            "Biorhythm", "Crop Rotation", "Food Chain", "Gaea's Cradle", "Natural Order", "Seedborn Muse", "Survival of the Fittest", "Vorinclex, Voice of Hunger", "Worldly Tutor",
+            "Aura Shards", "Coalition Victory", "Grand Arbiter Augustin IV", "Kinnan, Bonder Prodigy", "Yuriko, the Tiger's Shadow", "Notion Thief", "Winota, Joiner of Forces",
+            "Ancient Tomb", "Chrome Mox", "Field of the Dead", "Glacial Chasm", "Grim Monolith", "Lion's Eye Diamond", "Mana Vault", "Mishra's Workshop", "Mox Diamond", "Panoptic Mirror", "The One Ring", "The Tabernacle at Pendrell Vale", "Trinisphere"
+        ];
+
+        let gameChangerCards = [];
+        if (deck && deck.cards) { gameChangerCards = deck.cards.filter(c => GAMECHANGERS.includes(c.name)); }
+        let deckBracket = gameChangerCards.length > 0 ? 4 : 2;
+
+        const findAlternatives = (card) => {
+            setAltTarget(card); setShowAltModal(true); setAltLoading(true); setAltResults([]);
+            const typeLine = card.type || ""; let typeQuery = "";
+            if (typeLine.toLowerCase().includes("creature")) typeQuery = "t:creature";
+            else if (typeLine.toLowerCase().includes("enchantment")) typeQuery = "t:enchantment";
+            else if (typeLine.toLowerCase().includes("artifact")) typeQuery = "t:artifact";
+            else if (typeLine.toLowerCase().includes("instant")) typeQuery = "t:instant";
+            else if (typeLine.toLowerCase().includes("sorcery")) typeQuery = "t:sorcery";
+            else if (typeLine.toLowerCase().includes("planeswalker")) typeQuery = "t:planeswalker";
+            else typeQuery = "t:land";
+
+            let colorQuery = "c:c";
+            if (card.colors && card.colors.length > 0) { colorQuery = "c<=" + card.colors.join(''); }
+            
+            const searchQ = typeQuery + " " + colorQuery + " eur<5 -name:\"" + card.name + "\" sort:edhrec";
+            
+            fetch("https://api.scryfall.com/cards/search?q=" + encodeURIComponent(searchQ)).then(res => res.json()).then(data => {
+                if (data.data) {
+                    const deckNames = deck.cards.map(c => c.name);
+                    const filtered = data.data.filter(c => !deckNames.includes(c.name) && !GAMECHANGERS.includes(c.name)).slice(0, 5);
+                    setAltResults(filtered);
+                }
+                setAltLoading(false);
+            }).catch(err => { setAltLoading(false); });
+        };
+
+        const listText = (deck && deck.cards) ? deck.cards.map(c => `1 ${c.name}`).join('\n') : "";
+
+        const handleUpgradeBracket = () => {
+            const formatName = deck.format || "Commander";
+            const prompt = `Agisci come un esperto deckbuilder di Magic: The Gathering.\nEcco la lista del mio mazzo ${formatName}:\n\n${listText}\n\nVorrei potenziarlo per i tavoli High-Power (Bracket 4) aggiungendo delle carte "Gamechanger" vere e proprie.\nSuggeriscimi 5 carte devastanti (es. mana veloce, tutor potenti, carte che chiudono la partita o protezioni assolute) da inserire per alzare drasticamente il power level del mazzo, spiegando brevemente perché sono perfette per questa lista. Rispondi in italiano.`;
+            navigator.clipboard.writeText(prompt).then(() => {
+                alert("🪄 Prompt per l'Upgrade copiato!\n\nTi sto portando su Gemini. Incolla la richiesta per ricevere le carte Gamechanger perfette per te.");
+                window.open('https://gemini.google.com/', '_blank');
+            });
+        };
+        // --- FINE LOGICA BRACKET COMMANDER ---
+
+        let cmds = [];
+        if (deck && deck.cards) cmds = deck.cards.filter(c => c.isCommander);
+        const cmdName = cmds.length > 0 ? cmds[0].name : "Nessun Comandante Selezionato";
+        
+        let totalCards = 0; let lands = 0; let avgCMC = 0;
+        const curve = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, '6+':0};
+        let maxCurve = 0; const colorCounts = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
+        let maxColor = 0;
+
+        if (deck && deck.cards) {
+            totalCards = deck.cards.filter(c => !c.isSideboard && !c.isCompanion).length;
+            lands = deck.cards.filter(c => c.type && c.type.toLowerCase().includes('land') && !c.isSideboard && !c.isCompanion).length;
+            avgCMC = deck.cards.filter(c => !c.isSideboard && !c.isCompanion).reduce((acc, c) => acc + (c.cmc || 0), 0) / (totalCards || 1);
+            
+            deck.cards.forEach(c => {
+               if(c.isSideboard || c.isCompanion) return;
+               if(c.type && !c.type.toLowerCase().includes('land')) {
+                  let cmc = c.cmc || 0; if (cmc >= 6) curve['6+']++; else curve[cmc]++;
+               }
+               if (c.colors && c.colors.length > 0) { c.colors.forEach(col => { if(colorCounts[col] !== undefined) colorCounts[col]++; }); } 
+               else if (c.type && !c.type.toLowerCase().includes('land')) { colorCounts['C']++; }
+            });
+            Object.values(curve).forEach(v => { if(v > maxCurve) maxCurve = v; });
+            Object.values(colorCounts).forEach(v => { if(v > maxColor) maxColor = v; });
+        }
+
+        const formatEdhrec = (name) => name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+        const openEdhrec = () => {
+           if (cmds.length === 0) return alert("Questo mazzo non ha un Comandante salvato!");
+           window.open(`https://edhrec.com/commanders/${formatEdhrec(cmds[0].name)}`, '_blank');
+        };
+
+        const copyPrompt = () => {
+           let formatName = 'Commander'; if (deck && deck.format) formatName = deck.format;
+           const prompt = `Agisci come un Master professionista e Deckbuilder esperto di Magic: The Gathering.\nFormato: ${formatName}. ${formatName==='commander'? `Comandante: ${cmdName}.`:''}\nAnalizza curva di mana, banlist e dammi consigli su cosa tagliare e aggiungere.\nLista:\n${listText}`;
+           navigator.clipboard.writeText(prompt); alert("Prompt copiato! Incollalo su ChatGPT o Gemini.");
+        };
+        const copyList = () => { navigator.clipboard.writeText(listText); alert("Lista carte copiata!"); };
+
+        const shareDeck = async () => {
+           const shareData = { title: `Mazzo MTG: ${deck.name}`, text: `Ecco il mio mazzo "${deck.name}":\n\n${listText}`, };
+           if (navigator.share) { try { await navigator.share(shareData); } catch(e) {} } 
+           else { copyList(); alert("Copiato negli appunti! Ora puoi incollarlo dove vuoi."); }
+        };
+
+        return (
+           <div className="max-w-2xl mx-auto space-y-4">
+             <button onClick={() => navigate('mydecks')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-2 shadow transition-colors">⬅ Indietro ai Mazzi</button>
+             <div className="bg-gray-800/90 p-6 rounded-xl border border-gray-600 shadow-xl backdrop-blur-sm">
+               <h2 className="text-3xl font-black text-white mb-1 drop-shadow-md">{deck.name}</h2>
+               <p className="text-gray-300 font-bold mb-6">Formato: <span className="text-blue-400 uppercase">{deck.format || 'Commander'}</span></p>
+
+               <div className="grid grid-cols-3 gap-2 mb-6 text-center">
+                 <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
+                    <p className="text-xs text-gray-400 font-bold uppercase">Carte (Main)</p>
+                    <p className={`text-2xl font-black ${totalCards===100 ? 'text-green-400':'text-red-400'}`}>{totalCards}</p>
+                 </div>
+                 <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
+                    <p className="text-xs text-gray-400 font-bold uppercase">Terre</p>
+                    <p className="text-2xl font-black text-white">{lands}</p>
+                 </div>
+                 <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
+                    <p className="text-xs text-gray-400 font-bold uppercase">CMC Medio</p>
+                    <p className="text-2xl font-black text-blue-400">{avgCMC.toFixed(2)}</p>
                  </div>
                </div>
-               <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner">
-                 <h3 className="text-sm font-bold text-purple-400 mb-4 text-center uppercase">Devozione Colori</h3>
-                 <div className="flex items-end gap-2 h-28">
-                    {ManaColors.map(m => {
-                       const count = colorCounts[m.id];
-                       const hPerc = maxColor === 0 ? 0 : (count / maxColor) * 100;
-                       let barColor = "bg-gray-500";
-                       if(m.id==='W') barColor="bg-yellow-100"; if(m.id==='U') barColor="bg-blue-500";
-                       if(m.id==='B') barColor="bg-gray-600"; if(m.id==='R') barColor="bg-red-500";
-                       if(m.id==='G') barColor="bg-green-500"; if(m.id==='C') barColor="bg-gray-400";
-                       return (
-                         <div key={m.id} className="flex-1 flex flex-col items-center justify-end h-full">
-                           <span className="text-[10px] text-gray-300 font-bold mb-1">{count}</span>
-                           <div className={`w-full ${barColor} rounded-t-sm shadow`} style={{ height: `${hPerc}%` }}></div>
-                           <span className={`text-[10px] mt-1 font-black ${m.color.split(' ')[1]}`}>{m.label}</span>
-                         </div>
-                       );
-                    })}
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                 <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner">
+                   <h3 className="text-sm font-bold text-blue-400 mb-4 text-center uppercase">Curva Mana (No Terre)</h3>
+                   <div className="flex items-end gap-2 h-28">
+                      {Object.keys(curve).map(k => {
+                         const hPerc = maxCurve === 0 ? 0 : (curve[k] / maxCurve) * 100;
+                         return (
+                           <div key={k} className="flex-1 flex flex-col items-center justify-end h-full">
+                             <span className="text-[10px] text-gray-300 font-bold mb-1">{curve[k]}</span>
+                             <div className="w-full bg-gradient-to-t from-blue-700 to-blue-400 rounded-t-sm" style={{ height: `${hPerc}%` }}></div>
+                             <span className="text-[10px] text-gray-400 mt-1 font-bold">{k}</span>
+                           </div>
+                         );
+                      })}
+                   </div>
+                 </div>
+                 <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner">
+                   <h3 className="text-sm font-bold text-purple-400 mb-4 text-center uppercase">Devozione Colori</h3>
+                   <div className="flex items-end gap-2 h-28">
+                      {ManaColors.map(m => {
+                         const count = colorCounts[m.id];
+                         const hPerc = maxColor === 0 ? 0 : (count / maxColor) * 100;
+                         let barColor = "bg-gray-500";
+                         if(m.id==='W') barColor="bg-yellow-100"; if(m.id==='U') barColor="bg-blue-500";
+                         if(m.id==='B') barColor="bg-gray-600"; if(m.id==='R') barColor="bg-red-500";
+                         if(m.id==='G') barColor="bg-green-500"; if(m.id==='C') barColor="bg-gray-400";
+                         return (
+                           <div key={m.id} className="flex-1 flex flex-col items-center justify-end h-full">
+                             <span className="text-[10px] text-gray-300 font-bold mb-1">{count}</span>
+                             <div className={`w-full ${barColor} rounded-t-sm shadow`} style={{ height: `${hPerc}%` }}></div>
+                             <span className={`text-[10px] mt-1 font-black ${m.color.split(' ')[1]}`}>{m.label}</span>
+                           </div>
+                         );
+                      })}
+                   </div>
                  </div>
                </div>
-             </div>
 
-             <div className="space-y-3">
-               <button onClick={shareDeck} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-[0_0_10px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2 transition-all">📲 Invia ad un Amico</button>
-               {/* --- INIZIO SEZIONE STRUMENTI AVANZATI (COMBO & BUDGET) --- */}
-                <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 shadow-lg mt-6">
-                    <h3 className="text-xl font-black text-white mb-2 flex items-center gap-2">🛠️ Strumenti Avanzati</h3>
-                    <p className="text-gray-400 text-xs font-bold mb-4">Usa l'Intelligenza Artificiale e i Database esterni per potenziare il tuo mazzo a costo zero.</p>
-                    
-                    <div className="flex flex-col gap-3">
-                        {/* BOTTONE COMBO */}
-                        <button onClick={handleComboSpellbook} className="w-full bg-purple-700 hover:bg-purple-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">
-                            ♾️ CERCA COMBO INFINITE
-                        </button>
+               <div className="space-y-3">
+                 <button onClick={shareDeck} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-[0_0_10px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2 transition-all">📲 Invia ad un Amico</button>
+                 
+                 {/* --- SEZIONE BRACKET COMMANDER --- */}
+                 {deck && deck.format && deck.format.toLowerCase() === 'commander' && (
+                     <div className="bg-gray-800 p-4 rounded-xl border-2 border-orange-500 shadow-lg mt-6">
+                         <div className="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
+                             <h3 className="text-xl font-black text-white flex items-center gap-2">
+                                 ⚖️ Commander Bracket
+                             </h3>
+                             <span className="bg-orange-600 text-white px-3 py-1 rounded-lg font-black text-xl shadow">
+                                 Livello {deckBracket}
+                             </span>
+                         </div>
+                         <p className="text-gray-300 text-sm font-semibold mb-4">
+                             {deckBracket <= 2 && "Mazzo Fair/Ottimizzato. Ideale per partite equilibrate, non contiene carte Gamechanger della Banlist ufficiale Bracket 4."}
+                             {deckBracket >= 3 && "Mazzo Competitivo/Estremo. Contiene carte Gamechanger della Banlist ufficiale Bracket 4 (Mana veloce, combo, power-cards)."}
+                         </p>
+                         
+                         {gameChangerCards.length > 0 ? (
+                             <div className="space-y-3 mb-4">
+                                 <h4 className="text-orange-400 font-bold text-sm">Carte Gamechanger Rilevate:</h4>
+                                 {gameChangerCards.map((c, i) => (
+                                     <div key={i} className="bg-gray-900 border border-gray-700 p-3 rounded-lg flex justify-between items-center">
+                                         <div>
+                                             <p className="text-white font-bold flex items-center gap-2">
+                                                 {c.name}
+                                             </p>
+                                         </div>
+                                         <button onClick={() => findAlternatives(c)} className="bg-orange-600 hover:bg-orange-500 text-white text-[10px] font-black px-3 py-2 rounded shadow transition-colors">
+                                             Riduci Potenza
+                                         </button>
+                                     </div>
+                                 ))}
+                             </div>
+                         ) : (
+                             <div className="bg-emerald-900/40 border border-emerald-500 p-3 rounded-lg mb-4">
+                                 <p className="text-emerald-400 font-bold text-sm text-center">Nessuna carta Gamechanger problematica rilevata!</p>
+                             </div>
+                         )}
 
-                        {/* BOTTONE TOP 5 CARTE */}
-                        <button onClick={handleTop5Budget} className="w-full bg-blue-700 hover:bg-blue-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">
-                            📉 ALTERNATIVE TOP 5 CARTE
-                        </button>
-                        
-                        {/* BOTTONE BUDGET INTERO MAZZO */}
-                        <button onClick={() => setShowBudgetModal(true)} className="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">
-                            💰 BUDGETIZZA INTERO MAZZO
-                        </button>
-                    </div>
-                </div>
+                         <button onClick={handleUpgradeBracket} className="w-full bg-red-700 hover:bg-red-600 text-white font-black py-3 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all">
+                            🔥 SUGGERISCI UPGRADE (Aumenta Bracket)
+                         </button>
+                     </div>
+                 )}
 
-                {/* MODALE INSERIMENTO BUDGET (SI APRE QUANDO CLICCHI IL TASTO INDIGO A SCOMPARSA) */}
-                {showBudgetModal && (
-                    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade">
-                        <div className="bg-gray-800 border-2 border-indigo-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
-                            <button onClick={() => setShowBudgetModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
-                            
-                            <h3 className="text-xl font-black text-white mb-2">Imposta il tuo Target</h3>
-                            <p className="text-gray-300 text-xs font-bold mb-4">Quanto vuoi spendere al massimo per questo mazzo?</p>
-                            
-                            <form onSubmit={handleFullDeckBudget} className="flex flex-col gap-4">
-                                <div className="relative">
-                                    <span className="absolute left-4 top-3 text-white font-black">€</span>
-                                    <input 
-                                        type="number" 
-                                        value={targetBudget} 
-                                        onChange={e => setTargetBudget(e.target.value)} 
-                                        placeholder="es. 50" 
-                                        className="w-full bg-gray-900 border border-gray-600 rounded-lg pl-8 pr-4 py-3 text-white font-bold outline-none focus:border-indigo-500" 
-                                        required 
-                                    />
-                                </div>
-                                <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-lg shadow-lg transition-all active:scale-95">
-                                    GENERA PROMPT & VAI SU GEMINI
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                )}
-                {/* --- FINE SEZIONE STRUMENTI AVANZATI --- */}
-               {deck.format === 'commander' && ( <button onClick={openEdhrec} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all mt-6">🛡️ Sinergie su EDHREC</button> )}
-               <button onClick={copyPrompt} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all">🤖 Copia Prompt IA</button>
-               <button onClick={copyList} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl shadow border border-gray-600 flex items-center justify-center gap-2 mt-2 transition-colors">📋 Copia solo Lista Testuale</button>
+                 {/* MODALE ALTERNATIVE GAMECHANGER */}
+                 {showAltModal && altTarget && (
+                     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[200] p-4 animate-fade">
+                         <div className="bg-gray-800 border-2 border-orange-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
+                             <button onClick={() => setShowAltModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
+                             <h3 className="text-lg font-black text-white mb-2">Alternative a {altTarget.name}</h3>
+                             <p className="text-gray-300 text-xs font-bold mb-4">Ecco 5 carte simili legali nei Bracket più bassi che non hai nel mazzo:</p>
+                             
+                             {altLoading ? (
+                                 <p className="text-yellow-400 font-bold text-center py-4">Ricerca in corso su Scryfall...</p>
+                             ) : (
+                                 <div className="space-y-2">
+                                     {altResults.map((res, idx) => (
+                                         <div key={idx} className="bg-gray-900 p-2 rounded-lg border border-gray-600 flex justify-between items-center group cursor-pointer" onClick={() => { navigator.clipboard.writeText(res.name); alert('Copiato negli appunti: ' + res.name); }}>
+                                             <div className="flex-1 truncate pr-2">
+                                                 <p className="text-white font-bold text-sm group-hover:text-orange-400 truncate">{res.name} 📋</p>
+                                                 <p className="text-[10px] text-gray-400 truncate">{res.type_line}</p>
+                                             </div>
+                                             <span className="bg-emerald-800 text-emerald-200 px-2 py-1 rounded text-xs font-black shadow whitespace-nowrap">
+                                                 €{res.prices && res.prices.eur ? res.prices.eur : '-'}
+                                             </span>
+                                         </div>
+                                     ))}
+                                     {altResults.length === 0 && <p className="text-red-400 text-sm text-center">Nessuna alternativa valida trovata.</p>}
+                                 </div>
+                             )}
+                         </div>
+                     </div>
+                 )}
+
+                 {/* --- INIZIO SEZIONE STRUMENTI AVANZATI --- */}
+                 <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 shadow-lg mt-6">
+                     <h3 className="text-xl font-black text-white mb-2 flex items-center gap-2">🛠️ Strumenti Avanzati</h3>
+                     <p className="text-gray-400 text-xs font-bold mb-4">Usa l'Intelligenza Artificiale e i Database esterni per potenziare il tuo mazzo a costo zero.</p>
+                     <div className="flex flex-col gap-3">
+                         <button onClick={handleComboSpellbook} className="w-full bg-purple-700 hover:bg-purple-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">♾️ CERCA COMBO INFINITE</button>
+                         <button onClick={handleTop5Budget} className="w-full bg-blue-700 hover:bg-blue-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">📉 ALTERNATIVE TOP 5 CARTE</button>
+                         <button onClick={() => setShowBudgetModal(true)} className="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">💰 BUDGETIZZA INTERO MAZZO</button>
+                     </div>
+                 </div>
+
+                 {/* MODALE INSERIMENTO BUDGET */}
+                 {showBudgetModal && (
+                     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade">
+                         <div className="bg-gray-800 border-2 border-indigo-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
+                             <button onClick={() => setShowBudgetModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
+                             <h3 className="text-xl font-black text-white mb-2">Imposta il tuo Target</h3>
+                             <p className="text-gray-300 text-xs font-bold mb-4">Quanto vuoi spendere al massimo per questo mazzo?</p>
+                             <form onSubmit={handleFullDeckBudget} className="flex flex-col gap-4">
+                                 <div className="relative">
+                                     <span className="absolute left-4 top-3 text-white font-black">€</span>
+                                     <input type="number" value={targetBudget} onChange={e => setTargetBudget(e.target.value)} placeholder="es. 50" className="w-full bg-gray-900 border border-gray-600 rounded-lg pl-8 pr-4 py-3 text-white font-bold outline-none focus:border-indigo-500" required />
+                                 </div>
+                                 <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-lg shadow-lg transition-all active:scale-95">GENERA PROMPT & VAI SU GEMINI</button>
+                             </form>
+                         </div>
+                     </div>
+                 )}
+
+                 {deck && deck.format && deck.format.toLowerCase() === 'commander' && ( <button onClick={openEdhrec} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all mt-6">🛡️ Sinergie su EDHREC</button> )}
+                 <button onClick={copyPrompt} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all">🤖 Copia Prompt IA</button>
+                 <button onClick={copyList} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl shadow border border-gray-600 flex items-center justify-center gap-2 mt-2 transition-colors">📋 Copia solo Lista Testuale</button>
+               </div>
              </div>
            </div>
-         </div>
-      );
+        );
     };
 
     const PrintView = ({deck, navigate}) => {
@@ -1968,6 +2058,16 @@
       const [numPlayers, setNumPlayers] = useState(4);
       const [startLife, setStartLife] = useState(40);
       const [players, setPlayers] = useState([]);
+      
+      const [showDice, setShowDice] = useState(false);
+      const [diceResult, setDiceResult] = useState(null);
+
+      const rollDice = (max) => {
+         const res = Math.floor(Math.random() * max) + 1;
+         setDiceResult({ max, val: res });
+         setShowDice(false);
+         setTimeout(() => setDiceResult(null), 2500);
+      };
 
       const startGame = () => {
         let newPlayers = [];
@@ -2027,14 +2127,65 @@
       return (
         <div className="fixed inset-0 z-[100] bg-black flex flex-col h-[100dvh] w-[100dvw]">
           <button onClick={() => setView('game')} className="absolute top-2 left-2 z-[110] bg-black/60 px-4 py-2 rounded-full text-white text-xs border border-white/20 font-bold shadow-lg backdrop-blur-md">✖ Esci Partita</button>
+          
           <div className={`flex-1 grid ${gridClass} gap-1 h-full w-full p-1`}>
-             {players.map(p => <PlayerCard key={p.id} player={p} updateStat={updateStat} updateMana={updateMana} toggleImmunity={toggleImmunity} opponents={players.filter(op => op.id !== p.id)} updatePlayerConfig={updatePlayerConfig} />)}
+             {players.map((p, index) => {
+                 let wrapperClass = "w-full h-full relative"; 
+                 let isCapotavola = false;
+                 if (players.length === 3) {
+                     if (index === 0) wrapperClass += " col-start-1 row-start-1";
+                     if (index === 1) wrapperClass += " col-start-1 row-start-2";
+                     if (index === 2) { wrapperClass += " col-start-2 row-start-1 row-span-2"; isCapotavola = true; }
+                 } else if (players.length === 5) {
+                     if (index === 0) wrapperClass += " col-start-1 row-start-1";
+                     if (index === 1) wrapperClass += " col-start-2 row-start-1";
+                     if (index === 2) wrapperClass += " col-start-1 row-start-2";
+                     if (index === 3) wrapperClass += " col-start-2 row-start-2";
+                     if (index === 4) { wrapperClass += " col-start-3 row-start-1 row-span-2"; isCapotavola = true; }
+                 }
+                 return (
+                     <div key={p.id} className={wrapperClass}>
+                         <PlayerCard 
+                            player={p} 
+                            updateStat={updateStat} 
+                            updateMana={updateMana} 
+                            toggleImmunity={toggleImmunity} 
+                            opponents={players.filter(op => op.id !== p.id)} 
+                            updatePlayerConfig={updatePlayerConfig} 
+                            isCapotavola={isCapotavola}
+                            onOpenDice={() => setShowDice(true)}
+                         />
+                     </div>
+                 );
+             })}
           </div>
+
+          {showDice && (
+             <div className="fixed inset-0 bg-black/80 z-[300] flex items-center justify-center p-4 animate-fade" onClick={() => setShowDice(false)}>
+                <div className="bg-gray-900 border border-purple-500 rounded-2xl p-6 shadow-2xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
+                   <h3 className="text-xl font-black text-white mb-4 text-center">🎲 Lancia Dado</h3>
+                   <div className="grid grid-cols-2 gap-4">
+                      <button onClick={() => rollDice(2)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl py-6 font-bold text-white shadow-lg active:scale-95 text-lg transition-all">Moneta</button>
+                      <button onClick={() => rollDice(6)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl py-6 font-bold text-white shadow-lg active:scale-95 text-lg transition-all">D6</button>
+                      <button onClick={() => rollDice(20)} className="col-span-2 bg-purple-700 hover:bg-purple-600 border border-purple-500 rounded-xl py-6 font-black text-white shadow-[0_0_15px_rgba(168,85,247,0.5)] active:scale-95 text-2xl transition-all">D20</button>
+                   </div>
+                   <button onClick={() => setShowDice(false)} className="w-full mt-4 bg-red-600 py-3 rounded-xl text-white font-bold">Chiudi</button>
+                </div>
+             </div>
+          )}
+          {diceResult && (
+             <div className="fixed inset-0 z-[400] flex items-center justify-center pointer-events-none animate-fade">
+                <div className="bg-black/95 border-4 border-purple-500 w-48 h-48 rounded-full shadow-[0_0_60px_rgba(168,85,247,0.9)] flex flex-col items-center justify-center transform scale-150 animate-bounce">
+                   <span className="text-purple-400 font-black text-lg uppercase tracking-widest absolute top-6">D{diceResult.max}</span>
+                   <span className="text-white font-black text-7xl">{diceResult.val}</span>
+                </div>
+             </div>
+          )}
         </div>
       );
     };
-
-    const PlayerCard = ({ player, updateStat, updateMana, toggleImmunity, opponents, updatePlayerConfig }) => {
+    
+    const PlayerCard = ({ player, updateStat, updateMana, toggleImmunity, opponents, updatePlayerConfig, isCapotavola, onOpenDice }) => {
       const [viewMode, setViewMode] = useState('life'); 
       const [cmdQuery, setCmdQuery] = useState("");
       const [cmdResults, setCmdResults] = useState([]);
@@ -2098,17 +2249,23 @@
 
       return (
         <div className={`w-full h-full flex flex-col rounded-xl border-2 relative overflow-hidden shadow-2xl ${isDead ? 'border-red-600 bg-red-950/90' : 'border-gray-600 bg-gray-900'}`}>
-          {player.bgUrl && <img src={player.bgUrl} className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none" />}
-          {isDead && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-50 pointer-events-none z-10">💀</div>}
-          {player.immune && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-30 pointer-events-none text-blue-500 drop-shadow-lg z-10">🛡️</div>}
-          
-          <PlayerHeader />
-          
-          <div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%]">
-            <button onClick={() => updateStat(player.id, 'life', -1)} className="w-1/4 h-full flex items-center justify-center text-6xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
-            <div className="w-2/4 text-center text-7xl md:text-9xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)]">{player.life}</div>
-            <button onClick={() => updateStat(player.id, 'life', 1)} className="w-1/4 h-full flex items-center justify-center text-6xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
+          <div className="absolute inset-0 w-full h-full flex flex-col" style={isCapotavola ? { transform: 'rotate(-90deg)' } : {}}>
+             {player.bgUrl && <img src={player.bgUrl} className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none" />}
+             {isDead && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-50 pointer-events-none z-10">💀</div>}
+             {player.immune && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-30 pointer-events-none text-blue-500 drop-shadow-lg z-10">🛡️</div>}
+             
+             <PlayerHeader />
+             
+             <div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%]">
+               <button onClick={() => updateStat(player.id, 'life', -1)} className="w-1/4 h-full flex items-center justify-center text-6xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
+               <div className="w-2/4 text-center text-7xl md:text-9xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)]">{player.life}</div>
+               <button onClick={() => updateStat(player.id, 'life', 1)} className="w-1/4 h-full flex items-center justify-center text-6xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
+             </div>
           </div>
+
+          <button onClick={(e) => { e.stopPropagation(); onOpenDice && onOpenDice(); }} className="absolute bottom-2 right-2 px-3 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-xl shadow-[0_0_10px_rgba(168,85,247,0.6)] text-sm font-black border border-purple-500 z-40 flex items-center gap-1">
+             🎲 Dadi
+          </button>
 
           {viewMode === 'stats' && (
              <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-[9999] flex flex-col p-4 sm:p-6 animate-fade" style={{ margin: 0, borderRadius: 0 }}>
