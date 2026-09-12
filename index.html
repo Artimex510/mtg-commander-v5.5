@@ -2108,7 +2108,173 @@
       </div>
     );
 
-    // --- GAME UTILITY (LIFE TRACKER TIPO LIFETAP CON BARRA CENTRALE) ---
+    // --- COMPONENTE MODALI A TUTTO SCHERMO (STATS/MANA/RICERCA) ---
+    const PlayerModals = ({ type, player, opponents, onClose, updateStat, updateMana, toggleImmunity, updatePlayerConfig }) => {
+        const [cmdQuery, setCmdQuery] = useState("");
+        const [cmdResults, setCmdResults] = useState([]);
+        const [isSearching, setIsSearching] = useState(false);
+
+        const eseguiRicercaCmd = () => {
+            if(!cmdQuery.trim()) return;
+            setIsSearching(true);
+            fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(cmdQuery.trim() + " (is:commander OR t:legendary)")}&unique=art`)
+               .then(res => res.json())
+               .then(data => {
+                  if(data.data) {
+                     const results = data.data.map(c => {
+                        let imgUrl = c.image_uris ? c.image_uris.art_crop : (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris ? c.card_faces[0].image_uris.art_crop : null);
+                        return { id: c.id, name: c.name, img: imgUrl };
+                     }).filter(c => c.img);
+                     setCmdResults(results);
+                  } else { alert("Nessun comandante trovato."); }
+                  setIsSearching(false);
+               }).catch(e => { console.error(e); setIsSearching(false); });
+         };
+
+        if (type === 'stats') {
+            return (
+                <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-[9999] flex flex-col p-4 sm:p-6 animate-fade" style={{ margin: 0, borderRadius: 0 }}>
+                    <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2">
+                        <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">⚙️ Statistiche: {player.name}</h3>
+                        <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto pb-10 space-y-6">
+                        <div>
+                            <h4 className="text-blue-400 font-black text-lg mb-2 uppercase border-b border-gray-700 pb-1">⚔️ Danni Comandante</h4>
+                            {opponents.map(opp => (
+                                <BigStatRow key={opp.id} label={`Da: ${opp.name}`} value={player.cmdDmg[opp.id]} onSub={() => updateStat(player.id, 'cmdDmg', -1, opp.id)} onAdd={() => updateStat(player.id, 'cmdDmg', 1, opp.id)} />
+                            ))}
+                        </div>
+                        <div>
+                            <h4 className="text-green-400 font-black text-lg mb-2 uppercase border-b border-gray-700 pb-1">🔢 Segnalini</h4>
+                            <BigStatRow label="💧 Veleno" value={player.poison} onSub={() => updateStat(player.id, 'poison', -1)} onAdd={() => updateStat(player.id, 'poison', 1)} />
+                            <BigStatRow label="⚔️ Lanci Cmdr" value={player.cmdCasts} onSub={() => updateStat(player.id, 'cmdCasts', -1)} onAdd={() => updateStat(player.id, 'cmdCasts', 1)} />
+                            <BigStatRow label="🛡️ Emblemi" value={player.emblems} onSub={() => updateStat(player.id, 'emblems', -1)} onAdd={() => updateStat(player.id, 'emblems', 1)} />
+                            <BigStatRow label="☢️ Radiazioni" value={player.rad || 0} onSub={() => updateStat(player.id, 'rad', -1)} onAdd={() => updateStat(player.id, 'rad', 1)} />
+                            <BigStatRow label="⚡ Energia" value={player.energy || 0} onSub={() => updateStat(player.id, 'energy', -1)} onAdd={() => updateStat(player.id, 'energy', 1)} />
+                            <BigStatRow label="✨ Esperienza" value={player.exp || 0} onSub={() => updateStat(player.id, 'exp', -1)} onAdd={() => updateStat(player.id, 'exp', 1)} />
+                            <BigStatRow label="🎫 Ticket" value={player.ticket || 0} onSub={() => updateStat(player.id, 'ticket', -1)} onAdd={() => updateStat(player.id, 'ticket', 1)} />
+                        </div>
+                        <div>
+                            <h4 className="text-yellow-400 font-black text-lg mb-2 uppercase border-b border-gray-700 pb-1">🔰 Designatori di Stato</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button onClick={() => updatePlayerConfig(player.id, 'monarch', !player.monarch)} className={`p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.monarch ? 'bg-yellow-600 border-yellow-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-400'}`}><span className="text-2xl">👑</span> Monarca</button>
+                                <button onClick={() => updatePlayerConfig(player.id, 'initiative', !player.initiative)} className={`p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.initiative ? 'bg-red-600 border-red-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-400'}`}><span className="text-2xl">🗡️</span> Iniziativa</button>
+                                <button onClick={() => updatePlayerConfig(player.id, 'blessing', !player.blessing)} className={`p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.blessing ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-400'}`}><span className="text-2xl">🏛️</span> City's Blessing</button>
+                                <button onClick={() => { let next = 'day'; if(player.dayNight === 'day') next = 'night'; else if(player.dayNight === 'night') next = 'none'; updatePlayerConfig(player.id, 'dayNight', next); }} className={`p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.dayNight === 'day' ? 'bg-yellow-500 border-yellow-300 text-black' : (player.dayNight === 'night' ? 'bg-blue-900 border-blue-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400')}`}><span className="text-2xl">{player.dayNight === 'day' ? '☀️' : (player.dayNight === 'night' ? '🌙' : '🌤️')}</span> {player.dayNight === 'day' ? 'Giorno' : (player.dayNight === 'night' ? 'Notte' : 'Nessuno')}</button>
+                            </div>
+                        </div>
+                        <div className="pt-4 flex flex-col gap-3">
+                            <button onClick={() => toggleImmunity(player.id)} className={`w-full py-4 font-black rounded-xl shadow-lg border text-lg ${player.immune ? 'bg-cyan-600 text-white border-cyan-400' : 'bg-gray-800 text-gray-300 border-gray-600'}`}>{player.immune ? '🛡️ Immunità (Danni Bloccati)' : 'Attiva Immunità (Ferma Danni)'}</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (type === 'mana') {
+            return (
+                <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-[9999] flex flex-col p-4 sm:p-6 animate-fade" style={{ margin: 0, borderRadius: 0 }}>
+                    <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3 mt-2">
+                        <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">🔮 Mana Pool: {player.name}</h3>
+                        <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
+                    </div>
+                    <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto content-start pb-10">
+                        {ManaColors.map(m => (
+                            <div key={m.id} className="bg-gray-800 rounded-2xl border border-gray-700 flex flex-col items-center justify-center p-4 shadow-xl">
+                                <span className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-xl border-2 shadow-md mb-4 ${m.color}`}>{m.label}</span>
+                                <div className="flex w-full justify-between items-center gap-4">
+                                    <button onClick={() => updateMana(player.id, m.id, -1)} className="w-16 h-16 bg-red-900/80 active:bg-red-700 text-red-300 font-black text-4xl rounded-xl flex items-center justify-center shadow-lg transition-transform active:scale-95">-</button>
+                                    <span className="text-5xl font-black text-white">{player.mana[m.id]}</span>
+                                    <button onClick={() => updateMana(player.id, m.id, 1)} className="w-16 h-16 bg-green-900/80 active:bg-green-700 text-green-300 font-black text-4xl rounded-xl flex items-center justify-center shadow-lg transition-transform active:scale-95">+</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <button onClick={() => { ManaColors.forEach(m => updatePlayerConfig(player.id, 'mana', {W:0,U:0,B:0,R:0,G:0,C:0})) }} className="w-full mt-auto py-4 font-black shadow-[0_0_15px_rgba(220,38,38,0.4)] bg-red-700 hover:bg-red-600 text-white rounded-xl transition-all text-xl">🔄 SVUOTA MANA POOL</button>
+                </div>
+            );
+        }
+
+        if (type === 'search') {
+            return (
+                <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-[9999] flex flex-col p-4 sm:p-6 animate-fade" style={{ margin: 0, borderRadius: 0 }}>
+                    <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2">
+                        <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">🔍 Sfondo: {player.name}</h3>
+                        <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
+                    </div>
+                    <div className="flex gap-2 mb-4">
+                        <input autoFocus type="text" placeholder="Scrivi nome es. Urza" value={cmdQuery} onChange={e=>setCmdQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&eseguiRicercaCmd()} className="flex-1 bg-gray-800 border border-gray-500 text-white rounded-xl p-3 outline-none font-bold text-lg focus:border-blue-500" />
+                        <button onClick={eseguiRicercaCmd} className="bg-blue-600 px-6 rounded-xl text-white font-black shadow-lg text-lg active:scale-95 transition-transform">{isSearching ? '...' : 'Cerca'}</button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto min-h-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 content-start pb-10 pr-2">
+                        {cmdResults.map(c => (
+                            <div key={c.id} className="relative rounded-xl overflow-hidden cursor-pointer border-2 border-transparent hover:border-blue-500 shadow-xl active:scale-95 transition-all bg-black h-28 sm:h-36 md:h-40" onClick={() => { updatePlayerConfig(player.id, 'bgUrl', c.img); onClose(); }}>
+                                <img src={c.img} className="absolute inset-0 w-full h-full object-cover opacity-90 hover:opacity-100" />
+                                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent p-2 pt-6 text-center flex flex-col justify-end h-full">
+                                    <span className="text-white text-[10px] md:text-xs font-bold drop-shadow-md leading-tight">{c.name}</span>
+                                </div>
+                            </div>
+                        ))}
+                        {cmdResults.length === 0 && !isSearching && <p className="col-span-full text-center text-gray-400 font-bold mt-10 text-xl">Cerca un Comandante per impostare lo sfondo.</p>}
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    };
+
+    // --- CARTELLA GIOCATORE (SOLO GRAFICA DI GIOCO) ---
+    const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig }) => {
+      const [isEditingName, setIsEditingName] = useState(false);
+      const [tempName, setTempName] = useState(player.name);
+      
+      let isDead = false;
+      if (!player.immune) {
+         if (player.life <= 0) isDead = true; if (player.poison >= 10) isDead = true;
+         Object.keys(player.cmdDmg).forEach(key => { if (player.cmdDmg[key] >= 21) isDead = true; });
+      }
+
+      const saveName = () => { setIsEditingName(false); if(tempName.trim() !== "") updatePlayerConfig(player.id, 'name', tempName.trim()); else setTempName(player.name); };
+
+      return (
+        <React.Fragment>
+          {player.bgUrl && <img src={player.bgUrl} className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none" />}
+          {isDead && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-50 pointer-events-none z-10">💀</div>}
+          {player.immune && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-30 pointer-events-none text-blue-500 drop-shadow-lg z-10">🛡️</div>}
+          
+          <div className="relative flex justify-between items-center bg-black/50 p-2 z-30 border-b border-gray-700 h-[25%] min-h-[50px] w-full px-4">
+            <button onClick={() => onOpenModal('search')} className="text-gray-400 hover:text-white transition-colors" title="Imposta Sfondo"><span className="text-xl">🖼️</span></button>
+            <div className="flex flex-col items-center justify-center overflow-hidden z-20 flex-1 px-2">
+               {isEditingName ? ( <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} onBlur={saveName} onKeyDown={e => e.key === 'Enter' && saveName()} className="bg-gray-700 text-white text-sm px-1 py-1 rounded outline-none w-full max-w-[120px] border border-gray-500 font-bold text-center" /> ) : (
+                  <span onClick={() => setIsEditingName(true)} className="font-bold text-white text-lg drop-shadow-md truncate cursor-pointer text-center w-full">{player.name} ✎</span>
+               )}
+               <div className="flex gap-2 mt-1 justify-center flex-wrap">
+                  {player.poison > 0 && <span className="text-green-400 text-xs font-black drop-shadow-md">💧{player.poison}</span>}
+                  {player.cmdCasts > 0 && <span className="text-gray-300 text-xs font-black drop-shadow-md">⚔️{player.cmdCasts}</span>}
+                  {player.emblems > 0 && <span className="text-purple-400 text-xs font-black drop-shadow-md">🛡️{player.emblems}</span>}
+                  {player.rad > 0 && <span className="text-lime-400 text-xs font-black drop-shadow-md">☢️{player.rad}</span>}
+                  {player.energy > 0 && <span className="text-blue-400 text-xs font-black drop-shadow-md">⚡{player.energy}</span>}
+                  {player.exp > 0 && <span className="text-yellow-400 text-xs font-black drop-shadow-md">✨{player.exp}</span>}
+                  {player.ticket > 0 && <span className="text-orange-400 text-xs font-black drop-shadow-md">🎫{player.ticket}</span>}
+               </div>
+            </div>
+            <div className="flex flex-col gap-1 z-30 shrink-0">
+               <button onClick={() => onOpenModal('mana')} className="px-3 py-1 rounded shadow-lg text-[10px] font-bold bg-emerald-700 text-white hover:bg-emerald-600 transition-colors">Mana</button>
+               <button onClick={() => onOpenModal('stats')} className="px-3 py-1 rounded shadow-lg text-[10px] font-bold bg-gray-700 text-white hover:bg-gray-600 transition-colors">Stats</button>
+            </div>
+          </div>
+          
+          <div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%] w-full">
+            <button onClick={() => updateStat(player.id, 'life', -1)} className="w-1/4 h-full flex items-center justify-center text-6xl md:text-7xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
+            <div className="w-2/4 text-center text-7xl md:text-8xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)]">{player.life}</div>
+            <button onClick={() => updateStat(player.id, 'life', 1)} className="w-1/4 h-full flex items-center justify-center text-6xl md:text-7xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
+          </div>
+        </React.Fragment>
+      );
+    };
+
+    // --- GAME UTILITY (IL TAVOLO DA GIOCO CON GRIGLIA INTELLIGENTE) ---
     const GameUtility = ({view, setView}) => {
       const [setup, setSetup] = useState(true);
       const [numPlayers, setNumPlayers] = useState(4);
@@ -2117,6 +2283,7 @@
       
       const [showDice, setShowDice] = useState(false);
       const [diceResult, setDiceResult] = useState(null);
+      const [activeModal, setActiveModal] = useState(null); 
 
       const rollDice = (max) => {
          const res = Math.floor(Math.random() * max) + 1;
@@ -2138,7 +2305,7 @@
       };
 
       const resetGame = () => {
-          if (window.confirm("Sei sicuro di voler resettare la partita? Punti vita, danni e segnalini torneranno ai valori iniziali.")) {
+          if (window.confirm("Sei sicuro di voler resettare la partita? Tutti i punti vita e i segnalini verranno azzerati.")) {
               startGame();
           }
       };
@@ -2170,7 +2337,7 @@
       if (view === 'game') return (
         <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl shadow-lg border border-gray-600 mt-4 backdrop-blur-sm">
           <h2 className="text-3xl font-black mb-6 text-center text-red-500 drop-shadow-md">Setup Partita</h2>
-          <p className="text-xs text-center text-gray-300 font-bold mb-4 bg-gray-900 p-2 rounded border border-gray-700">📱 Gira il telefono e mettilo al centro del tavolo!</p>
+          <p className="text-xs text-center text-gray-300 font-bold mb-4 bg-gray-900 p-2 rounded border border-gray-700">📱 Metti il telefono al centro del tavolo: le postazioni si ruoteranno in automatico!</p>
           <div className="mb-4">
             <label className="block text-gray-300 font-bold mb-2">Numero Giocatori (1-6)</label>
             <input type="number" min="1" max="6" value={numPlayers} onChange={e => setNumPlayers(parseInt(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white text-center text-xl font-bold outline-none" />
@@ -2185,70 +2352,97 @@
         </div>
       );
 
-      // Griglia Dinamica con Riga Centrale per la Barra (1fr - 45px - 1fr)
-      let gridClass = 'grid-cols-2 grid-rows-[1fr_45px_1fr]';
-      if (players.length === 2) gridClass = 'grid-cols-1 grid-rows-[1fr_45px_1fr]';
-      else if (players.length === 3) gridClass = 'grid-cols-[1fr_0.8fr] grid-rows-[1fr_45px_1fr]';
-      else if (players.length === 5) gridClass = 'grid-cols-[1fr_1fr_0.8fr] grid-rows-[1fr_45px_1fr]';
-      else if (players.length === 6) gridClass = 'grid-cols-3 grid-rows-[1fr_45px_1fr]';
+      // GRIGLIE DINAMICHE CON BARRA VERTICALE CENTRALE (Tra le colonne)
+      let gridClass = 'grid-cols-[1fr_50px_1fr] grid-rows-2';
+      if (players.length <= 2) gridClass = 'grid-cols-[1fr_50px_1fr] grid-rows-1';
+      else if (players.length === 3) gridClass = 'grid-cols-[1fr_50px_0.8fr] grid-rows-2';
+      else if (players.length === 5) gridClass = 'grid-cols-[1fr_1fr_50px_0.8fr] grid-rows-2';
+      else if (players.length === 6) gridClass = 'grid-cols-[1fr_50px_1fr] grid-rows-3';
 
       return (
         <div className="fixed inset-0 z-[100] bg-black flex flex-col h-[100dvh] w-[100dvw]">
-          <button onClick={() => setView('game')} className="absolute top-2 left-2 z-[150] bg-black/80 px-4 py-2 rounded-full text-white text-xs border border-gray-500 font-bold shadow-lg">✖ Esci Partita</button>
+          <button onClick={() => setView('game')} className="absolute top-2 left-2 z-[150] bg-black/80 px-4 py-2 rounded-full text-white text-xs border border-gray-500 font-bold shadow-lg flex items-center gap-2">✖ Esci Partita</button>
           
           <div className={`flex-1 grid ${gridClass} gap-1 h-full w-full p-1`}>
              {players.map((p, index) => {
-                 let wrapperClass = "w-full h-full relative overflow-hidden rounded-xl border border-gray-700 bg-gray-900"; 
+                 let wrapperClass = "relative overflow-hidden rounded-xl border-2 border-gray-700 bg-gray-900"; 
                  let rotDeg = 0; let rowStart = ""; let colStart = ""; let rowSpan = "";
                  
-                 // Posizionamento esatto dei quadrati nella griglia
-                 if (players.length === 2) {
-                     if (index === 0) { rowStart = "row-start-1"; rotDeg = 180; }
-                     if (index === 1) { rowStart = "row-start-3"; rotDeg = 0; }
+                 // POSIZIONAMENTO LOGICO
+                 if (players.length <= 2) {
+                     if (index === 0) { colStart = "col-start-1"; rotDeg = 90; }
+                     if (index === 1) { colStart = "col-start-3"; rotDeg = -90; }
                  } else if (players.length === 3) {
                      if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
-                     if (index === 1) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }
-                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-2"; rowSpan = "row-span-3"; rotDeg = -90; }
+                     if (index === 1) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
+                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola destro
                  } else if (players.length === 4) {
-                     if (index < 2) { rowStart = "row-start-1"; rotDeg = 180; }
-                     else { rowStart = "row-start-3"; rotDeg = 0; }
+                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
+                     if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = 180; }
+                     if (index === 2) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
+                     if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-3"; rotDeg = 0; }
                  } else if (players.length === 5) {
                      if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                      if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
-                     if (index === 2) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }
-                     if (index === 3) { rowStart = "row-start-3"; colStart = "col-start-2"; rotDeg = 0; }
-                     if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-3"; rowSpan = "row-span-3"; rotDeg = -90; }
+                     if (index === 2) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
+                     if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
+                     if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-4"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola destro
                  } else if (players.length === 6) {
-                     if (index < 3) { rowStart = "row-start-1"; rotDeg = 180; }
-                     else { rowStart = "row-start-3"; rotDeg = 0; }
+                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 90; }
+                     if (index === 1) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 90; }
+                     if (index === 2) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 90; }
+                     if (index === 3) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = -90; }
+                     if (index === 4) { rowStart = "row-start-2"; colStart = "col-start-3"; rotDeg = -90; }
+                     if (index === 5) { rowStart = "row-start-3"; colStart = "col-start-3"; rotDeg = -90; }
                  }
 
+                 const isSideways = rotDeg === 90 || rotDeg === -90;
                  return (
-                     <div key={p.id} className={`${wrapperClass} ${rowStart} ${colStart} ${rowSpan}`}>
-                         <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center" style={{ transform: `rotate(${rotDeg}deg)` }}>
-                             <PlayerCard player={p} updateStat={updateStat} updateMana={updateMana} toggleImmunity={toggleImmunity} opponents={players.filter(op => op.id !== p.id)} updatePlayerConfig={updatePlayerConfig} />
+                     <div key={p.id} className={`${wrapperClass} ${rowStart} ${colStart} ${rowSpan}`} style={{ containerType: 'size' }}>
+                         <div className={`absolute flex flex-col bg-gray-900 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] ${isSideways ? 'top-1/2 left-1/2' : 'inset-0'}`} 
+                              style={{
+                                  width: isSideways ? '100cqh' : '100cqw', 
+                                  height: isSideways ? '100cqw' : '100cqh', 
+                                  transform: isSideways ? `translate(-50%, -50%) rotate(${rotDeg}deg)` : `rotate(${rotDeg}deg)`
+                              }}>
+                             <PlayerCard player={p} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} onOpenModal={(type) => setActiveModal({type, playerId: p.id})} />
                          </div>
                      </div>
                  );
              })}
 
-             {/* BARRA CENTRALE (Dadi, Reset, Stats Partita) */}
-             <div className={`row-start-2 col-start-1 ${players.length===3 ? 'col-span-1' : (players.length===5 ? 'col-span-2' : 'col-span-full')} bg-gray-950 border-y border-gray-700 flex items-center justify-center gap-6 shadow-2xl z-[120]`}>
-                <button onClick={resetGame} className="flex items-center gap-1 text-gray-400 font-bold hover:text-white px-2 transition-colors">
-                    <span className="text-lg">🔄</span> <span className="text-xs uppercase">Reset</span>
+             {/* BARRA VERTICALE CENTRALE (Dadi, Reset, Stats Partita) */}
+             <div className={`row-start-1 row-span-full ${players.length===5 ? 'col-start-3' : 'col-start-2'} bg-gray-950 border-x border-gray-700 flex flex-col items-center justify-center gap-8 shadow-2xl z-[120] py-4`}>
+                <button onClick={() => setShowDice(true)} className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 w-10 h-10 rounded-xl shadow-lg border border-gray-600 transform transition-transform active:scale-90" title="Lancia Dadi">
+                    <span className="text-xl drop-shadow-md">🎲</span>
                 </button>
-                <button onClick={() => setShowDice(true)} className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 w-12 h-12 rounded-xl shadow-lg border border-gray-600 transform -translate-y-1">
-                    <span className="text-2xl drop-shadow-md">🎲</span>
+                <div className="w-6 h-px bg-gray-700"></div>
+                <button onClick={resetGame} className="flex flex-col items-center gap-1 text-gray-400 font-bold hover:text-white transition-colors" title="Azzera e Ricomincia">
+                    <span className="text-xl">🔄</span>
                 </button>
-                <button onClick={() => alert("La Cronologia Partite sarà disponibile nel prossimo aggiornamento dell'app!")} className="flex items-center gap-1 text-gray-400 font-bold hover:text-white px-2 transition-colors">
-                    <span className="text-lg">📊</span> <span className="text-xs uppercase">Storico</span>
+                <button onClick={() => alert("Cronologia partite in arrivo nel prossimo aggiornamento!")} className="flex flex-col items-center gap-1 text-gray-400 font-bold hover:text-white transition-colors" title="Storico Partite">
+                    <span className="text-xl">📊</span>
                 </button>
              </div>
           </div>
 
-          {/* MODALE DADI GLOBALI */}
-          {showDice && (
-             <div className="fixed inset-0 bg-black/80 z-[300] flex items-center justify-center p-4 animate-fade" onClick={() => setShowDice(false)}>
+          {/* RENDER MODALI GLOBALI (A TUTTO SCHERMO) */}
+          {activeModal && ReactDOM.createPortal(
+              <PlayerModals 
+                 type={activeModal.type} 
+                 player={players.find(p => p.id === activeModal.playerId)} 
+                 opponents={players.filter(p => p.id !== activeModal.playerId)}
+                 onClose={() => setActiveModal(null)} 
+                 updateStat={updateStat} 
+                 updateMana={updateMana} 
+                 toggleImmunity={toggleImmunity} 
+                 updatePlayerConfig={updatePlayerConfig} 
+              />
+          , document.body)}
+
+          {/* MODALE DADI */}
+          {showDice && ReactDOM.createPortal(
+             <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 animate-fade" onClick={() => setShowDice(false)}>
                 <div className="bg-gray-900 border border-purple-500 rounded-2xl p-6 shadow-2xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
                    <h3 className="text-xl font-black text-white mb-4 text-center">🎲 Lancia Dado</h3>
                    <div className="grid grid-cols-2 gap-4">
@@ -2256,186 +2450,20 @@
                       <button onClick={() => rollDice(6)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl py-6 font-bold text-white shadow-lg active:scale-95 text-lg transition-all">🎲 Dado (D6)</button>
                       <button onClick={() => rollDice(20)} className="col-span-2 bg-purple-700 hover:bg-purple-600 border border-purple-500 rounded-xl py-6 font-black text-white shadow-[0_0_15px_rgba(168,85,247,0.5)] active:scale-95 text-2xl transition-all">✨ Dado Vita (D20)</button>
                    </div>
+                   <button onClick={() => setShowDice(false)} className="w-full mt-4 bg-red-600 py-3 rounded-xl text-white font-bold">Chiudi</button>
                 </div>
              </div>
-          )}
-          {diceResult && (
-             <div className="fixed inset-0 z-[400] flex items-center justify-center pointer-events-none animate-fade">
+          , document.body)}
+          
+          {diceResult && ReactDOM.createPortal(
+             <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none animate-fade">
                 <div className="bg-black/95 border-4 border-purple-500 w-48 h-48 rounded-full shadow-[0_0_60px_rgba(168,85,247,0.9)] flex flex-col items-center justify-center transform scale-150 animate-bounce">
                    <span className="text-purple-400 font-black text-lg uppercase tracking-widest absolute top-6">D{diceResult.max}</span>
                    <span className="text-white font-black text-7xl">{diceResult.val}</span>
                 </div>
              </div>
-          )}
+          , document.body)}
         </div>
-      );
-    };
-    
-    const PlayerCard = ({ player, updateStat, updateMana, toggleImmunity, opponents, updatePlayerConfig }) => {
-      const [viewMode, setViewMode] = useState('life'); 
-      const [cmdQuery, setCmdQuery] = useState("");
-      const [cmdResults, setCmdResults] = useState([]);
-      const [isSearching, setIsSearching] = useState(false);
-      const [isEditingName, setIsEditingName] = useState(false);
-      const [tempName, setTempName] = useState(player.name);
-      
-      let isDead = false;
-      if (!player.immune) {
-         if (player.life <= 0) isDead = true; if (player.poison >= 10) isDead = true;
-         Object.keys(player.cmdDmg).forEach(key => { if (player.cmdDmg[key] >= 21) isDead = true; });
-      }
-
-      const eseguiRicercaCmd = () => {
-         if(!cmdQuery.trim()) return;
-         setIsSearching(true);
-         fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(cmdQuery.trim() + " (is:commander OR t:legendary)")}&unique=art`)
-            .then(res => res.json())
-            .then(data => {
-               if(data.data) {
-                  const results = data.data.map(c => {
-                     let imgUrl = c.image_uris ? c.image_uris.art_crop : (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris ? c.card_faces[0].image_uris.art_crop : null);
-                     return { id: c.id, name: c.name, img: imgUrl };
-                  }).filter(c => c.img);
-                  setCmdResults(results);
-               } else { alert("Nessun comandante trovato."); }
-               setIsSearching(false);
-            }).catch(e => { console.error(e); setIsSearching(false); });
-      };
-
-      const saveName = () => { setIsEditingName(false); if(tempName.trim() !== "") updatePlayerConfig(player.id, 'name', tempName.trim()); else setTempName(player.name); };
-
-      const PlayerHeader = () => (
-         <div className="relative flex justify-center items-center bg-black/50 p-2 z-30 border-b border-gray-700 h-[25%] min-h-[50px] w-full">
-            <div className="flex flex-col items-center justify-center overflow-hidden z-20 w-3/4">
-               {isEditingName ? ( <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} onBlur={saveName} onKeyDown={e => e.key === 'Enter' && saveName()} className="bg-gray-700 text-white text-sm px-1 py-1 rounded outline-none w-32 border border-gray-500 font-bold text-center" /> ) : (
-                  <span onClick={() => setIsEditingName(true)} className="font-bold text-white text-base drop-shadow-md truncate cursor-pointer text-center px-4 w-full">{player.name} ✎</span>
-               )}
-               <div className="flex gap-2 mt-1 justify-center flex-wrap px-1">
-                  {player.poison > 0 && <span className="text-green-400 text-xs font-black drop-shadow-md">💧{player.poison}</span>}
-                  {player.cmdCasts > 0 && <span className="text-gray-300 text-xs font-black drop-shadow-md">⚔️{player.cmdCasts}</span>}
-                  {player.emblems > 0 && <span className="text-purple-400 text-xs font-black drop-shadow-md">🛡️{player.emblems}</span>}
-                  {player.rad > 0 && <span className="text-lime-400 text-xs font-black drop-shadow-md">☢️{player.rad}</span>}
-                  {player.energy > 0 && <span className="text-blue-400 text-xs font-black drop-shadow-md">⚡{player.energy}</span>}
-                  {player.exp > 0 && <span className="text-yellow-400 text-xs font-black drop-shadow-md">✨{player.exp}</span>}
-                  {player.ticket > 0 && <span className="text-orange-400 text-xs font-black drop-shadow-md">🎫{player.ticket}</span>}
-                  {player.monarch && <span className="text-yellow-500 text-xs font-black drop-shadow-md">👑</span>}
-                  {player.initiative && <span className="text-red-400 text-xs font-black drop-shadow-md">🗡️</span>}
-                  {player.blessing && <span className="text-yellow-100 text-xs font-black drop-shadow-md">🏛️</span>}
-                  {player.dayNight === 'day' && <span className="text-yellow-300 text-xs font-black drop-shadow-md">☀️</span>}
-                  {player.dayNight === 'night' && <span className="text-indigo-300 text-xs font-black drop-shadow-md">🌙</span>}
-               </div>
-            </div>
-            
-            <div className="absolute right-2 top-2 bottom-2 flex flex-col justify-center gap-1 z-30">
-               <button onClick={() => setViewMode(viewMode === 'mana' ? 'life' : 'mana')} className={`px-2 py-1 rounded shadow-lg text-[10px] font-bold transition-colors ${viewMode === 'mana' ? 'bg-blue-600 text-white' : 'bg-emerald-700 text-white'}`}>{viewMode === 'mana' ? 'Chiudi' : 'Mana'}</button>
-               <button onClick={() => setViewMode(viewMode === 'stats' || viewMode === 'search' ? 'life' : 'stats')} className={`px-2 py-1 rounded shadow-lg text-[10px] font-bold transition-colors ${viewMode === 'stats' || viewMode === 'search' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'}`}>{viewMode === 'stats' || viewMode === 'search' ? 'Chiudi' : 'Stats'}</button>
-            </div>
-         </div>
-      );
-
-      return (
-        <React.Fragment>
-          <div className="absolute inset-0 w-full h-full flex flex-col">
-             {player.bgUrl && <img src={player.bgUrl} className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none" />}
-             {isDead && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-50 pointer-events-none z-10">💀</div>}
-             {player.immune && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-30 pointer-events-none text-blue-500 drop-shadow-lg z-10">🛡️</div>}
-             
-             <PlayerHeader />
-             
-             <div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%]">
-               <button onClick={() => updateStat(player.id, 'life', -1)} className="w-1/4 h-full flex items-center justify-center text-6xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
-               <div className="w-2/4 text-center text-7xl md:text-9xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)]">{player.life}</div>
-               <button onClick={() => updateStat(player.id, 'life', 1)} className="w-1/4 h-full flex items-center justify-center text-6xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
-             </div>
-          </div>
-
-          {/* ReactDOM.createPortal sgancia le finestre Stats/Mana dalla rotazione del Capotavola, rendendole sempre a tutto schermo! */}
-          {viewMode === 'stats' && ReactDOM.createPortal(
-             <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-[9999] flex flex-col p-4 sm:p-6 animate-fade" style={{ margin: 0, borderRadius: 0 }}>
-                <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2">
-                   <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">⚙️ Statistiche: {player.name}</h3>
-                   <button onClick={()=>setViewMode('life')} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
-                </div>
-                <div className="flex-1 overflow-y-auto pb-10 space-y-6">
-                   <div>
-                      <h4 className="text-blue-400 font-black text-lg mb-2 uppercase border-b border-gray-700 pb-1">⚔️ Danni Comandante</h4>
-                      {opponents.map(opp => (
-                         <BigStatRow key={opp.id} label={`Da: ${opp.name}`} value={player.cmdDmg[opp.id]} onSub={() => updateStat(player.id, 'cmdDmg', -1, opp.id)} onAdd={() => updateStat(player.id, 'cmdDmg', 1, opp.id)} />
-                      ))}
-                   </div>
-                   <div>
-                      <h4 className="text-green-400 font-black text-lg mb-2 uppercase border-b border-gray-700 pb-1">🔢 Segnalini</h4>
-                      <BigStatRow label="💧 Veleno" value={player.poison} onSub={() => updateStat(player.id, 'poison', -1)} onAdd={() => updateStat(player.id, 'poison', 1)} />
-                      <BigStatRow label="⚔️ Lanci Cmdr" value={player.cmdCasts} onSub={() => updateStat(player.id, 'cmdCasts', -1)} onAdd={() => updateStat(player.id, 'cmdCasts', 1)} />
-                      <BigStatRow label="🛡️ Emblemi" value={player.emblems} onSub={() => updateStat(player.id, 'emblems', -1)} onAdd={() => updateStat(player.id, 'emblems', 1)} />
-                      <BigStatRow label="☢️ Radiazioni" value={player.rad || 0} onSub={() => updateStat(player.id, 'rad', -1)} onAdd={() => updateStat(player.id, 'rad', 1)} />
-                      <BigStatRow label="⚡ Energia" value={player.energy || 0} onSub={() => updateStat(player.id, 'energy', -1)} onAdd={() => updateStat(player.id, 'energy', 1)} />
-                      <BigStatRow label="✨ Esperienza" value={player.exp || 0} onSub={() => updateStat(player.id, 'exp', -1)} onAdd={() => updateStat(player.id, 'exp', 1)} />
-                      <BigStatRow label="🎫 Ticket" value={player.ticket || 0} onSub={() => updateStat(player.id, 'ticket', -1)} onAdd={() => updateStat(player.id, 'ticket', 1)} />
-                   </div>
-                   <div>
-                      <h4 className="text-yellow-400 font-black text-lg mb-2 uppercase border-b border-gray-700 pb-1">🔰 Designatori di Stato</h4>
-                      <div className="grid grid-cols-2 gap-3">
-                         <button onClick={() => updatePlayerConfig(player.id, 'monarch', !player.monarch)} className={`p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.monarch ? 'bg-yellow-600 border-yellow-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-400'}`}><span className="text-2xl">👑</span> Monarca</button>
-                         <button onClick={() => updatePlayerConfig(player.id, 'initiative', !player.initiative)} className={`p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.initiative ? 'bg-red-600 border-red-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-400'}`}><span className="text-2xl">🗡️</span> Iniziativa</button>
-                         <button onClick={() => updatePlayerConfig(player.id, 'blessing', !player.blessing)} className={`p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.blessing ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-400'}`}><span className="text-2xl">🏛️</span> City's Blessing</button>
-                         <button onClick={() => { let next = 'day'; if(player.dayNight === 'day') next = 'night'; else if(player.dayNight === 'night') next = 'none'; updatePlayerConfig(player.id, 'dayNight', next); }} className={`p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.dayNight === 'day' ? 'bg-yellow-500 border-yellow-300 text-black' : (player.dayNight === 'night' ? 'bg-blue-900 border-blue-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400')}`}><span className="text-2xl">{player.dayNight === 'day' ? '☀️' : (player.dayNight === 'night' ? '🌙' : '🌤️')}</span> {player.dayNight === 'day' ? 'Giorno' : (player.dayNight === 'night' ? 'Notte' : 'Nessuno')}</button>
-                      </div>
-                   </div>
-                   <div className="pt-4 flex flex-col gap-3">
-                      <button onClick={() => setViewMode('search')} className="w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-lg border border-blue-400 text-lg">🔍 Cerca Sfondo Comandante</button>
-                      <button onClick={() => toggleImmunity(player.id)} className={`w-full py-4 font-black rounded-xl shadow-lg border text-lg ${player.immune ? 'bg-cyan-600 text-white border-cyan-400' : 'bg-gray-800 text-gray-300 border-gray-600'}`}>{player.immune ? '🛡️ Immunità (Danni Bloccati)' : 'Attiva Immunità (Ferma Danni)'}</button>
-                   </div>
-                </div>
-             </div>
-          , document.body)}
-
-          {viewMode === 'search' && ReactDOM.createPortal(
-             <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-[9999] flex flex-col p-4 sm:p-6 animate-fade" style={{ margin: 0, borderRadius: 0 }}>
-                <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2">
-                   <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">🔍 Sfondo: {player.name}</h3>
-                   <button onClick={()=>setViewMode('stats')} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
-                </div>
-                <div className="flex gap-2 mb-4">
-                   <input autoFocus type="text" placeholder="Scrivi nome es. Urza" value={cmdQuery} onChange={e=>setCmdQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&eseguiRicercaCmd()} className="flex-1 bg-gray-800 border border-gray-500 text-white rounded-xl p-3 outline-none font-bold text-lg focus:border-blue-500" />
-                   <button onClick={eseguiRicercaCmd} className="bg-blue-600 px-6 rounded-xl text-white font-black shadow-lg text-lg active:scale-95 transition-transform">{isSearching ? '...' : 'Cerca'}</button>
-                </div>
-                <div className="flex-1 overflow-y-auto min-h-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 content-start pb-10 pr-2">
-                   {cmdResults.map(c => (
-                      <div key={c.id} className="relative rounded-xl overflow-hidden cursor-pointer border-2 border-transparent hover:border-blue-500 shadow-xl active:scale-95 transition-all bg-black h-28 sm:h-36 md:h-40" onClick={() => { updatePlayerConfig(player.id, 'bgUrl', c.img); setViewMode('life'); setCmdResults([]); setCmdQuery(""); }}>
-                         <img src={c.img} className="absolute inset-0 w-full h-full object-cover opacity-90 hover:opacity-100" />
-                         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent p-2 pt-6 text-center flex flex-col justify-end h-full">
-                            <span className="text-white text-[10px] md:text-xs font-bold drop-shadow-md leading-tight">{c.name}</span>
-                         </div>
-                      </div>
-                   ))}
-                   {cmdResults.length === 0 && !isSearching && <p className="col-span-full text-center text-gray-400 font-bold mt-10 text-xl">Cerca un Comandante per vedere le sue art.</p>}
-                </div>
-             </div>
-          , document.body)}
-
-          {viewMode === 'mana' && ReactDOM.createPortal(
-             <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-[9999] flex flex-col p-4 sm:p-6 animate-fade" style={{ margin: 0, borderRadius: 0 }}>
-                <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3 mt-2">
-                   <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">🔮 Mana Pool: {player.name}</h3>
-                   <button onClick={()=>setViewMode('life')} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
-                </div>
-                <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto content-start pb-10">
-                   {ManaColors.map(m => (
-                      <div key={m.id} className="bg-gray-800 rounded-2xl border border-gray-700 flex flex-col items-center justify-center p-4 shadow-xl">
-                         <span className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-xl border-2 shadow-md mb-4 ${m.color}`}>{m.label}</span>
-                         <div className="flex w-full justify-between items-center gap-4">
-                            <button onClick={() => updateMana(player.id, m.id, -1)} className="w-16 h-16 bg-red-900/80 active:bg-red-700 text-red-300 font-black text-4xl rounded-xl flex items-center justify-center shadow-lg transition-transform active:scale-95">-</button>
-                            <span className="text-5xl font-black text-white">{player.mana[m.id]}</span>
-                            <button onClick={() => updateMana(player.id, m.id, 1)} className="w-16 h-16 bg-green-900/80 active:bg-green-700 text-green-300 font-black text-4xl rounded-xl flex items-center justify-center shadow-lg transition-transform active:scale-95">+</button>
-                         </div>
-                      </div>
-                   ))}
-                </div>
-                <button onClick={() => { ManaColors.forEach(m => updatePlayerConfig(player.id, 'mana', {W:0,U:0,B:0,R:0,G:0,C:0})) }} className="w-full mt-auto py-4 font-black shadow-[0_0_15px_rgba(220,38,38,0.4)] bg-red-700 hover:bg-red-600 text-white rounded-xl transition-all text-xl">🔄 SVUOTA MANA POOL</button>
-             </div>
-          , document.body)}
-        </React.Fragment>
       );
     };
     
