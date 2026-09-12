@@ -1743,29 +1743,6 @@
             window.open('https://commanderspellbook.com/find-my-combos/', '_blank');
         });
     };
-
-    // --- INIZIO LOGICA BRACKET COMMANDER ---
-    const BRACKET_DB = {
-        "Mana Crypt": 4, "Jeweled Lotus": 4, "Dockside Extortionist": 4, "Thassa's Oracle": 4, 
-        "Demonic Tutor": 4, "Vampiric Tutor": 4, "Fierce Guardianship": 4, "Force of Will": 4, 
-        "Gaea's Cradle": 4, "Rhystic Study": 4, "Smothering Tithe": 4, "Deflecting Swat": 4,
-        "Cyclonic Rift": 3, "Teferi's Protection": 3, "Craterhoof Behemoth": 3, "Jeska's Will": 3, 
-        "Esper Sentinel": 3, "Sylvan Library": 3, "Farewell": 3, "Toxic Deluge": 3,
-        "Heroic Intervention": 2, "Lightning Greaves": 2, "Skullclamp": 2, "Swords to Plowshares": 2
-    };
-
-    const gameChangerCards = (deck && deck.cards) ? deck.cards.filter(c => BRACKET_DB[c.name]) : [];
-    const deckBracket = gameChangerCards.length > 0 ? Math.max(...gameChangerCards.map(c => BRACKET_DB[c.name])) : 1;
-
-    const handleDowngradeBracket = (cardName, currentBracket) => {
-        const prompt = `Agisci come un esperto giudice e giocatore di Magic: The Gathering.\nNel mio mazzo Commander ho la carta "${cardName}" che è considerata una carta "Gamechanger" di Bracket ${currentBracket} e rende il mazzo troppo forte o "salty" per il mio gruppo.\nSuggeriscimi 3-5 carte alternative meno potenti (Bracket 1 o 2), più 'fair' e bilanciate per sostituirla, mantenendo se possibile una strategia simile. Spiega brevemente le opzioni e perché sono più accettate al tavolo. Rispondi in italiano.`;
-        
-        navigator.clipboard.writeText(prompt).then(() => {
-            alert("🪄 Prompt per sostituire " + cardName + " copiato!\n\nTi sto portando su Gemini. Incolla la richiesta per ricevere le alternative fair.");
-            window.open('https://gemini.google.com/', '_blank');
-        });
-    };
-    // --- FINE LOGICA BRACKET COMMANDER ---
     // --- FINE LOGICA STRUMENTI AVANZATI ---
       
       if(!deck) return null;
@@ -1888,51 +1865,9 @@
              </div>
 
              <div className="space-y-3">
-                 <button onClick={shareDeck} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-[0_0_10px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2 transition-all">📲 Invia ad un Amico</button>
-                 
-                 {/* --- SEZIONE BRACKET COMMANDER --- */}
-                 {(deck && deck.format && deck.format.toLowerCase() === 'commander') && (
-                     <div className="bg-gray-800 p-4 rounded-xl border-2 border-orange-500 shadow-lg mt-6">
-                         <div className="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
-                             <h3 className="text-xl font-black text-white flex items-center gap-2">
-                                 ⚖️ Commander Bracket
-                             </h3>
-                             <span className="bg-orange-600 text-white px-3 py-1 rounded-lg font-black text-xl shadow">
-                                 Livello {deckBracket}
-                             </span>
-                         </div>
-                         <p className="text-gray-300 text-sm font-semibold mb-4">
-                             {deckBracket === 1 && "Mazzo Fair/Precon. Ideale per partite tranquille, non contiene Gamechanger di alto livello."}
-                             {deckBracket === 2 && "Mazzo Ottimizzato. Contiene staple forti ma non oppressive."}
-                             {deckBracket === 3 && "Mazzo High Power. Molto sinergico, usa board wipe, protezioni assolute e accelerini potenti."}
-                             {deckBracket === 4 && "Mazzo Competitivo (cEDH) o Estremo. Contiene mana veloce, tutor efficienti o win-condition a due carte."}
-                         </p>
-                         {gameChangerCards.length > 0 ? (
-                             <div className="space-y-3">
-                                 <h4 className="text-orange-400 font-bold text-sm">Carte Gamechanger rilevate:</h4>
-                                 {gameChangerCards.map(c => (
-                                     <div key={c.id} className="bg-gray-900 border border-gray-700 p-3 rounded-lg flex justify-between items-center">
-                                         <div>
-                                             <p className="text-white font-bold flex items-center gap-2">
-                                                 {c.name} <span className="bg-red-900 text-red-200 text-xs px-2 py-0.5 rounded font-black">B{BRACKET_DB[c.name]}</span>
-                                             </p>
-                                         </div>
-                                         <button onClick={() => handleDowngradeBracket(c.name, BRACKET_DB[c.name])} className="bg-orange-600 hover:bg-orange-500 text-white text-xs font-black px-3 py-2 rounded shadow transition-colors">
-                                             Riduci Potenza
-                                         </button>
-                                     </div>
-                                 ))}
-                             </div>
-                         ) : (
-                             <div className="bg-emerald-900/40 border border-emerald-500 p-3 rounded-lg">
-                                 <p className="text-emerald-400 font-bold text-sm text-center">Nessuna carta Gamechanger problematica rilevata!</p>
-                             </div>
-                         )}
-                     </div>
-                 )}
-
-                 {/* --- INIZIO SEZIONE STRUMENTI AVANZATI (COMBO & BUDGET) --- */}
-                 <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 shadow-lg mt-6">
+               <button onClick={shareDeck} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-[0_0_10px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2 transition-all">📲 Invia ad un Amico</button>
+               {/* --- INIZIO SEZIONE STRUMENTI AVANZATI (COMBO & BUDGET) --- */}
+                <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 shadow-lg mt-6">
                     <h3 className="text-xl font-black text-white mb-2 flex items-center gap-2">🛠️ Strumenti Avanzati</h3>
                     <p className="text-gray-400 text-xs font-bold mb-4">Usa l'Intelligenza Artificiale e i Database esterni per potenziare il tuo mazzo a costo zero.</p>
                     
@@ -2093,32 +2028,7 @@
         <div className="fixed inset-0 z-[100] bg-black flex flex-col h-[100dvh] w-[100dvw]">
           <button onClick={() => setView('game')} className="absolute top-2 left-2 z-[110] bg-black/60 px-4 py-2 rounded-full text-white text-xs border border-white/20 font-bold shadow-lg backdrop-blur-md">✖ Esci Partita</button>
           <div className={`flex-1 grid ${gridClass} gap-1 h-full w-full p-1`}>
-             {players.map((p, index) => {
-                 let wrapperClass = "w-full h-full"; 
-                 if (players.length === 3) {
-                     if (index === 0) wrapperClass += " col-start-1 row-start-1";
-                     if (index === 1) wrapperClass += " col-start-1 row-start-2";
-                     if (index === 2) wrapperClass += " col-start-2 row-start-1 row-span-2";
-                 } else if (players.length === 5) {
-                     if (index === 0) wrapperClass += " col-start-1 row-start-1";
-                     if (index === 1) wrapperClass += " col-start-2 row-start-1";
-                     if (index === 2) wrapperClass += " col-start-1 row-start-2";
-                     if (index === 3) wrapperClass += " col-start-2 row-start-2";
-                     if (index === 4) wrapperClass += " col-start-3 row-start-1 row-span-2";
-                 }
-                 return (
-                     <div key={p.id} className={wrapperClass}>
-                         <PlayerCard 
-                            player={p} 
-                            updateStat={updateStat} 
-                            updateMana={updateMana} 
-                            toggleImmunity={toggleImmunity} 
-                            opponents={players.filter(op => op.id !== p.id)} 
-                            updatePlayerConfig={updatePlayerConfig} 
-                         />
-                     </div>
-                 );
-             })}
+             {players.map(p => <PlayerCard key={p.id} player={p} updateStat={updateStat} updateMana={updateMana} toggleImmunity={toggleImmunity} opponents={players.filter(op => op.id !== p.id)} updatePlayerConfig={updatePlayerConfig} />)}
           </div>
         </div>
       );
