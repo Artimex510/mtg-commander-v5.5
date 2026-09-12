@@ -1700,7 +1700,6 @@
     };
 
     // --- DECK ANALYSIS E CONDIVISIONE ---
-    // --- DECK ANALYSIS E CONDIVISIONE ---
     const DeckAnalysis = ({deck, navigate}) => {
         const [showBudgetModal, setShowBudgetModal] = useState(false);
         const [targetBudget, setTargetBudget] = useState("");
@@ -1710,6 +1709,8 @@
         const [altTarget, setAltTarget] = useState(null);
         const [altResults, setAltResults] = useState([]);
         const [altLoading, setAltLoading] = useState(false);
+
+        const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
         if(!deck) return null;
 
@@ -1744,20 +1745,18 @@
             });
         };
 
-        // --- INIZIO LOGICA BRACKET COMMANDER UFFICIALE (54 CARTE B4) ---
-        const GAMECHANGERS = [
-            "Drannith Magistrate", "Enlightened Tutor", "Humility", "Serra's Sanctum", "Smothering Tithe", "Teferi's Protection", "Trouble in Pairs",
-            "Consecrated Sphinx", "Cyclonic Rift", "Expropriate", "Force of Will", "Fierce Guardianship", "Gifts Ungiven", "Intuition", "Jin-Gitaxias, Core Augur", "Mystical Tutor", "Narset, Parter of Veils", "Rhystic Study", "Sway of the Stars", "Thassa's Oracle", "Urza, Lord High Artificer",
-            "Bolas's Citadel", "Braids, Cabal Minion", "Demonic Tutor", "Imperial Seal", "Necropotence", "Opposition Agent", "Orcish Bowmasters", "Tergrid, God of Fright", "Vampiric Tutor",
-            "Ad Nauseam", "Deflecting Swat", "Gamble", "Jeska's Will", "Underworld Breach",
-            "Biorhythm", "Crop Rotation", "Food Chain", "Gaea's Cradle", "Natural Order", "Seedborn Muse", "Survival of the Fittest", "Vorinclex, Voice of Hunger", "Worldly Tutor",
-            "Aura Shards", "Coalition Victory", "Grand Arbiter Augustin IV", "Kinnan, Bonder Prodigy", "Yuriko, the Tiger's Shadow", "Notion Thief", "Winota, Joiner of Forces",
-            "Ancient Tomb", "Chrome Mox", "Field of the Dead", "Glacial Chasm", "Grim Monolith", "Lion's Eye Diamond", "Mana Vault", "Mishra's Workshop", "Mox Diamond", "Panoptic Mirror", "The One Ring", "The Tabernacle at Pendrell Vale", "Trinisphere"
-        ];
+        // --- INIZIO LOGICA BRACKET COMMANDER UFFICIALE E CALCOLI ---
+        const BRACKET_DB = {
+            "Mana Crypt": { b: 4, c: [] }, "Jeweled Lotus": { b: 4, c: [] }, "Dockside Extortionist": { b: 4, c: ['R'] }, "Thassa's Oracle": { b: 4, c: ['U'] }, 
+            "Demonic Tutor": { b: 4, c: ['B'] }, "Vampiric Tutor": { b: 4, c: ['B'] }, "Fierce Guardianship": { b: 4, c: ['U'] }, "Force of Will": { b: 4, c: ['U'] }, 
+            "Gaea's Cradle": { b: 4, c: ['G'] }, "Rhystic Study": { b: 4, c: ['U'] }, "Smothering Tithe": { b: 4, c: ['W'] }, "Deflecting Swat": { b: 4, c: ['R'] },
+            "Cyclonic Rift": { b: 3, c: ['U'] }, "Teferi's Protection": { b: 3, c: ['W'] }, "Craterhoof Behemoth": { b: 3, c: ['G'] }, "Jeska's Will": { b: 3, c: ['R'] }, 
+            "Esper Sentinel": { b: 3, c: ['W'] }, "Sylvan Library": { b: 3, c: ['G'] }, "Farewell": { b: 3, c: ['W'] }, "Toxic Deluge": { b: 3, c: ['B'] },
+            "Heroic Intervention": { b: 2, c: ['G'] }, "Lightning Greaves": { b: 2, c: [] }, "Skullclamp": { b: 2, c: [] }, "Swords to Plowshares": { b: 2, c: ['W'] }
+        };
 
-        let gameChangerCards = [];
-        if (deck && deck.cards) { gameChangerCards = deck.cards.filter(c => GAMECHANGERS.includes(c.name)); }
-        let deckBracket = gameChangerCards.length > 0 ? 4 : 2;
+        const gameChangerCards = (deck && deck.cards) ? deck.cards.filter(c => BRACKET_DB[c.name]) : [];
+        const deckBracket = gameChangerCards.length > 0 ? Math.max(...gameChangerCards.map(c => BRACKET_DB[c.name].b)) : 1;
 
         const findAlternatives = (card) => {
             setAltTarget(card); setShowAltModal(true); setAltLoading(true); setAltResults([]);
@@ -1778,27 +1777,39 @@
             fetch("https://api.scryfall.com/cards/search?q=" + encodeURIComponent(searchQ)).then(res => res.json()).then(data => {
                 if (data.data) {
                     const deckNames = deck.cards.map(c => c.name);
-                    const filtered = data.data.filter(c => !deckNames.includes(c.name) && !GAMECHANGERS.includes(c.name)).slice(0, 5);
+                    const filtered = data.data.filter(c => !deckNames.includes(c.name) && !Object.keys(BRACKET_DB).includes(c.name)).slice(0, 5);
                     setAltResults(filtered);
                 }
                 setAltLoading(false);
             }).catch(err => { setAltLoading(false); });
         };
 
-        const listText = (deck && deck.cards) ? deck.cards.map(c => `1 ${c.name}`).join('\n') : "";
+        const deckColors = new Set();
+        if (deck && deck.cards) { deck.cards.forEach(c => { if (c.isCommander && c.colors) { c.colors.forEach(col => deckColors.add(col)); } }); }
+        
+        const deckNames = (deck && deck.cards) ? deck.cards.map(c => c.name) : [];
+        const upgradeSuggestions = Object.keys(BRACKET_DB)
+            .filter(name => !deckNames.includes(name))
+            .filter(name => {
+                const reqColors = BRACKET_DB[name].c;
+                if (reqColors.length === 0) return true;
+                if (deckColors.size === 0) return false;
+                return reqColors.every(col => deckColors.has(col));
+            })
+            .sort((a, b) => BRACKET_DB[b].b - BRACKET_DB[a].b)
+            .slice(0, 5);
 
-        const handleUpgradeBracket = () => {
+        const doUpgradePrompt = () => {
             const formatName = deck.format || "Commander";
-            const prompt = `Agisci come un esperto deckbuilder di Magic: The Gathering.\nEcco la lista del mio mazzo ${formatName}:\n\n${listText}\n\nVorrei potenziarlo per i tavoli High-Power (Bracket 4) aggiungendo delle carte "Gamechanger" vere e proprie.\nSuggeriscimi 5 carte devastanti (es. mana veloce, tutor potenti, carte che chiudono la partita o protezioni assolute) da inserire per alzare drasticamente il power level del mazzo, spiegando brevemente perché sono perfette per questa lista. Rispondi in italiano.`;
+            const listTextStr = (deck && deck.cards) ? deck.cards.map(c => `1 ${c.name}`).join('\n') : "";
+            const prompt = `Agisci come un esperto deckbuilder di Magic: The Gathering.\nEcco la lista del mio mazzo ${formatName}:\n\n${listTextStr}\n\nVorrei potenziarlo per i tavoli High-Power aggiungendo delle carte "Gamechanger" vere e proprie.\nSuggeriscimi 5 carte devastanti (es. mana veloce, tutor potenti, carte che chiudono la partita o protezioni assolute) da inserire per alzare drasticamente il power level del mazzo, spiegando brevemente perché sono perfette per questa lista. Rispondi in italiano.`;
             navigator.clipboard.writeText(prompt).then(() => {
-                alert("🪄 Prompt per l'Upgrade copiato!\n\nTi sto portando su Gemini. Incolla la richiesta per ricevere le carte Gamechanger perfette per te.");
+                alert("🪄 Prompt per l'Upgrade copiato!\n\nTi sto portando su Gemini. Incolla la richiesta per ricevere l'analisi dettagliata delle carte Gamechanger.");
                 window.open('https://gemini.google.com/', '_blank');
             });
         };
-        // --- FINE LOGICA BRACKET COMMANDER ---
 
-        let cmds = [];
-        if (deck && deck.cards) cmds = deck.cards.filter(c => c.isCommander);
+        const cmds = (deck && deck.cards) ? deck.cards.filter(c => c.isCommander) : [];
         const cmdName = cmds.length > 0 ? cmds[0].name : "Nessun Comandante Selezionato";
         
         let totalCards = 0; let lands = 0; let avgCMC = 0;
@@ -1829,6 +1840,7 @@
            window.open(`https://edhrec.com/commanders/${formatEdhrec(cmds[0].name)}`, '_blank');
         };
 
+        const listText = (deck && deck.cards) ? deck.cards.map(c => `1 ${c.name}`).join('\n') : "";
         const copyPrompt = () => {
            let formatName = 'Commander'; if (deck && deck.format) formatName = deck.format;
            const prompt = `Agisci come un Master professionista e Deckbuilder esperto di Magic: The Gathering.\nFormato: ${formatName}. ${formatName==='commander'? `Comandante: ${cmdName}.`:''}\nAnalizza curva di mana, banlist e dammi consigli su cosa tagliare e aggiungere.\nLista:\n${listText}`;
@@ -1917,8 +1929,10 @@
                              </span>
                          </div>
                          <p className="text-gray-300 text-sm font-semibold mb-4">
-                             {deckBracket <= 2 && "Mazzo Fair/Ottimizzato. Ideale per partite equilibrate, non contiene carte Gamechanger della Banlist ufficiale Bracket 4."}
-                             {deckBracket >= 3 && "Mazzo Competitivo/Estremo. Contiene carte Gamechanger della Banlist ufficiale Bracket 4 (Mana veloce, combo, power-cards)."}
+                             {deckBracket === 1 && "Mazzo Fair/Precon. Ideale per partite tranquille, non contiene Gamechanger di alto livello."}
+                             {deckBracket === 2 && "Mazzo Ottimizzato. Contiene staple forti ma non oppressive."}
+                             {deckBracket === 3 && "Mazzo High Power. Molto sinergico, usa board wipe o protezioni assolute."}
+                             {deckBracket === 4 && "Mazzo Competitivo (cEDH) o Estremo. Contiene mana veloce o combo infinite."}
                          </p>
                          
                          {gameChangerCards.length > 0 ? (
@@ -1928,7 +1942,7 @@
                                      <div key={i} className="bg-gray-900 border border-gray-700 p-3 rounded-lg flex justify-between items-center">
                                          <div>
                                              <p className="text-white font-bold flex items-center gap-2">
-                                                 {c.name}
+                                                 {c.name} <span className="bg-red-900 text-red-200 text-xs px-2 py-0.5 rounded font-black">B{BRACKET_DB[c.name].b}</span>
                                              </p>
                                          </div>
                                          <button onClick={() => findAlternatives(c)} className="bg-orange-600 hover:bg-orange-500 text-white text-[10px] font-black px-3 py-2 rounded shadow transition-colors">
@@ -1939,17 +1953,17 @@
                              </div>
                          ) : (
                              <div className="bg-emerald-900/40 border border-emerald-500 p-3 rounded-lg mb-4">
-                                 <p className="text-emerald-400 font-bold text-sm text-center">Nessuna carta Gamechanger problematica rilevata!</p>
+                                 <p className="text-emerald-400 font-bold text-sm text-center">Nessuna carta Gamechanger rilevata!</p>
                              </div>
                          )}
 
-                         <button onClick={handleUpgradeBracket} className="w-full bg-red-700 hover:bg-red-600 text-white font-black py-3 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all">
-                            🔥 SUGGERISCI UPGRADE (Aumenta Bracket)
+                         <button onClick={() => setShowUpgradeModal(true)} className="w-full bg-red-700 hover:bg-red-600 text-white font-black py-3 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all">
+                            🔥 AUMENTA POTENZA (Upgrade)
                          </button>
                      </div>
                  )}
 
-                 {/* MODALE ALTERNATIVE GAMECHANGER */}
+                 {/* MODALE ALTERNATIVE GAMECHANGER (RIDUCI POTENZA) */}
                  {showAltModal && altTarget && (
                      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[200] p-4 animate-fade">
                          <div className="bg-gray-800 border-2 border-orange-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
@@ -1975,6 +1989,33 @@
                                      {altResults.length === 0 && <p className="text-red-400 text-sm text-center">Nessuna alternativa valida trovata.</p>}
                                  </div>
                              )}
+                         </div>
+                     </div>
+                 )}
+
+                 {/* MODALE UPGRADE (AUMENTA POTENZA) */}
+                 {showUpgradeModal && (
+                     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[200] p-4 animate-fade">
+                         <div className="bg-gray-800 border-2 border-red-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
+                             <button onClick={() => setShowUpgradeModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
+                             <h3 className="text-lg font-black text-white mb-2">Upgrade High-Power</h3>
+                             <p className="text-gray-300 text-xs font-bold mb-4">Ecco le migliori carte Gamechanger per i colori del tuo Comandante che non hai ancora inserito:</p>
+                             
+                             <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                                 {upgradeSuggestions.map((name, idx) => (
+                                     <div key={idx} className="bg-gray-900 p-2 rounded-lg border border-gray-600 flex justify-between items-center group cursor-pointer" onClick={() => { navigator.clipboard.writeText(name); alert('Copiato negli appunti: ' + name); }}>
+                                         <p className="text-white font-bold text-sm group-hover:text-red-400 truncate">{name} 📋</p>
+                                         <span className="bg-red-900 text-red-200 px-2 py-1 rounded text-xs font-black shadow whitespace-nowrap">
+                                             B{BRACKET_DB[name].b}
+                                         </span>
+                                     </div>
+                                 ))}
+                                 {upgradeSuggestions.length === 0 && <p className="text-red-400 text-sm text-center">Hai già inserito i migliori Gamechanger per i tuoi colori!</p>}
+                             </div>
+
+                             <button onClick={doUpgradePrompt} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all">
+                                 🤖 CHIEDI A GEMINI
+                             </button>
                          </div>
                      </div>
                  )}
@@ -2130,18 +2171,17 @@
           
           <div className={`flex-1 grid ${gridClass} gap-1 h-full w-full p-1`}>
              {players.map((p, index) => {
-                 let wrapperClass = "w-full h-full relative"; 
-                 let isCapotavola = false;
+                 let wrapperClass = "w-full h-full"; 
                  if (players.length === 3) {
                      if (index === 0) wrapperClass += " col-start-1 row-start-1";
                      if (index === 1) wrapperClass += " col-start-1 row-start-2";
-                     if (index === 2) { wrapperClass += " col-start-2 row-start-1 row-span-2"; isCapotavola = true; }
+                     if (index === 2) wrapperClass += " col-start-2 row-start-1 row-span-2";
                  } else if (players.length === 5) {
                      if (index === 0) wrapperClass += " col-start-1 row-start-1";
                      if (index === 1) wrapperClass += " col-start-2 row-start-1";
                      if (index === 2) wrapperClass += " col-start-1 row-start-2";
                      if (index === 3) wrapperClass += " col-start-2 row-start-2";
-                     if (index === 4) { wrapperClass += " col-start-3 row-start-1 row-span-2"; isCapotavola = true; }
+                     if (index === 4) wrapperClass += " col-start-3 row-start-1 row-span-2";
                  }
                  return (
                      <div key={p.id} className={wrapperClass}>
@@ -2152,7 +2192,6 @@
                             toggleImmunity={toggleImmunity} 
                             opponents={players.filter(op => op.id !== p.id)} 
                             updatePlayerConfig={updatePlayerConfig} 
-                            isCapotavola={isCapotavola}
                             onOpenDice={() => setShowDice(true)}
                          />
                      </div>
@@ -2185,7 +2224,7 @@
       );
     };
     
-    const PlayerCard = ({ player, updateStat, updateMana, toggleImmunity, opponents, updatePlayerConfig, isCapotavola, onOpenDice }) => {
+    const PlayerCard = ({ player, updateStat, updateMana, toggleImmunity, opponents, updatePlayerConfig, onOpenDice }) => {
       const [viewMode, setViewMode] = useState('life'); 
       const [cmdQuery, setCmdQuery] = useState("");
       const [cmdResults, setCmdResults] = useState([]);
@@ -2220,9 +2259,9 @@
 
       const PlayerHeader = () => (
          <div className="relative flex justify-center items-center bg-black/50 p-2 z-30 border-b border-gray-700 h-[25%] min-h-[50px]">
-            <div className="flex flex-col items-center justify-center overflow-hidden z-20 w-3/4">
+            <div className="flex flex-col items-center justify-center overflow-hidden z-20 w-[60%]">
                {isEditingName ? ( <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} onBlur={saveName} onKeyDown={e => e.key === 'Enter' && saveName()} className="bg-gray-700 text-white text-sm px-1 py-1 rounded outline-none w-32 border border-gray-500 font-bold text-center" /> ) : (
-                  <span onClick={() => setIsEditingName(true)} className="font-bold text-white text-base drop-shadow-md truncate cursor-pointer text-center px-4 w-full">{player.name} ✎</span>
+                  <span onClick={() => setIsEditingName(true)} className="font-bold text-white text-base drop-shadow-md truncate cursor-pointer text-center px-2 w-full">{player.name} ✎</span>
                )}
                <div className="flex gap-2 mt-1 justify-center flex-wrap px-1">
                   {player.poison > 0 && <span className="text-green-400 text-xs font-black drop-shadow-md">💧{player.poison}</span>}
@@ -2240,32 +2279,29 @@
                </div>
             </div>
             
-            <div className="absolute right-2 top-2 bottom-2 flex flex-col justify-center gap-1 z-30">
-               <button onClick={() => setViewMode(viewMode === 'mana' ? 'life' : 'mana')} className={`px-2 py-1 rounded shadow-lg text-[10px] font-bold transition-colors ${viewMode === 'mana' ? 'bg-blue-600 text-white' : 'bg-emerald-700 text-white'}`}>{viewMode === 'mana' ? 'Chiudi' : 'Mana'}</button>
-               <button onClick={() => setViewMode(viewMode === 'stats' || viewMode === 'search' ? 'life' : 'stats')} className={`px-2 py-1 rounded shadow-lg text-[10px] font-bold transition-colors ${viewMode === 'stats' || viewMode === 'search' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'}`}>{viewMode === 'stats' || viewMode === 'search' ? 'Chiudi' : 'Stats'}</button>
+            <div className="absolute right-2 top-2 bottom-2 flex items-center gap-2 z-30">
+               <button onClick={(e) => { e.stopPropagation(); onOpenDice && onOpenDice(); }} className="px-3 py-1 rounded shadow-lg text-[10px] font-black bg-purple-700 hover:bg-purple-600 text-white transition-colors h-[90%] flex flex-col items-center justify-center border border-purple-500"><span className="text-lg">🎲</span> Dadi</button>
+               <div className="flex flex-col justify-center gap-1 h-full">
+                  <button onClick={() => setViewMode(viewMode === 'mana' ? 'life' : 'mana')} className={`px-2 py-1 rounded shadow-lg text-[10px] font-bold transition-colors ${viewMode === 'mana' ? 'bg-blue-600 text-white' : 'bg-emerald-700 text-white'}`}>{viewMode === 'mana' ? 'Chiudi' : 'Mana'}</button>
+                  <button onClick={() => setViewMode(viewMode === 'stats' || viewMode === 'search' ? 'life' : 'stats')} className={`px-2 py-1 rounded shadow-lg text-[10px] font-bold transition-colors ${viewMode === 'stats' || viewMode === 'search' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'}`}>{viewMode === 'stats' || viewMode === 'search' ? 'Chiudi' : 'Stats'}</button>
+               </div>
             </div>
          </div>
       );
 
       return (
         <div className={`w-full h-full flex flex-col rounded-xl border-2 relative overflow-hidden shadow-2xl ${isDead ? 'border-red-600 bg-red-950/90' : 'border-gray-600 bg-gray-900'}`}>
-          <div className="absolute inset-0 w-full h-full flex flex-col" style={isCapotavola ? { transform: 'rotate(-90deg)' } : {}}>
-             {player.bgUrl && <img src={player.bgUrl} className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none" />}
-             {isDead && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-50 pointer-events-none z-10">💀</div>}
-             {player.immune && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-30 pointer-events-none text-blue-500 drop-shadow-lg z-10">🛡️</div>}
-             
-             <PlayerHeader />
-             
-             <div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%]">
-               <button onClick={() => updateStat(player.id, 'life', -1)} className="w-1/4 h-full flex items-center justify-center text-6xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
-               <div className="w-2/4 text-center text-7xl md:text-9xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)]">{player.life}</div>
-               <button onClick={() => updateStat(player.id, 'life', 1)} className="w-1/4 h-full flex items-center justify-center text-6xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
-             </div>
+          {player.bgUrl && <img src={player.bgUrl} className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none" />}
+          {isDead && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-50 pointer-events-none z-10">💀</div>}
+          {player.immune && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-30 pointer-events-none text-blue-500 drop-shadow-lg z-10">🛡️</div>}
+          
+          <PlayerHeader />
+          
+          <div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%]">
+            <button onClick={() => updateStat(player.id, 'life', -1)} className="w-1/4 h-full flex items-center justify-center text-6xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
+            <div className="w-2/4 text-center text-7xl md:text-9xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)]">{player.life}</div>
+            <button onClick={() => updateStat(player.id, 'life', 1)} className="w-1/4 h-full flex items-center justify-center text-6xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
           </div>
-
-          <button onClick={(e) => { e.stopPropagation(); onOpenDice && onOpenDice(); }} className="absolute bottom-2 right-2 px-3 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-xl shadow-[0_0_10px_rgba(168,85,247,0.6)] text-sm font-black border border-purple-500 z-40 flex items-center gap-1">
-             🎲 Dadi
-          </button>
 
           {viewMode === 'stats' && (
              <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-[9999] flex flex-col p-4 sm:p-6 animate-fade" style={{ margin: 0, borderRadius: 0 }}>
@@ -2355,7 +2391,7 @@
         </div>
       );
     };
-
+    
     const PlaytesterSandbox = ({view, setView, navigate}) => {
        const [decks, setDecks] = useState([]);
        const [selectedDeckId, setSelectedDeckId] = useState("");
