@@ -1701,304 +1701,245 @@
 
     // --- DECK ANALYSIS E CONDIVISIONE ---
     const DeckAnalysis = ({deck, navigate}) => {
+        const [showBudgetModal, setShowBudgetModal] = useState(false);
+        const [targetBudget, setTargetBudget] = useState("");
 
-                {/* --- SEZIONE BRACKET COMMANDER --- */}
-                {deck?.format?.toLowerCase() === 'commander' && (
-                    <div className="bg-gray-800 p-4 rounded-xl border-2 border-orange-500 shadow-lg mt-6">
-                        <div className="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
-                            <h3 className="text-xl font-black text-white flex items-center gap-2">
-                                ⚖️ Commander Bracket
-                            </h3>
-                            <span className="bg-orange-600 text-white px-3 py-1 rounded-lg font-black text-xl shadow">
-                                Livello {deckBracket}
-                            </span>
-                        </div>
-                        
-                        <p className="text-gray-300 text-sm font-semibold mb-4">
-                            {deckBracket === 1 && "Mazzo Fair/Precon. Ideale per partite tranquille, non contiene Gamechanger di alto livello."}
-                            {deckBracket === 2 && "Mazzo Ottimizzato. Contiene staple forti ma non oppressive."}
-                            {deckBracket === 3 && "Mazzo High Power. Molto sinergico, usa board wipe, protezioni assolute e accelerini potenti."}
-                            {deckBracket === 4 && "Mazzo Competitivo (cEDH) o Estremo. Contiene mana veloce, tutor efficienti o win-condition a due carte."}
-                        </p>
+        if(!deck) return null;
 
-                        {gameChangerCards.length > 0 ? (
-                            <div className="space-y-3">
-                                <h4 className="text-orange-400 font-bold text-sm">Carte Gamechanger rilevate:</h4>
-                                {gameChangerCards.map(c => (
-                                    <div key={c.id} className="bg-gray-900 border border-gray-700 p-3 rounded-lg flex justify-between items-center">
-                                        <div>
-                                            <p className="text-white font-bold flex items-center gap-2">
-                                                {c.name} <span className="bg-red-900 text-red-200 text-xs px-2 py-0.5 rounded font-black">B{BRACKET_DB[c.name]}</span>
-                                            </p>
-                                        </div>
-                                        <button 
-                                            onClick={() => handleDowngradeBracket(c.name, BRACKET_DB[c.name])}
-                                            className="bg-orange-600 hover:bg-orange-500 text-white text-xs font-black px-3 py-2 rounded shadow transition-colors"
-                                        >
-                                            Riduci Potenza
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="bg-emerald-900/40 border border-emerald-500 p-3 rounded-lg">
-                                <p className="text-emerald-400 font-bold text-sm text-center">Nessuna carta Gamechanger problematica rilevata!</p>
-                            </div>
-                        )}
-                    </div>
-                )}
-      
-      
-    // --- INIZIO LOGICA STRUMENTI AVANZATI ---
-    const [showBudgetModal, setShowBudgetModal] = useState(false);
-    const [targetBudget, setTargetBudget] = useState("");
-
-    const handleTop5Budget = () => {
-        if (!deck || !deck.cards) return;
-        const format = deck.format || "Commander";
-        const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
-        
-        const prompt = `Agisci come un giocatore esperto di Magic: The Gathering.\nAnalizza questa lista di un mazzo formato ${format}:\n\n${deckListStr}\n\nTrova le 5 carte più costose di questo mazzo e suggerisci 5 carte alternative per ognuna di esse. Le alternative devono essere molto economiche ma perfettamente integrabili per sinergia e strategia nel mazzo. Rispondi in italiano.`;
-        
-        navigator.clipboard.writeText(prompt).then(() => {
-            alert("🪄 Prompt copiato!\n\nTi sto portando su Gemini. Fai 'Incolla' nella chat per ricevere l'analisi gratuita delle tue carte costose.");
-            window.open('https://gemini.google.com/', '_blank');
-        });
-    };
-
-    const handleFullDeckBudget = (e) => {
-        e.preventDefault();
-        if (!targetBudget || !deck || !deck.cards) return;
-        
-        const format = deck.format || "Commander";
-        const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
-        
-        const prompt = `Agisci come un giocatore esperto di Magic: The Gathering.\nAnalizza questa lista di un mazzo formato ${format}:\n\n${deckListStr}\n\nIl mio obiettivo è abbassare il costo totale del mazzo facendolo rientrare in un budget MASSIMO di ${targetBudget}€, mantenendolo però competitivo e sinergico. Suggeriscimi esattamente quali carte costose tagliare e con quali alternative economiche sostituirle. Spiega brevemente il perché. Rispondi in italiano.`;
-        
-        navigator.clipboard.writeText(prompt).then(() => {
-            setShowBudgetModal(false);
-            alert(`🪄 Prompt per Budget ${targetBudget}€ copiato!\n\nTi sto portando su Gemini. Fai 'Incolla' nella chat per ricevere la tua lista modificata.`);
-            window.open('https://gemini.google.com/', '_blank');
-        });
-    };
-
-        // --- INIZIO LOGICA BRACKET COMMANDER ---
-    const BRACKET_DB = {
-        "Mana Crypt": 4, "Jeweled Lotus": 4, "Dockside Extortionist": 4, "Thassa's Oracle": 4, 
-        "Demonic Tutor": 4, "Vampiric Tutor": 4, "Fierce Guardianship": 4, "Force of Will": 4, 
-        "Gaea's Cradle": 4, "Rhystic Study": 4, "Smothering Tithe": 4, "Deflecting Swat": 4,
-        "Cyclonic Rift": 3, "Teferi's Protection": 3, "Craterhoof Behemoth": 3, "Jeska's Will": 3, 
-        "Esper Sentinel": 3, "Sylvan Library": 3, "Farewell": 3, "Toxic Deluge": 3,
-        "Heroic Intervention": 2, "Lightning Greaves": 2, "Skullclamp": 2, "Swords to Plowshares": 2
-    };
-
-    // Calcola il Bracket del mazzo analizzando le carte
-    const gameChangerCards = deck?.cards?.filter(c => BRACKET_DB[c.name]) || [];
-    // Se non ci sono gamechanger alti, il mazzo è Bracket 1 di base. Altrimenti prende il massimo trovato.
-    const deckBracket = gameChangerCards.length > 0 ? Math.max(...gameChangerCards.map(c => BRACKET_DB[c.name])) : 1;
-
-    const handleDowngradeBracket = (cardName, currentBracket) => {
-        const prompt = `Agisci come un esperto giudice e giocatore di Magic: The Gathering.\nNel mio mazzo Commander ho la carta "${cardName}" che è considerata una carta "Gamechanger" di Bracket ${currentBracket} e rende il mazzo troppo forte o "salty" per il mio gruppo.\nSuggeriscimi 3-5 carte alternative meno potenti (Bracket 1 o 2), più 'fair' e bilanciate per sostituirla, mantenendo se possibile una strategia simile. Spiega brevemente le opzioni e perché sono più accettate al tavolo. Rispondi in italiano.`;
-        
-        navigator.clipboard.writeText(prompt).then(() => {
-            alert(`🪄 Prompt per sostituire ${cardName} copiato!\n\nTi sto portando su Gemini. Incolla la richiesta per ricevere le alternative fair.`);
-            window.open('https://gemini.google.com/', '_blank');
-        });
-    };
-    // --- FINE LOGICA BRACKET COMMANDER ---
-      
-      
-    const handleComboSpellbook = () => {
-        if (!deck || !deck.cards) return;
-        const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
-        
-        navigator.clipboard.writeText(deckListStr).then(() => {
-            alert("🪄 Lista del mazzo copiata!\n\nTi sto portando su Commander Spellbook. Fai 'Incolla' nel loro box di ricerca per scoprire le combo infinite del tuo mazzo.");
-            window.open('https://commanderspellbook.com/find-my-combos/', '_blank');
-        });
-    };
-    // --- FINE LOGICA STRUMENTI AVANZATI ---
-      
-      if(!deck) return null;
-
-      const cmds = deck.cards.filter(c => c.isCommander);
-      const cmdName = cmds.length > 0 ? cmds[0].name : "Nessun Comandante Selezionato";
-      
-      const totalCards = deck.cards.filter(c => !c.isSideboard && !c.isCompanion).length;
-      const lands = deck.cards.filter(c => c.type && c.type.toLowerCase().includes('land') && !c.isSideboard && !c.isCompanion).length;
-      const avgCMC = deck.cards.filter(c => !c.isSideboard && !c.isCompanion).reduce((acc, c) => acc + (c.cmc || 0), 0) / (totalCards || 1);
-
-      const curve = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, '6+':0};
-      let maxCurve = 0; const colorCounts = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
-      
-      deck.cards.forEach(c => {
-         if(c.isSideboard || c.isCompanion) return;
-         if(c.type && !c.type.toLowerCase().includes('land')) {
-            let cmc = c.cmc || 0; if (cmc >= 6) curve['6+']++; else curve[cmc]++;
-         }
-         if (c.colors && c.colors.length > 0) { c.colors.forEach(col => { if(colorCounts[col] !== undefined) colorCounts[col]++; }); } 
-         else if (c.type && !c.type.toLowerCase().includes('land')) { colorCounts['C']++; }
-      });
-      Object.values(curve).forEach(v => { if(v > maxCurve) maxCurve = v; });
-      let maxColor = 0; Object.values(colorCounts).forEach(v => { if(v > maxColor) maxColor = v; });
-
-      const formatEdhrec = (name) => name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
-      const openEdhrec = () => {
-         if (cmds.length === 0) return alert("Questo mazzo non ha un Comandante salvato!");
-         window.open(`https://edhrec.com/commanders/${formatEdhrec(cmds[0].name)}`, '_blank');
-      };
-
-      const listText = deck.cards.map(c => `1 ${c.name}`).join('\n');
-      const copyPrompt = () => {
-         const prompt = `Agisci come un Master professionista e Deckbuilder esperto di Magic: The Gathering.\nFormato: ${deck.format || 'Commander'}. ${deck.format==='commander'? `Comandante: ${cmdName}.`:''}\nAnalizza curva di mana, banlist e dammi consigli su cosa tagliare e aggiungere.\nLista:\n${listText}`;
-         navigator.clipboard.writeText(prompt); alert("Prompt copiato! Incollalo su ChatGPT o Gemini.");
-      };
-      const copyList = () => { navigator.clipboard.writeText(listText); alert("Lista carte copiata!"); };
-
-      const shareDeck = async () => {
-         const shareData = { title: `Mazzo MTG: ${deck.name}`, text: `Ecco il mio mazzo "${deck.name}":\n\n${listText}`, };
-         if (navigator.share) { try { await navigator.share(shareData); } catch(e) {} } 
-         else { copyList(); alert("Copiato negli appunti! Ora puoi incollarlo dove vuoi."); }
-      };
-
-      const generateQR = () => {
-         if(window.QRCode) {
-            window.QRCode.toDataURL(listText, { errorCorrectionLevel: 'L', width: 250, margin: 2 }, function (err, url) {
-               if (err) { alert("Errore: la lista è troppo lunga per un singolo QR code! Prova a condividerla via WhatsApp."); } 
-               else {
-                  const img = new Image(); img.src = url; img.className = "mb-4 border-4 border-gray-200 rounded";
-                  const modal = document.createElement("div"); modal.className = "fixed inset-0 bg-black/95 z-[9999] flex flex-col items-center justify-center p-4 animate-fade"; modal.onclick = () => document.body.removeChild(modal);
-                  const container = document.createElement("div"); container.className = "bg-white p-6 rounded-xl flex flex-col items-center shadow-2xl"; container.onclick = (e) => e.stopPropagation();
-                  const title = document.createElement("h3"); title.className = "text-black font-black text-xl mb-2 text-center"; title.innerText = "QR Code Mazzo";
-                  const sub = document.createElement("p"); sub.className = "text-gray-600 text-xs mb-4 text-center font-bold"; sub.innerText = "Fai inquadrare questo codice dalla fotocamera di un amico. Copierà la lista in automatico!";
-                  const btn = document.createElement("button"); btn.className = "w-full bg-red-600 text-white font-bold py-3 rounded-xl shadow-md"; btn.innerText = "Chiudi"; btn.onclick = () => document.body.removeChild(modal);
-                  container.appendChild(title); container.appendChild(sub); container.appendChild(img); container.appendChild(btn); modal.appendChild(container); document.body.appendChild(modal);
-               }
+        // --- FUNZIONI STRUMENTI AVANZATI ---
+        const handleTop5Budget = () => {
+            const format = deck.format || "Commander";
+            const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
+            const prompt = `Agisci come un giocatore esperto di Magic: The Gathering.\nAnalizza questa lista di un mazzo formato ${format}:\n\n${deckListStr}\n\nTrova le 5 carte più costose di questo mazzo e suggerisci 5 carte alternative per ognuna di esse. Le alternative devono essere molto economiche ma perfettamente integrabili per sinergia e strategia nel mazzo. Rispondi in italiano.`;
+            navigator.clipboard.writeText(prompt).then(() => {
+                alert("🪄 Prompt copiato!\n\nTi sto portando su Gemini. Fai 'Incolla' nella chat per ricevere l'analisi gratuita delle tue carte costose.");
+                window.open('https://gemini.google.com/', '_blank');
             });
-         } else { alert("Libreria QR non caricata."); }
-      };
+        };
 
-      return (
-         <div className="max-w-2xl mx-auto space-y-4">
-           <button onClick={() => navigate('mydecks')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-2 shadow transition-colors">⬅ Indietro ai Mazzi</button>
-           <div className="bg-gray-800/90 p-6 rounded-xl border border-gray-600 shadow-xl backdrop-blur-sm">
-             <h2 className="text-3xl font-black text-white mb-1 drop-shadow-md">{deck.name}</h2>
-             <p className="text-gray-300 font-bold mb-6">Formato: <span className="text-blue-400 uppercase">{deck.format || 'Commander'}</span></p>
+        const handleFullDeckBudget = (e) => {
+            e.preventDefault();
+            if (!targetBudget) return;
+            const format = deck.format || "Commander";
+            const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
+            const prompt = `Agisci come un giocatore esperto di Magic: The Gathering.\nAnalizza questa lista di un mazzo formato ${format}:\n\n${deckListStr}\n\nIl mio obiettivo è abbassare il costo totale del mazzo facendolo rientrare in un budget MASSIMO di ${targetBudget}€, mantenendolo però competitivo e sinergico. Suggeriscimi esattamente quali carte costose tagliare e con quali alternative economiche sostituirle. Spiega brevemente il perché. Rispondi in italiano.`;
+            navigator.clipboard.writeText(prompt).then(() => {
+                setShowBudgetModal(false);
+                alert(`🪄 Prompt per Budget ${targetBudget}€ copiato!\n\nTi sto portando su Gemini. Fai 'Incolla' nella chat per ricevere la tua lista modificata.`);
+                window.open('https://gemini.google.com/', '_blank');
+            });
+        };
 
-             <div className="grid grid-cols-3 gap-2 mb-6 text-center">
-               <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
-                  <p className="text-xs text-gray-400 font-bold uppercase">Carte (Main)</p>
-                  <p className={`text-2xl font-black ${totalCards===100 ? 'text-green-400':'text-red-400'}`}>{totalCards}</p>
-               </div>
-               <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
-                  <p className="text-xs text-gray-400 font-bold uppercase">Terre</p>
-                  <p className="text-2xl font-black text-white">{lands}</p>
-               </div>
-               <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
-                  <p className="text-xs text-gray-400 font-bold uppercase">CMC Medio</p>
-                  <p className="text-2xl font-black text-blue-400">{avgCMC.toFixed(2)}</p>
-               </div>
-             </div>
+        const handleComboSpellbook = () => {
+            const deckListStr = deck.cards.map(c => `1 ${c.name}`).join('\n');
+            navigator.clipboard.writeText(deckListStr).then(() => {
+                alert("🪄 Lista del mazzo copiata!\n\nTi sto portando su Commander Spellbook. Fai 'Incolla' nel loro box di ricerca per scoprire le combo infinite del tuo mazzo.");
+                window.open('https://commanderspellbook.com/find-my-combos/', '_blank');
+            });
+        };
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-               <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner">
-                 <h3 className="text-sm font-bold text-blue-400 mb-4 text-center uppercase">Curva Mana (No Terre)</h3>
-                 <div className="flex items-end gap-2 h-28">
-                    {Object.keys(curve).map(k => {
-                       const hPerc = maxCurve === 0 ? 0 : (curve[k] / maxCurve) * 100;
-                       return (
-                         <div key={k} className="flex-1 flex flex-col items-center justify-end h-full">
-                           <span className="text-[10px] text-gray-300 font-bold mb-1">{curve[k]}</span>
-                           <div className="w-full bg-gradient-to-t from-blue-700 to-blue-400 rounded-t-sm" style={{ height: `${hPerc}%` }}></div>
-                           <span className="text-[10px] text-gray-400 mt-1 font-bold">{k}</span>
-                         </div>
-                       );
-                    })}
+        // --- LOGICA BRACKET COMMANDER ---
+        const BRACKET_DB = {
+            "Mana Crypt": 4, "Jeweled Lotus": 4, "Dockside Extortionist": 4, "Thassa's Oracle": 4, 
+            "Demonic Tutor": 4, "Vampiric Tutor": 4, "Fierce Guardianship": 4, "Force of Will": 4, 
+            "Gaea's Cradle": 4, "Rhystic Study": 4, "Smothering Tithe": 4, "Deflecting Swat": 4,
+            "Cyclonic Rift": 3, "Teferi's Protection": 3, "Craterhoof Behemoth": 3, "Jeska's Will": 3, 
+            "Esper Sentinel": 3, "Sylvan Library": 3, "Farewell": 3, "Toxic Deluge": 3,
+            "Heroic Intervention": 2, "Lightning Greaves": 2, "Skullclamp": 2, "Swords to Plowshares": 2
+        };
+
+        const gameChangerCards = deck.cards.filter(c => BRACKET_DB[c.name]) || [];
+        const deckBracket = gameChangerCards.length > 0 ? Math.max(...gameChangerCards.map(c => BRACKET_DB[c.name])) : 1;
+
+        const handleDowngradeBracket = (cardName, currentBracket) => {
+            const prompt = `Agisci come un esperto giudice e giocatore di Magic: The Gathering.\nNel mio mazzo Commander ho la carta "${cardName}" che è considerata una carta "Gamechanger" di Bracket ${currentBracket} e rende il mazzo troppo forte o "salty" per il mio gruppo.\nSuggeriscimi 3-5 carte alternative meno potenti (Bracket 1 o 2), più 'fair' e bilanciate per sostituirla, mantenendo se possibile una strategia simile. Spiega brevemente le opzioni e perché sono più accettate al tavolo. Rispondi in italiano.`;
+            navigator.clipboard.writeText(prompt).then(() => {
+                alert(`🪄 Prompt per sostituire ${cardName} copiato!\n\nTi sto portando su Gemini. Incolla la richiesta per ricevere le alternative fair.`);
+                window.open('https://gemini.google.com/', '_blank');
+            });
+        };
+
+        // --- CALCOLI STATISTICHE MAZZO ---
+        const cmds = deck.cards.filter(c => c.isCommander);
+        const cmdName = cmds.length > 0 ? cmds[0].name : "Nessun Comandante Selezionato";
+        const totalCards = deck.cards.filter(c => !c.isSideboard && !c.isCompanion).length;
+        const lands = deck.cards.filter(c => c.type && c.type.toLowerCase().includes('land') && !c.isSideboard && !c.isCompanion).length;
+        const avgCMC = deck.cards.filter(c => !c.isSideboard && !c.isCompanion).reduce((acc, c) => acc + (c.cmc || 0), 0) / (totalCards || 1);
+
+        const curve = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, '6+':0};
+        let maxCurve = 0; const colorCounts = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
+        
+        deck.cards.forEach(c => {
+           if(c.isSideboard || c.isCompanion) return;
+           if(c.type && !c.type.toLowerCase().includes('land')) {
+              let cmc = c.cmc || 0; if (cmc >= 6) curve['6+']++; else curve[cmc]++;
+           }
+           if (c.colors && c.colors.length > 0) { c.colors.forEach(col => { if(colorCounts[col] !== undefined) colorCounts[col]++; }); } 
+           else if (c.type && !c.type.toLowerCase().includes('land')) { colorCounts['C']++; }
+        });
+        Object.values(curve).forEach(v => { if(v > maxCurve) maxCurve = v; });
+        let maxColor = 0; Object.values(colorCounts).forEach(v => { if(v > maxColor) maxColor = v; });
+
+        const formatEdhrec = (name) => name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+        const openEdhrec = () => {
+           if (cmds.length === 0) return alert("Questo mazzo non ha un Comandante salvato!");
+           window.open(`https://edhrec.com/commanders/${formatEdhrec(cmds[0].name)}`, '_blank');
+        };
+
+        const listText = deck.cards.map(c => `1 ${c.name}`).join('\n');
+        const copyPrompt = () => {
+           const prompt = `Agisci come un Master professionista e Deckbuilder esperto di Magic: The Gathering.\nFormato: ${deck.format || 'Commander'}. ${deck.format==='commander'? `Comandante: ${cmdName}.`:''}\nAnalizza curva di mana, banlist e dammi consigli su cosa tagliare e aggiungere.\nLista:\n${listText}`;
+           navigator.clipboard.writeText(prompt); alert("Prompt copiato! Incollalo su ChatGPT o Gemini.");
+        };
+        const copyList = () => { navigator.clipboard.writeText(listText); alert("Lista carte copiata!"); };
+
+        const shareDeck = async () => {
+           const shareData = { title: `Mazzo MTG: ${deck.name}`, text: `Ecco il mio mazzo "${deck.name}":\n\n${listText}`, };
+           if (navigator.share) { try { await navigator.share(shareData); } catch(e) {} } 
+           else { copyList(); alert("Copiato negli appunti! Ora puoi incollarlo dove vuoi."); }
+        };
+
+        // --- GRAFICA SCHERMATA ---
+        return (
+           <div className="max-w-2xl mx-auto space-y-4">
+             <button onClick={() => navigate('mydecks')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-2 shadow transition-colors">⬅ Indietro ai Mazzi</button>
+             <div className="bg-gray-800/90 p-6 rounded-xl border border-gray-600 shadow-xl backdrop-blur-sm">
+               <h2 className="text-3xl font-black text-white mb-1 drop-shadow-md">{deck.name}</h2>
+               <p className="text-gray-300 font-bold mb-6">Formato: <span className="text-blue-400 uppercase">{deck.format || 'Commander'}</span></p>
+
+               <div className="grid grid-cols-3 gap-2 mb-6 text-center">
+                 <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
+                    <p className="text-xs text-gray-400 font-bold uppercase">Carte (Main)</p>
+                    <p className={`text-2xl font-black ${totalCards===100 ? 'text-green-400':'text-red-400'}`}>{totalCards}</p>
+                 </div>
+                 <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
+                    <p className="text-xs text-gray-400 font-bold uppercase">Terre</p>
+                    <p className="text-2xl font-black text-white">{lands}</p>
+                 </div>
+                 <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
+                    <p className="text-xs text-gray-400 font-bold uppercase">CMC Medio</p>
+                    <p className="text-2xl font-black text-blue-400">{avgCMC.toFixed(2)}</p>
                  </div>
                </div>
-               <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner">
-                 <h3 className="text-sm font-bold text-purple-400 mb-4 text-center uppercase">Devozione Colori</h3>
-                 <div className="flex items-end gap-2 h-28">
-                    {ManaColors.map(m => {
-                       const count = colorCounts[m.id];
-                       const hPerc = maxColor === 0 ? 0 : (count / maxColor) * 100;
-                       let barColor = "bg-gray-500";
-                       if(m.id==='W') barColor="bg-yellow-100"; if(m.id==='U') barColor="bg-blue-500";
-                       if(m.id==='B') barColor="bg-gray-600"; if(m.id==='R') barColor="bg-red-500";
-                       if(m.id==='G') barColor="bg-green-500"; if(m.id==='C') barColor="bg-gray-400";
-                       return (
-                         <div key={m.id} className="flex-1 flex flex-col items-center justify-end h-full">
-                           <span className="text-[10px] text-gray-300 font-bold mb-1">{count}</span>
-                           <div className={`w-full ${barColor} rounded-t-sm shadow`} style={{ height: `${hPerc}%` }}></div>
-                           <span className={`text-[10px] mt-1 font-black ${m.color.split(' ')[1]}`}>{m.label}</span>
-                         </div>
-                       );
-                    })}
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                 <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner">
+                   <h3 className="text-sm font-bold text-blue-400 mb-4 text-center uppercase">Curva Mana (No Terre)</h3>
+                   <div className="flex items-end gap-2 h-28">
+                      {Object.keys(curve).map(k => {
+                         const hPerc = maxCurve === 0 ? 0 : (curve[k] / maxCurve) * 100;
+                         return (
+                           <div key={k} className="flex-1 flex flex-col items-center justify-end h-full">
+                             <span className="text-[10px] text-gray-300 font-bold mb-1">{curve[k]}</span>
+                             <div className="w-full bg-gradient-to-t from-blue-700 to-blue-400 rounded-t-sm" style={{ height: `${hPerc}%` }}></div>
+                             <span className="text-[10px] text-gray-400 mt-1 font-bold">{k}</span>
+                           </div>
+                         );
+                      })}
+                   </div>
+                 </div>
+                 <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner">
+                   <h3 className="text-sm font-bold text-purple-400 mb-4 text-center uppercase">Devozione Colori</h3>
+                   <div className="flex items-end gap-2 h-28">
+                      {ManaColors.map(m => {
+                         const count = colorCounts[m.id];
+                         const hPerc = maxColor === 0 ? 0 : (count / maxColor) * 100;
+                         let barColor = "bg-gray-500";
+                         if(m.id==='W') barColor="bg-yellow-100"; if(m.id==='U') barColor="bg-blue-500";
+                         if(m.id==='B') barColor="bg-gray-600"; if(m.id==='R') barColor="bg-red-500";
+                         if(m.id==='G') barColor="bg-green-500"; if(m.id==='C') barColor="bg-gray-400";
+                         return (
+                           <div key={m.id} className="flex-1 flex flex-col items-center justify-end h-full">
+                             <span className="text-[10px] text-gray-300 font-bold mb-1">{count}</span>
+                             <div className={`w-full ${barColor} rounded-t-sm shadow`} style={{ height: `${hPerc}%` }}></div>
+                             <span className={`text-[10px] mt-1 font-black ${m.color.split(' ')[1]}`}>{m.label}</span>
+                           </div>
+                         );
+                      })}
+                   </div>
                  </div>
                </div>
-             </div>
 
-             <div className="space-y-3">
-               <button onClick={shareDeck} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-[0_0_10px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2 transition-all">📲 Invia ad un Amico</button>
-               {/* --- INIZIO SEZIONE STRUMENTI AVANZATI (COMBO & BUDGET) --- */}
-                <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 shadow-lg mt-6">
-                    <h3 className="text-xl font-black text-white mb-2 flex items-center gap-2">🛠️ Strumenti Avanzati</h3>
-                    <p className="text-gray-400 text-xs font-bold mb-4">Usa l'Intelligenza Artificiale e i Database esterni per potenziare il tuo mazzo a costo zero.</p>
-                    
-                    <div className="flex flex-col gap-3">
-                        {/* BOTTONE COMBO */}
-                        <button onClick={handleComboSpellbook} className="w-full bg-purple-700 hover:bg-purple-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">
-                            ♾️ CERCA COMBO INFINITE
-                        </button>
+               <div className="space-y-3">
+                 <button onClick={shareDeck} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-[0_0_10px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2 transition-all">📲 Invia ad un Amico</button>
+                 
+                 {/* --- SEZIONE BRACKET COMMANDER --- */}
+                 {deck?.format?.toLowerCase() === 'commander' && (
+                     <div className="bg-gray-800 p-4 rounded-xl border-2 border-orange-500 shadow-lg mt-6">
+                         <div className="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
+                             <h3 className="text-xl font-black text-white flex items-center gap-2">
+                                 ⚖️ Commander Bracket
+                             </h3>
+                             <span className="bg-orange-600 text-white px-3 py-1 rounded-lg font-black text-xl shadow">
+                                 Livello {deckBracket}
+                             </span>
+                         </div>
+                         <p className="text-gray-300 text-sm font-semibold mb-4">
+                             {deckBracket === 1 && "Mazzo Fair/Precon. Ideale per partite tranquille, non contiene Gamechanger di alto livello."}
+                             {deckBracket === 2 && "Mazzo Ottimizzato. Contiene staple forti ma non oppressive."}
+                             {deckBracket === 3 && "Mazzo High Power. Molto sinergico, usa board wipe, protezioni assolute e accelerini potenti."}
+                             {deckBracket === 4 && "Mazzo Competitivo (cEDH) o Estremo. Contiene mana veloce, tutor efficienti o win-condition a due carte."}
+                         </p>
+                         {gameChangerCards.length > 0 ? (
+                             <div className="space-y-3">
+                                 <h4 className="text-orange-400 font-bold text-sm">Carte Gamechanger rilevate:</h4>
+                                 {gameChangerCards.map(c => (
+                                     <div key={c.id} className="bg-gray-900 border border-gray-700 p-3 rounded-lg flex justify-between items-center">
+                                         <div>
+                                             <p className="text-white font-bold flex items-center gap-2">
+                                                 {c.name} <span className="bg-red-900 text-red-200 text-xs px-2 py-0.5 rounded font-black">B{BRACKET_DB[c.name]}</span>
+                                             </p>
+                                         </div>
+                                         <button onClick={() => handleDowngradeBracket(c.name, BRACKET_DB[c.name])} className="bg-orange-600 hover:bg-orange-500 text-white text-xs font-black px-3 py-2 rounded shadow transition-colors">
+                                             Riduci Potenza
+                                         </button>
+                                     </div>
+                                 ))}
+                             </div>
+                         ) : (
+                             <div className="bg-emerald-900/40 border border-emerald-500 p-3 rounded-lg">
+                                 <p className="text-emerald-400 font-bold text-sm text-center">Nessuna carta problematica rilevata!</p>
+                             </div>
+                         )}
+                     </div>
+                 )}
 
-                        {/* BOTTONE TOP 5 CARTE */}
-                        <button onClick={handleTop5Budget} className="w-full bg-blue-700 hover:bg-blue-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">
-                            📉 ALTERNATIVE TOP 5 CARTE
-                        </button>
-                        
-                        {/* BOTTONE BUDGET INTERO MAZZO */}
-                        <button onClick={() => setShowBudgetModal(true)} className="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">
-                            💰 BUDGETIZZA INTERO MAZZO
-                        </button>
-                    </div>
-                </div>
+                 {/* --- SEZIONE STRUMENTI AVANZATI (COMBO & BUDGET) --- */}
+                 <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 shadow-lg mt-6">
+                     <h3 className="text-xl font-black text-white mb-2 flex items-center gap-2">🛠️ Strumenti Avanzati</h3>
+                     <p className="text-gray-400 text-xs font-bold mb-4">Usa l'Intelligenza Artificiale e i Database esterni per potenziare il tuo mazzo a costo zero.</p>
+                     <div className="flex flex-col gap-3">
+                         <button onClick={handleComboSpellbook} className="w-full bg-purple-700 hover:bg-purple-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">♾️ CERCA COMBO INFINITE</button>
+                         <button onClick={handleTop5Budget} className="w-full bg-blue-700 hover:bg-blue-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">📉 ALTERNATIVE TOP 5 CARTE</button>
+                         <button onClick={() => setShowBudgetModal(true)} className="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-black py-3 rounded-lg shadow flex items-center justify-center gap-2 transition-colors">💰 BUDGETIZZA INTERO MAZZO</button>
+                     </div>
+                 </div>
 
-                {/* MODALE INSERIMENTO BUDGET (SI APRE QUANDO CLICCHI IL TASTO INDIGO A SCOMPARSA) */}
-                {showBudgetModal && (
-                    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade">
-                        <div className="bg-gray-800 border-2 border-indigo-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
-                            <button onClick={() => setShowBudgetModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
-                            
-                            <h3 className="text-xl font-black text-white mb-2">Imposta il tuo Target</h3>
-                            <p className="text-gray-300 text-xs font-bold mb-4">Quanto vuoi spendere al massimo per questo mazzo?</p>
-                            
-                            <form onSubmit={handleFullDeckBudget} className="flex flex-col gap-4">
-                                <div className="relative">
-                                    <span className="absolute left-4 top-3 text-white font-black">€</span>
-                                    <input 
-                                        type="number" 
-                                        value={targetBudget} 
-                                        onChange={e => setTargetBudget(e.target.value)} 
-                                        placeholder="es. 50" 
-                                        className="w-full bg-gray-900 border border-gray-600 rounded-lg pl-8 pr-4 py-3 text-white font-bold outline-none focus:border-indigo-500" 
-                                        required 
-                                    />
-                                </div>
-                                <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-lg shadow-lg transition-all active:scale-95">
-                                    GENERA PROMPT & VAI SU GEMINI
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                )}
-                {/* --- FINE SEZIONE STRUMENTI AVANZATI --- */}
-               {deck.format === 'commander' && ( <button onClick={openEdhrec} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all mt-6">🛡️ Sinergie su EDHREC</button> )}
-               <button onClick={copyPrompt} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all">🤖 Copia Prompt IA</button>
-               <button onClick={copyList} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl shadow border border-gray-600 flex items-center justify-center gap-2 mt-2 transition-colors">📋 Copia solo Lista Testuale</button>
+                 {/* MODALE INSERIMENTO BUDGET */}
+                 {showBudgetModal && (
+                     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade">
+                         <div className="bg-gray-800 border-2 border-indigo-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
+                             <button onClick={() => setShowBudgetModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
+                             <h3 className="text-xl font-black text-white mb-2">Imposta il tuo Target</h3>
+                             <p className="text-gray-300 text-xs font-bold mb-4">Quanto vuoi spendere al massimo per questo mazzo?</p>
+                             <form onSubmit={handleFullDeckBudget} className="flex flex-col gap-4">
+                                 <div className="relative">
+                                     <span className="absolute left-4 top-3 text-white font-black">€</span>
+                                     <input type="number" value={targetBudget} onChange={e => setTargetBudget(e.target.value)} placeholder="es. 50" className="w-full bg-gray-900 border border-gray-600 rounded-lg pl-8 pr-4 py-3 text-white font-bold outline-none focus:border-indigo-500" required />
+                                 </div>
+                                 <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-lg shadow-lg transition-all active:scale-95">GENERA PROMPT & VAI SU GEMINI</button>
+                             </form>
+                         </div>
+                     </div>
+                 )}
+
+                 {deck.format === 'commander' && ( <button onClick={openEdhrec} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all mt-6">🛡️ Sinergie su EDHREC</button> )}
+                 <button onClick={copyPrompt} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all">🤖 Copia Prompt IA</button>
+                 <button onClick={copyList} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl shadow border border-gray-600 flex items-center justify-center gap-2 mt-2 transition-colors">📋 Copia solo Lista Testuale</button>
+               </div>
              </div>
            </div>
-         </div>
-      );
+        );
     };
 
     const PrintView = ({deck, navigate}) => {
