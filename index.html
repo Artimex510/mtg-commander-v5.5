@@ -2428,13 +2428,18 @@
       };
 
       const resetGame = () => {
-          if (window.confirm("Vuoi davvero resettare la partita? Punti vita e segnalini torneranno ai valori iniziali (gli Sfondi verranno mantenuti).")) {
+          const isConfirmed = window.confirm("Vuoi davvero resettare la partita? Punti vita e segnalini torneranno ai valori iniziali (gli Sfondi verranno mantenuti).");
+          if (isConfirmed) {
               setArchenemy(prev => ({...prev, active: false, playerId: null, ongoing: [], currentScheme: null}));
               setPlayers(prev => prev.map(p => {
                   let resetDmg = {}; prev.forEach(op => { if(op.id !== p.id) resetDmg[`${op.id}`] = 0; });
                   return { ...p, life: startLife, poison: 0, cmdCasts: 0, emblems: 0, rad: 0, energy: 0, exp: 0, ticket: 0, cmdDmg: resetDmg, monarch: false, initiative: false, blessing: false, dayNight: 'none', immune: false, mana: {W:0, U:0, B:0, R:0, G:0, C:0} };
               }));
           }
+          
+          // Re-inietta sempre il blocco schermo/rotazione dopo il popup nativo!
+          const isVerticalMode = archenemy.showModal || (activeModal && activeModal.type === 'search');
+          applyScreenLock(isVerticalMode, numPlayers);
       };
 
       const exitGame = () => {
@@ -2595,7 +2600,7 @@
               <PlayerModals type={activeModal.type} player={players.find(p => p.id === activeModal.playerId)} opponents={players.filter(p => p.id !== activeModal.playerId)} onClose={() => setActiveModal(null)} updateStat={updateStat} updateMana={updateMana} toggleImmunity={toggleImmunity} updatePlayerConfig={updatePlayerConfig} rotation={activeModal.rotation} />
           , document.body)}
 
-          {/* MODALE ARCHENEMY (Verticale Forzato) */}
+          {/* MODALE ARCHENEMY */}
           {archenemy.showModal && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-gray-900 z-[9999] flex flex-col p-4 animate-fade overflow-hidden">
                 <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2 shrink-0">
@@ -2659,7 +2664,6 @@
              </div>
           , document.body)}
 
-          {/* ZOOM IMMAGINE SCHEMI */}
           {archenemy.enlargedImage && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-black/95 z-[10000] flex items-center justify-center p-4 animate-fade" onClick={() => setArchenemy(prev => ({...prev, enlargedImage: null}))}>
                 <img src={archenemy.enlargedImage} className="max-w-full max-h-[90vh] rounded-xl shadow-2xl border border-gray-600" />
@@ -2667,7 +2671,6 @@
              </div>
           , document.body)}
 
-          {/* MODALE DADI */}
           {showDice && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 animate-fade" onClick={() => setShowDice(false)}>
                 <div className="bg-gray-900 border border-purple-500 rounded-2xl p-6 shadow-2xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
