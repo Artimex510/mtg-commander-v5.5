@@ -1700,6 +1700,7 @@
     };
 
     // --- DECK ANALYSIS E CONDIVISIONE ---
+    // --- DECK ANALYSIS E CONDIVISIONE ---
     const DeckAnalysis = ({deck, navigate}) => {
         const [showBudgetModal, setShowBudgetModal] = useState(false);
         const [targetBudget, setTargetBudget] = useState("");
@@ -1763,6 +1764,7 @@
         let deckBracket = 2; // Valore di Base se non ha GC
 
         if (deck && deck.cards) {
+            // Conta SOLO le 54 carte Gamechanger Ufficiali WotC
             gameChangerCards = deck.cards.filter(c => GAMECHANGERS.includes(c.name));
             
             // LOGICA ESATTA:
@@ -1812,13 +1814,13 @@
             if (reqColors.length === 0) return true; // Incolore va in tutti i mazzi
             if (deckColors.size === 0) return false; // Se il mazzo è incolore, non può avere carte colorate
             return reqColors.every(col => deckColors.has(col)); // Deve rispettare tutti i colori
-        }).slice(0, 5);
+        }).sort(() => 0.5 - Math.random()).slice(0, 5); // Ne prende 5 a caso per variare ogni volta
 
         const listText = (deck && deck.cards) ? deck.cards.map(c => `1 ${c.name}`).join('\n') : "";
 
         const doUpgradePrompt = () => {
             const formatName = deck.format || "Commander";
-            const prompt = `Agisci come un esperto deckbuilder di Magic: The Gathering.\nEcco la lista del mio mazzo ${formatName}:\n\n${listText}\n\nVorrei potenziarlo inserendo delle carte "Gamechanger" essenziali.\nConoscendo l'identità di colore del mio mazzo, suggeriscimi le 5 carte più forti in assoluto da inserire per alzare drasticamente il Bracket/Power Level, spiegando brevemente perché. Rispondi in italiano.`;
+            const prompt = `Agisci come un esperto deckbuilder di Magic: The Gathering.\nEcco la lista del mio mazzo ${formatName}:\n\n${listText}\n\nVorrei potenziarlo inserendo delle carte "Gamechanger" essenziali per portarlo a Bracket 4.\nConoscendo l'identità di colore del mio mazzo, suggeriscimi le 5 carte più forti in assoluto da inserire per alzare drasticamente il Power Level, spiegando brevemente perché. Rispondi in italiano.`;
             navigator.clipboard.writeText(prompt).then(() => {
                 setShowUpgradeModal(false);
                 alert("🪄 Prompt per l'Upgrade copiato!\n\nTi sto portando su Gemini. Incolla la richiesta per farti suggerire i migliori Gamechanger mancanti per il tuo mazzo.");
@@ -1947,14 +1949,14 @@
                          </div>
                          <p className="text-gray-300 text-sm font-semibold mb-4">
                              {deckBracket === 2 && "Mazzo Fair/Ottimizzato. 0 Gamechanger. Ideale per partite equilibrate."}
-                             {deckBracket === 3 && "Mazzo High Power. Molto forte, contiene da 1 a 3 Gamechanger."}
-                             {deckBracket === 4 && "Mazzo Competitivo/Estremo. Contiene 4 o più Gamechanger della Banlist ufficiale."}
-                             <br/><span className="text-[10px] text-gray-500 italic mt-1 block">*Basato sulle 54 carte ufficiali WotC. Le combo infinite vanno auto-dichiarate come B4.</span>
+                             {deckBracket === 3 && `Mazzo High Power. Contiene ${gameChangerCards.length} Gamechanger.`}
+                             {deckBracket === 4 && `Mazzo Competitivo/Estremo. Contiene ${gameChangerCards.length} Gamechanger.`}
+                             <br/><span className="text-[10px] text-gray-500 italic mt-1 block">*Basato sulle 54 carte ufficiali WotC. Le combo infinite vanno dichiarate al tavolo come B4.</span>
                          </p>
                          
                          {gameChangerCards.length > 0 ? (
                              <div className="space-y-3 mb-4">
-                                 <h4 className="text-orange-400 font-bold text-sm">Carte Gamechanger (WotC) Rilevate ({gameChangerCards.length}):</h4>
+                                 <h4 className="text-orange-400 font-bold text-sm">Carte Gamechanger (WotC) Rilevate:</h4>
                                  {gameChangerCards.map((c, i) => (
                                      <div key={i} className="bg-gray-900 border border-gray-700 p-3 rounded-lg flex justify-between items-center">
                                          <div>
@@ -1981,8 +1983,8 @@
                  )}
 
                  {/* MODALE ALTERNATIVE GAMECHANGER (RIDUCI POTENZA) */}
-                 {showAltModal && altTarget && (
-                     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[200] p-4 animate-fade">
+                 {showAltModal && altTarget && ReactDOM.createPortal(
+                     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 animate-fade">
                          <div className="bg-gray-800 border-2 border-orange-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
                              <button onClick={() => setShowAltModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
                              <h3 className="text-lg font-black text-white mb-2">Alternative a {altTarget.name}</h3>
@@ -2008,14 +2010,14 @@
                              )}
                          </div>
                      </div>
-                 )}
+                 , document.body)}
 
                  {/* MODALE UPGRADE (AUMENTA POTENZA) */}
-                 {showUpgradeModal && (
-                     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[200] p-4 animate-fade">
+                 {showUpgradeModal && ReactDOM.createPortal(
+                     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 animate-fade">
                          <div className="bg-gray-800 border-2 border-red-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative flex flex-col max-h-[90vh]">
                              <button onClick={() => setShowUpgradeModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
-                             <h3 className="text-lg font-black text-white mb-2">Upgrade High-Power</h3>
+                             <h3 className="text-lg font-black text-white mb-2">Upgrade a Bracket 3 / 4</h3>
                              <p className="text-gray-300 text-xs font-bold mb-4">Ecco i Gamechanger ufficiali perfetti per i colori del tuo Comandante che ti mancano:</p>
                              
                              <div className="space-y-2 mb-4 overflow-y-auto flex-1 pr-1">
@@ -2033,7 +2035,7 @@
                              </button>
                          </div>
                      </div>
-                 )}
+                 , document.body)}
 
                  {/* --- INIZIO SEZIONE STRUMENTI AVANZATI --- */}
                  <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 shadow-lg mt-6">
@@ -2047,8 +2049,8 @@
                  </div>
 
                  {/* MODALE INSERIMENTO BUDGET */}
-                 {showBudgetModal && (
-                     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade">
+                 {showBudgetModal && ReactDOM.createPortal(
+                     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 animate-fade">
                          <div className="bg-gray-800 border-2 border-indigo-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
                              <button onClick={() => setShowBudgetModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
                              <h3 className="text-xl font-black text-white mb-2">Imposta il tuo Target</h3>
@@ -2062,7 +2064,7 @@
                              </form>
                          </div>
                      </div>
-                 )}
+                 , document.body)}
 
                  {deck && deck.format && deck.format.toLowerCase() === 'commander' && ( <button onClick={openEdhrec} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all mt-6">🛡️ Sinergie su EDHREC</button> )}
                  <button onClick={copyPrompt} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all">🤖 Copia Prompt IA</button>
@@ -2097,6 +2099,7 @@
     };
 
     // --- BIG STATS ROW (COMPONENTI GRAFICI PER IL LIFE TRACKER) ---
+    // --- BIG STATS ROW ---
     const BigStatRow = ({ label, value, onSub, onAdd }) => (
       <div className="flex justify-between items-center bg-gray-900 rounded-xl px-3 py-2 mb-2 border border-gray-700 shadow-inner">
         <span className="text-gray-300 font-bold text-sm w-1/2 truncate pr-2">{label}</span>
@@ -2165,7 +2168,7 @@
                             </div>
                         </div>
                         <div className="pt-4 flex flex-col gap-3">
-                            <button onClick={() => toggleImmunity(player.id)} className={`w-full py-4 font-black rounded-xl shadow-lg border text-lg ${player.immune ? 'bg-cyan-600 text-white border-cyan-400' : 'bg-gray-800 text-gray-300 border-gray-600'}`}>{player.immune ? '🛡️ Immunità (Danni Bloccati)' : 'Attiva Immunità (Ferma Danni)'}</button>
+                            <button onClick={() => toggleImmunity(player.id)} className={`w-full py-4 font-black rounded-xl shadow-lg border text-lg ${player.immune ? 'bg-cyan-600 text-white border-cyan-400' : 'bg-gray-800 text-gray-300 border-gray-600'}`}>{player.immune ? '🛡️ Immunità Attiva' : 'Attiva Immunità (Ferma Danni)'}</button>
                         </div>
                     </div>
                 </div>
@@ -2173,6 +2176,7 @@
         }
 
         if (type === 'mana') {
+            const ManaColors = [ { id: 'W', color: 'bg-yellow-100 text-yellow-900', label: 'W' }, { id: 'U', color: 'bg-blue-500 text-white', label: 'U' }, { id: 'B', color: 'bg-gray-800 text-white', label: 'B' }, { id: 'R', color: 'bg-red-500 text-white', label: 'R' }, { id: 'G', color: 'bg-green-500 text-white', label: 'G' }, { id: 'C', color: 'bg-gray-400 text-gray-900', label: 'C' } ];
             return (
                 <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-[9999] flex flex-col p-4 sm:p-6 animate-fade" style={{ margin: 0, borderRadius: 0 }}>
                     <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3 mt-2">
@@ -2224,204 +2228,7 @@
         return null;
     };
 
-    // --- GAME UTILITY (IL TAVOLO DA GIOCO CON GRIGLIA INTELLIGENTE) ---
-    const GameUtility = ({view, setView}) => {
-      const [setup, setSetup] = useState(true);
-      const [numPlayers, setNumPlayers] = useState(4);
-      const [startLife, setStartLife] = useState(40);
-      const [players, setPlayers] = useState([]);
-      
-      const [showDice, setShowDice] = useState(false);
-      const [diceResult, setDiceResult] = useState(null);
-      const [activeModal, setActiveModal] = useState(null); 
-
-      const rollDice = (max) => {
-         const res = Math.floor(Math.random() * max) + 1;
-         setDiceResult({ max, val: res });
-         setShowDice(false);
-         setTimeout(() => setDiceResult(null), 2500);
-      };
-
-      const startGame = () => {
-        let newPlayers = [];
-        for(let i=1; i<=numPlayers; i++) {
-          let cmdDmg = {}; for(let j=1; j<=numPlayers; j++) { if(i!==j) cmdDmg[`P${j}`] = 0; }
-          newPlayers.push({ 
-             id: `P${i}`, name: `Player ${i}`, life: startLife, poison: 0, cmdCasts: 0, emblems: 0, immune: false, cmdDmg: cmdDmg, bgUrl: null, mana: {W:0, U:0, B:0, R:0, G:0, C:0},
-             rad: 0, energy: 0, exp: 0, ticket: 0, monarch: false, initiative: false, blessing: false, dayNight: 'none'
-          });
-        }
-        setPlayers(newPlayers); setView('game_active');
-      };
-
-      const resetGame = () => {
-          if (window.confirm("Sei sicuro di voler resettare la partita? Tutti i punti vita e i segnalini verranno azzerati.")) {
-              startGame();
-          }
-      };
-
-      const updateStat = (playerId, stat, amount, opponentId = null) => {
-        setPlayers(prev => prev.map(p => {
-          if (p.id !== playerId) return p;
-          if (opponentId && stat === 'cmdDmg') {
-             let newDmg = { ...p.cmdDmg };
-             let prevVal = newDmg[opponentId] || 0; newDmg[opponentId] = Math.max(0, prevVal + amount);
-             let diff = newDmg[opponentId] - prevVal;
-             return { ...p, cmdDmg: newDmg, life: Math.max(0, p.life - diff) };
-          }
-          return { ...p, [stat]: Math.max(0, p[stat] + amount) };
-        }));
-      };
-
-      const updateMana = (playerId, color, amount) => {
-        setPlayers(prev => prev.map(p => {
-           if(p.id !== playerId) return p;
-           let newMana = {...p.mana}; newMana[color] = Math.max(0, newMana[color] + amount);
-           return {...p, mana: newMana};
-        }));
-      }
-
-      const updatePlayerConfig = (id, key, val) => { setPlayers(prev => prev.map(p => p.id === id ? { ...p, [key]: val } : p)); };
-      const toggleImmunity = (playerId) => { setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, immune: !p.immune } : p)); };
-
-      if (view === 'game') return (
-        <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl shadow-lg border border-gray-600 mt-4 backdrop-blur-sm">
-          <h2 className="text-3xl font-black mb-6 text-center text-red-500 drop-shadow-md">Setup Partita</h2>
-          <p className="text-xs text-center text-gray-300 font-bold mb-4 bg-gray-900 p-2 rounded border border-gray-700">📱 Metti il telefono al centro del tavolo: le postazioni si ruoteranno in automatico!</p>
-          <div className="mb-4">
-            <label className="block text-gray-300 font-bold mb-2">Numero Giocatori (1-6)</label>
-            <input type="number" min="1" max="6" value={numPlayers} onChange={e => setNumPlayers(parseInt(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white text-center text-xl font-bold outline-none" />
-          </div>
-          <div className="mb-6">
-            <label className="block text-gray-300 font-bold mb-2">Punti Vita Iniziali</label>
-            <select value={startLife} onChange={e => setStartLife(parseInt(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white text-center text-xl font-bold outline-none">
-              <option value={40}>40 (Commander)</option><option value={20}>20 (Standard)</option>
-            </select>
-          </div>
-          <button onClick={startGame} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl text-xl shadow-[0_0_15px_rgba(220,38,38,0.5)] transition-all">INIZIA</button>
-        </div>
-      );
-
-      // GRIGLIE DINAMICHE CON BARRA CENTRALE
-      let gridClass = 'grid-cols-[1fr_50px_1fr] grid-rows-2';
-      if (players.length <= 2) gridClass = 'grid-cols-1 grid-rows-[1fr_55px_1fr]'; // Configurazione Alto/Basso per 2 giocatori
-      else if (players.length === 3) gridClass = 'grid-cols-[1fr_50px_0.8fr] grid-rows-2';
-      else if (players.length === 4) gridClass = 'grid-cols-[1fr_50px_1fr] grid-rows-2';
-      else if (players.length === 5) gridClass = 'grid-cols-[1fr_1fr_50px_0.8fr] grid-rows-2';
-      else if (players.length === 6) gridClass = 'grid-cols-[1fr_50px_1fr] grid-rows-3';
-
-      return (
-        <div className="fixed inset-0 z-[100] bg-black flex flex-col h-[100dvh] w-[100dvw]">
-          <button onClick={() => setView('game')} className="absolute top-2 left-2 z-[150] bg-black/80 px-4 py-2 rounded-full text-white text-xs border border-gray-500 font-bold shadow-lg flex items-center gap-2">✖ Esci Partita</button>
-          
-          <div className={`flex-1 grid ${gridClass} gap-1 h-full w-full p-1`}>
-             {players.map((p, index) => {
-                 let wrapperClass = "relative overflow-hidden rounded-xl border-2 border-gray-700 bg-gray-900"; 
-                 let rotDeg = 0; let rowStart = ""; let colStart = ""; let rowSpan = "";
-                 
-                 // POSIZIONAMENTO LOGICO (Adattato a 2 giocatori uno di fronte all'altro)
-                 if (players.length <= 2) {
-                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; } // Giocatore in alto
-                     if (index === 1) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }   // Giocatore in basso
-                 } else if (players.length === 3) {
-                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
-                     if (index === 1) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
-                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rowSpan = "row-span-2"; rotDeg = -90; }
-                 } else if (players.length === 4) {
-                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
-                     if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = 180; }
-                     if (index === 2) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
-                     if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-3"; rotDeg = 0; }
-                 } else if (players.length === 5) {
-                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
-                     if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
-                     if (index === 2) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
-                     if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
-                     if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-4"; rowSpan = "row-span-2"; rotDeg = -90; }
-                 } else if (players.length === 6) {
-                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 90; }
-                     if (index === 1) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 90; }
-                     if (index === 2) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 90; }
-                     if (index === 3) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = -90; }
-                     if (index === 4) { rowStart = "row-start-2"; colStart = "col-start-3"; rotDeg = -90; }
-                     if (index === 5) { rowStart = "row-start-3"; colStart = "col-start-3"; rotDeg = -90; }
-                 }
-
-                 const isSideways = rotDeg === 90 || rotDeg === -90;
-                 return (
-                     <div key={p.id} className={`${wrapperClass} ${rowStart} ${colStart} ${rowSpan}`} style={{ containerType: 'size' }}>
-                         <div className={`absolute flex flex-col bg-gray-900 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] ${isSideways ? 'top-1/2 left-1/2' : 'inset-0'}`} 
-                              style={{
-                                  width: isSideways ? '100cqh' : '100cqw', 
-                                  height: isSideways ? '100cqw' : '100cqh', 
-                                  transform: isSideways ? `translate(-50%, -50%) rotate(${rotDeg}deg)` : `rotate(${rotDeg}deg)`
-                              }}>
-                             <PlayerCard player={p} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} onOpenModal={(type) => setActiveModal({type, playerId: p.id})} />
-                         </div>
-                     </div>
-                 );
-             })}
-
-             {/* BARRA CENTRALE (Dadi, Reset, Stats Partita). In 2 Giocatori è orizzontale. */}
-             <div className={players.length <= 2 
-                 ? "row-start-2 col-start-1 col-span-full bg-gray-950 border-y border-gray-700 flex flex-row items-center justify-center gap-10 shadow-2xl z-[120] py-2"
-                 : `row-start-1 row-span-full ${players.length===5 ? 'col-start-3' : 'col-start-2'} bg-gray-950 border-x border-gray-700 flex flex-col items-center justify-center gap-8 shadow-2xl z-[120] py-4`
-             }>
-                <button onClick={() => setShowDice(true)} className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 w-10 h-10 rounded-xl shadow-lg border border-gray-600 transform transition-transform active:scale-90" title="Lancia Dadi">
-                    <span className="text-xl drop-shadow-md">🎲</span>
-                </button>
-                <div className={players.length <= 2 ? "w-px h-6 bg-gray-700" : "w-6 h-px bg-gray-700"}></div>
-                <button onClick={resetGame} className="flex flex-col items-center gap-1 text-gray-400 font-bold hover:text-white transition-colors" title="Azzera e Ricomincia">
-                    <span className="text-xl">🔄</span>
-                </button>
-                <button onClick={() => alert("Cronologia partite in arrivo nel prossimo aggiornamento!")} className="flex flex-col items-center gap-1 text-gray-400 font-bold hover:text-white transition-colors" title="Storico Partite">
-                    <span className="text-xl">📊</span>
-                </button>
-             </div>
-          </div>
-
-          {/* RENDER MODALI GLOBALI (A TUTTO SCHERMO) */}
-          {activeModal && ReactDOM.createPortal(
-              <PlayerModals 
-                 type={activeModal.type} 
-                 player={players.find(p => p.id === activeModal.playerId)} 
-                 opponents={players.filter(p => p.id !== activeModal.playerId)}
-                 onClose={() => setActiveModal(null)} 
-                 updateStat={updateStat} 
-                 updateMana={updateMana} 
-                 toggleImmunity={toggleImmunity} 
-                 updatePlayerConfig={updatePlayerConfig} 
-              />
-          , document.body)}
-
-          {/* MODALE DADI */}
-          {showDice && ReactDOM.createPortal(
-             <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 animate-fade" onClick={() => setShowDice(false)}>
-                <div className="bg-gray-900 border border-purple-500 rounded-2xl p-6 shadow-2xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
-                   <h3 className="text-xl font-black text-white mb-4 text-center">🎲 Lancia Dado</h3>
-                   <div className="grid grid-cols-2 gap-4">
-                      <button onClick={() => rollDice(2)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl py-6 font-bold text-white shadow-lg active:scale-95 text-lg transition-all">🪙 Moneta (D2)</button>
-                      <button onClick={() => rollDice(6)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl py-6 font-bold text-white shadow-lg active:scale-95 text-lg transition-all">🎲 Dado (D6)</button>
-                      <button onClick={() => rollDice(20)} className="col-span-2 bg-purple-700 hover:bg-purple-600 border border-purple-500 rounded-xl py-6 font-black text-white shadow-[0_0_15px_rgba(168,85,247,0.5)] active:scale-95 text-2xl transition-all">✨ Dado Vita (D20)</button>
-                   </div>
-                   <button onClick={() => setShowDice(false)} className="w-full mt-4 bg-red-600 hover:bg-red-500 py-3 rounded-xl text-white font-bold transition-colors">Chiudi</button>
-                </div>
-             </div>
-          , document.body)}
-          
-          {diceResult && ReactDOM.createPortal(
-             <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none animate-fade">
-                <div className="bg-black/95 border-4 border-purple-500 w-48 h-48 rounded-full shadow-[0_0_60px_rgba(168,85,247,0.9)] flex flex-col items-center justify-center transform scale-150 animate-bounce">
-                   <span className="text-purple-400 font-black text-lg uppercase tracking-widest absolute top-6">D{diceResult.max}</span>
-                   <span className="text-white font-black text-7xl">{diceResult.val}</span>
-                </div>
-             </div>
-          , document.body)}
-        </div>
-      );
-    };
-
-    // --- CARTELLA GIOCATORE (SOLO GRAFICA DI GIOCO) ---
+    // --- CARTELLA GIOCATORE ---
     const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig }) => {
       const [isEditingName, setIsEditingName] = useState(false);
       const [tempName, setTempName] = useState(player.name);
@@ -2429,7 +2236,7 @@
       let isDead = false;
       if (!player.immune) {
          if (player.life <= 0) isDead = true; if (player.poison >= 10) isDead = true;
-         Object.keys(player.cmdDmg).forEach(key => { if (player.cmdDmg[key] >= 21) isDead = true; });
+         if (player.cmdDmg) { Object.keys(player.cmdDmg).forEach(key => { if (player.cmdDmg[key] >= 21) isDead = true; }); }
       }
 
       const saveName = () => { setIsEditingName(false); if(tempName.trim() !== "") updatePlayerConfig(player.id, 'name', tempName.trim()); else setTempName(player.name); };
@@ -2454,6 +2261,11 @@
                   {player.energy > 0 && <span className="text-blue-400 text-xs font-black drop-shadow-md">⚡{player.energy}</span>}
                   {player.exp > 0 && <span className="text-yellow-400 text-xs font-black drop-shadow-md">✨{player.exp}</span>}
                   {player.ticket > 0 && <span className="text-orange-400 text-xs font-black drop-shadow-md">🎫{player.ticket}</span>}
+                  {player.monarch && <span className="text-yellow-500 text-xs font-black drop-shadow-md">👑</span>}
+                  {player.initiative && <span className="text-red-400 text-xs font-black drop-shadow-md">🗡️</span>}
+                  {player.blessing && <span className="text-yellow-100 text-xs font-black drop-shadow-md">🏛️</span>}
+                  {player.dayNight === 'day' && <span className="text-yellow-300 text-xs font-black drop-shadow-md">☀️</span>}
+                  {player.dayNight === 'night' && <span className="text-indigo-300 text-xs font-black drop-shadow-md">🌙</span>}
                </div>
             </div>
             <div className="flex flex-col gap-1 z-30 shrink-0">
@@ -2464,14 +2276,14 @@
           
           <div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%] w-full">
             <button onClick={() => updateStat(player.id, 'life', -1)} className="w-1/4 h-full flex items-center justify-center text-6xl md:text-7xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
-            <div className="w-2/4 text-center text-7xl md:text-8xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)]">{player.life}</div>
+            <div className="w-2/4 text-center text-7xl md:text-9xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)]">{player.life}</div>
             <button onClick={() => updateStat(player.id, 'life', 1)} className="w-1/4 h-full flex items-center justify-center text-6xl md:text-7xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
           </div>
         </React.Fragment>
       );
     };
 
-    // --- GAME UTILITY (IL TAVOLO DA GIOCO CON GRIGLIA INTELLIGENTE) ---
+    // --- GAME UTILITY (IL TAVOLO DA GIOCO) ---
     const GameUtility = ({view, setView}) => {
       const [setup, setSetup] = useState(true);
       const [numPlayers, setNumPlayers] = useState(4);
@@ -2534,7 +2346,7 @@
       if (view === 'game') return (
         <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl shadow-lg border border-gray-600 mt-4 backdrop-blur-sm">
           <h2 className="text-3xl font-black mb-6 text-center text-red-500 drop-shadow-md">Setup Partita</h2>
-          <p className="text-xs text-center text-gray-300 font-bold mb-4 bg-gray-900 p-2 rounded border border-gray-700">📱 Metti il telefono al centro del tavolo: le postazioni si ruoteranno in automatico!</p>
+          <p className="text-xs text-center text-gray-300 font-bold mb-4 bg-gray-900 p-2 rounded border border-gray-700">📱 Metti il telefono in orizzontale al centro del tavolo: le postazioni si ruoteranno in automatico!</p>
           <div className="mb-4">
             <label className="block text-gray-300 font-bold mb-2">Numero Giocatori (1-6)</label>
             <input type="number" min="1" max="6" value={numPlayers} onChange={e => setNumPlayers(parseInt(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white text-center text-xl font-bold outline-none" />
@@ -2549,12 +2361,13 @@
         </div>
       );
 
-      // GRIGLIE DINAMICHE CON BARRA VERTICALE CENTRALE (Tra le colonne)
-      let gridClass = 'grid-cols-[1fr_50px_1fr] grid-rows-2';
-      if (players.length <= 2) gridClass = 'grid-cols-[1fr_50px_1fr] grid-rows-1';
-      else if (players.length === 3) gridClass = 'grid-cols-[1fr_50px_0.8fr] grid-rows-2';
-      else if (players.length === 5) gridClass = 'grid-cols-[1fr_1fr_50px_0.8fr] grid-rows-2';
-      else if (players.length === 6) gridClass = 'grid-cols-[1fr_50px_1fr] grid-rows-3';
+      // GRIGLIE DINAMICHE CON BARRA CENTRALE
+      let gridClass = '';
+      if (players.length <= 2) gridClass = 'grid-cols-1 grid-rows-[1fr_55px_1fr]';
+      else if (players.length === 3) gridClass = 'grid-cols-[1fr_55px_1fr] grid-rows-2';
+      else if (players.length === 4) gridClass = 'grid-cols-2 grid-rows-[1fr_55px_1fr]';
+      else if (players.length === 5) gridClass = 'grid-cols-[1fr_1fr_55px_1fr] grid-rows-2';
+      else if (players.length === 6) gridClass = 'grid-cols-3 grid-rows-[1fr_55px_1fr]';
 
       return (
         <div className="fixed inset-0 z-[100] bg-black flex flex-col h-[100dvh] w-[100dvw]">
@@ -2565,55 +2378,55 @@
                  let wrapperClass = "relative overflow-hidden rounded-xl border-2 border-gray-700 bg-gray-900"; 
                  let rotDeg = 0; let rowStart = ""; let colStart = ""; let rowSpan = "";
                  
-                 // POSIZIONAMENTO LOGICO
+                 // POSIZIONAMENTO LOGICO PERFETTO
                  if (players.length <= 2) {
-                     if (index === 0) { colStart = "col-start-1"; rotDeg = 90; }
-                     if (index === 1) { colStart = "col-start-3"; rotDeg = -90; }
+                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; } // Giocatore in alto
+                     if (index === 1) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }   // Giocatore in basso
                  } else if (players.length === 3) {
                      if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                      if (index === 1) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
-                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola destro
+                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola ruotato
                  } else if (players.length === 4) {
                      if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
-                     if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = 180; }
-                     if (index === 2) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
-                     if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-3"; rotDeg = 0; }
+                     if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
+                     if (index === 2) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }
+                     if (index === 3) { rowStart = "row-start-3"; colStart = "col-start-2"; rotDeg = 0; }
                  } else if (players.length === 5) {
                      if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                      if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
                      if (index === 2) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
                      if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
-                     if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-4"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola destro
+                     if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-4"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola ruotato
                  } else if (players.length === 6) {
-                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 90; }
-                     if (index === 1) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 90; }
-                     if (index === 2) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 90; }
-                     if (index === 3) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = -90; }
-                     if (index === 4) { rowStart = "row-start-2"; colStart = "col-start-3"; rotDeg = -90; }
-                     if (index === 5) { rowStart = "row-start-3"; colStart = "col-start-3"; rotDeg = -90; }
+                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
+                     if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
+                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = 180; }
+                     if (index === 3) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }
+                     if (index === 4) { rowStart = "row-start-3"; colStart = "col-start-2"; rotDeg = 0; }
+                     if (index === 5) { rowStart = "row-start-3"; colStart = "col-start-3"; rotDeg = 0; }
                  }
 
                  const isSideways = rotDeg === 90 || rotDeg === -90;
                  return (
-                     <div key={p.id} className={`${wrapperClass} ${rowStart} ${colStart} ${rowSpan}`} style={{ containerType: 'size' }}>
-                         <div className={`absolute flex flex-col bg-gray-900 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] ${isSideways ? 'top-1/2 left-1/2' : 'inset-0'}`} 
-                              style={{
-                                  width: isSideways ? '100cqh' : '100cqw', 
-                                  height: isSideways ? '100cqw' : '100cqh', 
-                                  transform: isSideways ? `translate(-50%, -50%) rotate(${rotDeg}deg)` : `rotate(${rotDeg}deg)`
-                              }}>
+                     <div key={p.id} className={`${wrapperClass} ${rowStart} ${colStart} ${rowSpan} flex items-center justify-center`}>
+                         <div className={`absolute w-full h-full flex flex-col justify-center`} 
+                              style={{ transform: `rotate(${rotDeg}deg)` }}>
                              <PlayerCard player={p} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} onOpenModal={(type) => setActiveModal({type, playerId: p.id})} />
                          </div>
                      </div>
                  );
              })}
 
-             {/* BARRA VERTICALE CENTRALE (Dadi, Reset, Stats Partita) */}
-             <div className={`row-start-1 row-span-full ${players.length===5 ? 'col-start-3' : 'col-start-2'} bg-gray-950 border-x border-gray-700 flex flex-col items-center justify-center gap-8 shadow-2xl z-[120] py-4`}>
-                <button onClick={() => setShowDice(true)} className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 w-10 h-10 rounded-xl shadow-lg border border-gray-600 transform transition-transform active:scale-90" title="Lancia Dadi">
-                    <span className="text-xl drop-shadow-md">🎲</span>
+             {/* LA BARRA CENTRALE (Dadi, Reset, Stats Partita) */}
+             <div className={
+                 players.length === 3 || players.length === 5 
+                 ? `row-start-1 row-span-full ${players.length===5 ? 'col-start-3' : 'col-start-2'} bg-gray-950 border-x border-gray-700 flex flex-col items-center justify-center gap-8 shadow-2xl z-[120] py-4`
+                 : "row-start-2 col-start-1 col-span-full bg-gray-950 border-y border-gray-700 flex flex-row items-center justify-center gap-10 shadow-2xl z-[120] py-2"
+             }>
+                <button onClick={() => setShowDice(true)} className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 w-12 h-12 rounded-xl shadow-lg border border-gray-600 transform transition-transform active:scale-90" title="Lancia Dadi">
+                    <span className="text-2xl drop-shadow-md">🎲</span>
                 </button>
-                <div className="w-6 h-px bg-gray-700"></div>
+                <div className={players.length === 3 || players.length === 5 ? "w-6 h-px bg-gray-700" : "w-px h-6 bg-gray-700"}></div>
                 <button onClick={resetGame} className="flex flex-col items-center gap-1 text-gray-400 font-bold hover:text-white transition-colors" title="Azzera e Ricomincia">
                     <span className="text-xl">🔄</span>
                 </button>
@@ -2623,7 +2436,7 @@
              </div>
           </div>
 
-          {/* RENDER MODALI GLOBALI (A TUTTO SCHERMO) */}
+          {/* RENDER MODALI GLOBALI IN PORTAL */}
           {activeModal && ReactDOM.createPortal(
               <PlayerModals 
                  type={activeModal.type} 
@@ -2647,7 +2460,7 @@
                       <button onClick={() => rollDice(6)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl py-6 font-bold text-white shadow-lg active:scale-95 text-lg transition-all">🎲 Dado (D6)</button>
                       <button onClick={() => rollDice(20)} className="col-span-2 bg-purple-700 hover:bg-purple-600 border border-purple-500 rounded-xl py-6 font-black text-white shadow-[0_0_15px_rgba(168,85,247,0.5)] active:scale-95 text-2xl transition-all">✨ Dado Vita (D20)</button>
                    </div>
-                   <button onClick={() => setShowDice(false)} className="w-full mt-4 bg-red-600 py-3 rounded-xl text-white font-bold">Chiudi</button>
+                   <button onClick={() => setShowDice(false)} className="w-full mt-4 bg-red-600 hover:bg-red-500 py-3 rounded-xl text-white font-bold transition-colors">Chiudi</button>
                 </div>
              </div>
           , document.body)}
