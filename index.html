@@ -2124,7 +2124,9 @@
                .then(data => {
                   if(data.data) {
                      const results = data.data.map(c => {
-                        let imgUrl = c.image_uris ? c.image_uris.art_crop : (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris ? c.card_faces[0].image_uris.art_crop : null);
+                        let imgUrl = "";
+                        if (c.image_uris && c.image_uris.art_crop) imgUrl = c.image_uris.art_crop;
+                        else if (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris && c.card_faces[0].image_uris.art_crop) imgUrl = c.card_faces[0].image_uris.art_crop;
                         return { id: c.id, name: c.name, img: imgUrl };
                      }).filter(c => c.img);
                      setCmdResults(results);
@@ -2235,7 +2237,7 @@
         return null;
     };
 
-    // --- CARTELLA GIOCATORE (PURA GRAFICA, NESSUN BOTTONE INTRALCIANTE) ---
+    // --- CARTELLA GIOCATORE (PURA GRAFICA) ---
     const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig }) => {
       const [isEditingName, setIsEditingName] = useState(false);
       const [tempName, setTempName] = useState(player.name);
@@ -2289,8 +2291,8 @@
         </React.Fragment>
       );
     };
-
-    // --- GAME UTILITY (IL TAVOLO DA GIOCO E BARRA CENTRALE) ---
+    
+    // --- GAME UTILITY E ARCHENEMY ---
     const GameUtility = ({view, setView}) => {
       const [setup, setSetup] = useState(true);
       const [numPlayers, setNumPlayers] = useState(4);
@@ -2299,22 +2301,35 @@
       
       const [showDice, setShowDice] = useState(false);
       const [diceResult, setDiceResult] = useState(null);
-      const [activeModal, setActiveModal] = useState(null); // { type, playerId, rotation }
+      const [activeModal, setActiveModal] = useState(null); 
       
       // STATO ARCHENEMY
       const [archenemy, setArchenemy] = useState({
-          active: false, playerId: null, schemes: [], ongoing: [], currentScheme: null, showModal: false, enlargedImage: null
+          active: false,
+          playerId: null,
+          schemes: [],
+          ongoing: [],
+          currentScheme: null,
+          showModal: false,
+          enlargedImage: null
       });
 
       useEffect(() => {
-          fetch('https://api.scryfall.com/cards/search?q=t:scheme').then(res => res.json()).then(data => {
-                  if (data.data) {
+          fetch('https://api.scryfall.com/cards/search?q=t:scheme')
+              .then(res => res.json())
+              .then(data => {
+                  if (data && data.data) {
                       let fetched = data.data.map(c => {
                           let imageUrl = "";
-                          if (c.image_uris && c.image_uris.normal) imageUrl = c.image_uris.normal;
-                          else if (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris) imageUrl = c.card_faces[0].image_uris.normal;
-                          return { id: c.id, name: c.name, img: imageUrl, isOngoing: (c.type_line||"").includes("Ongoing") };
-                      }).filter(c => c.img);
+                          if (c.image_uris && c.image_uris.normal) {
+                              imageUrl = c.image_uris.normal;
+                          } else if (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris && c.card_faces[0].image_uris.normal) {
+                              imageUrl = c.card_faces[0].image_uris.normal;
+                          }
+                          let isOng = false;
+                          if (c.type_line && c.type_line.includes("Ongoing")) isOng = true;
+                          return { id: c.id, name: c.name, img: imageUrl, isOngoing: isOng };
+                      }).filter(c => c.img !== "");
                       setArchenemy(prev => ({ ...prev, schemes: fetched.sort(() => Math.random() - 0.5) }));
                   }
               }).catch(e => console.log("Errore Archenemy"));
@@ -2389,10 +2404,12 @@
       if (view === 'game') return (
         <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl shadow-lg border border-gray-600 mt-4 backdrop-blur-sm animate-fade">
           <h2 className="text-3xl font-black mb-6 text-center text-red-500 drop-shadow-md">Setup Partita</h2>
+          
           <div className="bg-blue-900/50 border border-blue-500 rounded-lg p-4 mb-6 shadow-inner text-center">
              <p className="text-blue-200 text-sm font-bold uppercase tracking-wider mb-2">Posizione del Telefono:</p>
-             <p className="text-white text-xs font-semibold">2 Giocatori ➡️ Verticale<br/>3 - 6 Giocatori ➡️ Orizzontale al centro</p>
+             <p className="text-white text-xs font-semibold">2 Giocatori ➡️ Tieni in Verticale<br/>3 - 6 Giocatori ➡️ Tieni in Orizzontale</p>
           </div>
+
           <div className="mb-4">
             <label className="block text-gray-300 font-bold mb-2">Numero Giocatori (1-6)</label>
             <input type="number" min="1" max="6" value={numPlayers} onChange={e => setNumPlayers(parseInt(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white text-center text-xl font-bold outline-none" />
@@ -2407,13 +2424,19 @@
         </div>
       );
 
-      // --- LOGICA GRIGLIE E BARRA ---
+      // --- LOGICA GRIGLIE ---
       let gridClass = '';
       if (players.length <= 2) gridClass = 'grid-cols-1 grid-rows-[1fr_55px_1fr]';
       else if (players.length === 3) gridClass = 'grid-cols-[1fr_55px_1fr] grid-rows-2';
       else if (players.length === 4) gridClass = 'grid-cols-[1fr_55px_1fr] grid-rows-2';
       else if (players.length === 5) gridClass = 'grid-cols-[1fr_1fr_55px_1.2fr] grid-rows-2';
       else if (players.length === 6) gridClass = 'grid-cols-[1.2fr_1fr_55px_1fr_1.2fr] grid-rows-2';
+
+      let currentArchenemyName = "Sconosciuto";
+      if (archenemy.playerId) {
+          const archPlayer = players.find(p => p.id === archenemy.playerId);
+          if (archPlayer) currentArchenemyName = archPlayer.name;
+      }
 
       return (
         <div className="fixed inset-0 z-[100] bg-black flex flex-col h-[100dvh] w-[100dvw]">
@@ -2424,14 +2447,14 @@
                  let wrapperClass = "relative overflow-hidden rounded-xl border border-gray-600 bg-gray-900 shadow-xl"; 
                  let rotDeg = 0; let rowStart = ""; let colStart = ""; let rowSpan = "";
                  
-                 // POSIZIONAMENTO LOGICO MATEMATICO
+                 // POSIZIONAMENTO LOGICO
                  if (players.length <= 2) {
                      if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; } // Sopra
                      if (index === 1) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }   // Sotto
                  } else if (players.length === 3) {
                      if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                      if (index === 1) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
-                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola Destro
+                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rowSpan = "row-span-2"; rotDeg = -90; } // Destra Capotavola
                  } else if (players.length === 4) {
                      if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                      if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = 180; }
@@ -2442,14 +2465,14 @@
                      if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
                      if (index === 2) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
                      if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
-                     if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-4"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola Destro
+                     if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-4"; rowSpan = "row-span-2"; rotDeg = -90; } // Destra Capotavola
                  } else if (players.length === 6) {
-                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rowSpan = "row-span-2"; rotDeg = 90; }  // Capotavola Sinistro
+                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rowSpan = "row-span-2"; rotDeg = 90; }  // Sinistra Capotavola
                      if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
                      if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-4"; rotDeg = 180; }
                      if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
                      if (index === 4) { rowStart = "row-start-2"; colStart = "col-start-4"; rotDeg = 0; }
-                     if (index === 5) { rowStart = "row-start-1"; colStart = "col-start-5"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola Destro
+                     if (index === 5) { rowStart = "row-start-1"; colStart = "col-start-5"; rowSpan = "row-span-2"; rotDeg = -90; } // Destra Capotavola
                  }
 
                  const isSideways = rotDeg === 90 || rotDeg === -90;
@@ -2534,7 +2557,7 @@
                       ) : (
                          <div className="flex-1 flex flex-col">
                             <p className="text-center text-red-400 font-black mb-2 bg-red-900/30 p-2 rounded border border-red-800 uppercase tracking-widest">
-                               🔥 {players.find(p=>p.id===archenemy.playerId)?.name} È IL NEMICO 🔥
+                               🔥 {currentArchenemyName} È IL NEMICO 🔥
                             </p>
                             
                             {/* Schemi Permanenti in alto */}
