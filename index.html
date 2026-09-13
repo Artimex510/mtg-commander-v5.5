@@ -1734,46 +1734,6 @@
       );
     };
 
-// --- HELPER MATEMATICI PER PROBABILITA' (IPERGEOMETRICA) ---
-    const calcCombinations = (n, k) => {
-        if (k < 0 || k > n) return 0;
-        if (k === 0 || k === n) return 1;
-        let res = 1;
-        for (let i = 1; i <= k; i++) { res = res * (n - i + 1) / i; }
-        return res;
-    };
-    const calcHypergeometric = (popSize, successPop, sampleSize, successSample) => {
-        if (sampleSize > popSize || successPop > popSize) return 0;
-        return (calcCombinations(successPop, successSample) * calcCombinations(popSize - successPop, sampleSize - successSample)) / calcCombinations(popSize, sampleSize);
-    };
-    const calcAtLeast = (popSize, successPop, sampleSize, minSuccess) => {
-        let prob = 0;
-        for (let i = minSuccess; i <= Math.min(successPop, sampleSize); i++) {
-            prob += calcHypergeometric(popSize, successPop, sampleSize, i);
-        }
-        return (prob * 100).toFixed(1);
-    };
-
-    // --- HELPER MATEMATICI PER PROBABILITA' (IPERGEOMETRICA) ---
-    const calcCombinations = (n, k) => {
-        if (k < 0 || k > n) return 0;
-        if (k === 0 || k === n) return 1;
-        let res = 1;
-        for (let i = 1; i <= k; i++) { res = res * (n - i + 1) / i; }
-        return res;
-    };
-    const calcHypergeometric = (popSize, successPop, sampleSize, successSample) => {
-        if (sampleSize > popSize || successPop > popSize) return 0;
-        return (calcCombinations(successPop, successSample) * calcCombinations(popSize - successPop, sampleSize - successSample)) / calcCombinations(popSize, sampleSize);
-    };
-    const calcAtLeast = (popSize, successPop, sampleSize, minSuccess) => {
-        let prob = 0;
-        for (let i = minSuccess; i <= Math.min(successPop, sampleSize); i++) {
-            prob += calcHypergeometric(popSize, successPop, sampleSize, i);
-        }
-        return (prob * 100).toFixed(1);
-    };
-
     // --- HELPER MATEMATICI PER PROBABILITA' (IPERGEOMETRICA) ---
     const calcCombinations = (n, k) => {
         if (k < 0 || k > n) return 0;
@@ -1796,7 +1756,6 @@
 
     // --- DECK ANALYSIS E CONDIVISIONE ---
     const DeckAnalysis = ({deck, navigate}) => {
-        // ARRAY COLORI MANA AGGIUNTO QUI PER NON FAR CRASHARE I GRAFICI
         const ManaColors = [ { id: 'W', color: 'bg-yellow-100 text-yellow-900', label: 'W' }, { id: 'U', color: 'bg-blue-500 text-white', label: 'U' }, { id: 'B', color: 'bg-gray-800 text-white', label: 'B' }, { id: 'R', color: 'bg-red-500 text-white', label: 'R' }, { id: 'G', color: 'bg-green-500 text-white', label: 'G' }, { id: 'C', color: 'bg-gray-400 text-gray-900', label: 'C' } ];
 
         const [showBudgetModal, setShowBudgetModal] = useState(false);
@@ -1814,9 +1773,10 @@
 
         if(!deck) return null;
 
-        const listText = (deck && deck.cards) ? deck.cards.map(c => `1 ${c.name}`).join('\n') : "";
-        const formatName = deck.format || "Commander";
-        const cmds = (deck && deck.cards) ? deck.cards.filter(c => c.isCommander) : [];
+        const isDeckCardsArray = Array.isArray(deck.cards);
+        const listText = (deck && isDeckCardsArray) ? deck.cards.map(c => `1 ${c.name}`).join('\n') : "";
+        const formatName = String(deck.format || "Commander");
+        const cmds = (deck && isDeckCardsArray) ? deck.cards.filter(c => c.isCommander) : [];
         const cmdName = cmds.length > 0 ? cmds[0].name : "Nessun Comandante";
 
         const copyPrompt = (type) => {
@@ -1837,7 +1797,7 @@
         };
 
         const openMtggoldfish = () => {
-            const fmt = formatName.toLowerCase().replace(" ", "");
+            const fmt = String(formatName).toLowerCase().replace(" ", "");
             window.open(`https://www.mtggoldfish.com/metagame/${fmt}#paper`, '_blank');
         };
 
@@ -1852,21 +1812,22 @@
         const GAMECHANGERS = Object.keys(GC_COLORS);
         let gameChangerCards = []; let deckBracket = 2;
 
-        if (deck && deck.cards) {
+        if (deck && isDeckCardsArray) {
             gameChangerCards = deck.cards.filter(c => GAMECHANGERS.includes(c.name));
             if (gameChangerCards.length === 0) deckBracket = 2;
             else if (gameChangerCards.length >= 1 && gameChangerCards.length <= 3) deckBracket = 3;
             else deckBracket = 4;
         }
 
+        const deckNames = (deck && isDeckCardsArray) ? deck.cards.map(c => c.name) : [];
+
         const findAlternatives = (card) => {
             setAltTarget(card); setShowAltModal(true); setAltLoading(true); setAltResults([]);
             let typeQuery = "t:land";
-            if (card.type) {
-                const t = card.type.toLowerCase();
-                if (t.includes("creature")) typeQuery = "t:creature"; else if (t.includes("enchantment")) typeQuery = "t:enchantment"; else if (t.includes("artifact")) typeQuery = "t:artifact"; else if (t.includes("instant")) typeQuery = "t:instant"; else if (t.includes("sorcery")) typeQuery = "t:sorcery"; else if (t.includes("planeswalker")) typeQuery = "t:planeswalker";
-            }
-            let colorQuery = "c:c"; if (card.colors && card.colors.length > 0) colorQuery = "c<=" + card.colors.join('');
+            const t = String(card.type || card.type_line || "").toLowerCase();
+            if (t.includes("creature")) typeQuery = "t:creature"; else if (t.includes("enchantment")) typeQuery = "t:enchantment"; else if (t.includes("artifact")) typeQuery = "t:artifact"; else if (t.includes("instant")) typeQuery = "t:instant"; else if (t.includes("sorcery")) typeQuery = "t:sorcery"; else if (t.includes("planeswalker")) typeQuery = "t:planeswalker";
+            
+            let colorQuery = "c:c"; if (Array.isArray(card.colors) && card.colors.length > 0) colorQuery = "c<=" + card.colors.join('');
             
             fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(`${typeQuery} ${colorQuery} eur<5 -name:"${card.name}" sort:edhrec`)}`).then(res => res.json()).then(data => {
                 if (data.data) setAltResults(data.data.filter(c => !deckNames.includes(c.name) && !GAMECHANGERS.includes(c.name)).slice(0, 5));
@@ -1875,10 +1836,10 @@
         };
 
         const deckColors = new Set();
-        if (deck && deck.cards) { deck.cards.forEach(c => { if (c.isCommander && c.colors) c.colors.forEach(col => deckColors.add(col)); }); }
-        const deckNames = (deck && deck.cards) ? deck.cards.map(c => c.name) : [];
+        if (deck && isDeckCardsArray) { deck.cards.forEach(c => { if (c.isCommander && Array.isArray(c.colors)) c.colors.forEach(col => deckColors.add(col)); }); }
+        
         const upgradeSuggestions = GAMECHANGERS.filter(name => !deckNames.includes(name)).filter(name => {
-            const reqColors = GC_COLORS[name];
+            const reqColors = GC_COLORS[name] || [];
             if (reqColors.length === 0) return true;
             if (deckColors.size === 0) return false;
             return reqColors.every(col => deckColors.has(col));
@@ -1892,28 +1853,23 @@
             });
         };
 
-        // --- MOTORE ANALISI MAZZO (Tipi, Fonti Mana, Strategia) ---
+        // --- MOTORE ANALISI MAZZO ANTI-CRASH ---
         let totalCards = 0; let avgCMC = 0;
         const curve = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, '6+':0}; let maxCurve = 0; 
-        
-        // TIPI CARTA
         const typeCounts = { Creature:0, Artifact:0, Enchantment:0, Instant:0, Sorcery:0, Planeswalker:0, Land:0 };
-        // FONTI DI MANA REALI
         const manaSources = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
         const spellColors = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 }; let maxSpellColor = 0;
         const landColors = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 }; let maxLandColor = 0;
-        // ANALISI STRATEGICA
         const roles = { ramp: 0, draw: 0, recursion: 0, counter: 0, wipe: 0, tutor: 0 };
 
-        if (deck && deck.cards) {
+        if (deck && isDeckCardsArray) {
             const mainboard = deck.cards.filter(c => !c.isSideboard && !c.isCompanion);
             totalCards = mainboard.length;
             
             mainboard.forEach(c => {
-               const typeLower = (c.type || "").toLowerCase();
-               const oracleLower = (c.oracle_text || "").toLowerCase();
+               const typeLower = String(c.type || c.type_line || "").toLowerCase();
+               const oracleLower = String(c.oracle_text || "").toLowerCase();
 
-               // Conteggio Tipi
                if (typeLower.includes('creature')) typeCounts.Creature++;
                else if (typeLower.includes('land')) typeCounts.Land++;
                else if (typeLower.includes('artifact')) typeCounts.Artifact++;
@@ -1922,26 +1878,29 @@
                else if (typeLower.includes('sorcery')) typeCounts.Sorcery++;
                else if (typeLower.includes('planeswalker')) typeCounts.Planeswalker++;
 
-               // Curva e Colori Magie (Escludi terre)
-               if(!typeLower.includes('land')) {
-                  let cmc = c.cmc || 0; if (cmc >= 6) curve['6+']++; else curve[cmc]++;
-                  if (c.colors && c.colors.length > 0) c.colors.forEach(col => { if(spellColors[col] !== undefined) spellColors[col]++; });
-                  else spellColors['C']++;
+               const isLand = typeLower.includes('land');
+               
+               if(!isLand) {
+                  let cmc = Number(c.cmc) || 0; 
+                  if (cmc >= 6) curve['6+']++; else curve[cmc]++;
+                  
+                  if (Array.isArray(c.colors) && c.colors.length > 0) {
+                      c.colors.forEach(col => { if(spellColors[col] !== undefined) spellColors[col]++; });
+                  } else { spellColors['C']++; }
                } else {
-                  if (c.color_identity && c.color_identity.length > 0) c.color_identity.forEach(col => { if(landColors[col] !== undefined) landColors[col]++; });
-                  else landColors['C']++;
+                  if (Array.isArray(c.color_identity) && c.color_identity.length > 0) {
+                      c.color_identity.forEach(col => { if(landColors[col] !== undefined) landColors[col]++; });
+                  } else { landColors['C']++; }
                }
 
-               // Lettura Fonti di Mana (Prodotte realmente da Scryfall, include Sassi e Dork!)
-               if (c.produced_mana) {
+               if (Array.isArray(c.produced_mana)) {
                    c.produced_mana.forEach(m => {
                        if (manaSources[m] !== undefined) manaSources[m]++;
                    });
                }
 
-               // Lettura Strategica tramite Oracle Text
-               if (!typeLower.includes('land')) {
-                   if (c.produced_mana || oracleLower.includes("search your library for a basic land") || oracleLower.includes("put it onto the battlefield tapped")) roles.ramp++;
+               if (!isLand) {
+                   if (Array.isArray(c.produced_mana) || oracleLower.includes("search your library for a basic land") || oracleLower.includes("put it onto the battlefield tapped")) roles.ramp++;
                    if (oracleLower.includes("draw ") && !oracleLower.includes("draw the game")) roles.draw++;
                    if (oracleLower.includes("return target") && oracleLower.includes("graveyard")) roles.recursion++;
                    if (oracleLower.includes("counter target spell")) roles.counter++;
@@ -1950,17 +1909,18 @@
                }
             });
 
-            avgCMC = mainboard.filter(c => !(c.type || "").toLowerCase().includes('land')).reduce((acc, c) => acc + (c.cmc || 0), 0) / (totalCards - typeCounts.Land || 1);
+            const nonLandCount = totalCards - typeCounts.Land;
+            avgCMC = mainboard.filter(c => !String(c.type || "").toLowerCase().includes('land')).reduce((acc, c) => acc + (Number(c.cmc) || 0), 0) / (nonLandCount > 0 ? nonLandCount : 1);
+            
             Object.values(curve).forEach(v => { if(v > maxCurve) maxCurve = v; });
             Object.values(spellColors).forEach(v => { if(v > maxSpellColor) maxSpellColor = v; });
             Object.values(landColors).forEach(v => { if(v > maxLandColor) maxLandColor = v; });
         }
 
         const typeTotalNonLand = totalCards - typeCounts.Land;
-
-        // Calcolo Grafico a Torta (Conic Gradient)
         const totalSources = Object.values(manaSources).reduce((a,b)=>a+b, 0);
-        let pieGradient = "conic-gradient(";
+        
+        let pieGradient = "none";
         if (totalSources > 0) {
             let currentPerc = 0;
             const colors = { W: '#fef3c7', U: '#3b82f6', B: '#374151', R: '#ef4444', G: '#22c55e', C: '#9ca3af' };
@@ -1972,8 +1932,8 @@
                     currentPerc += perc;
                 }
             });
-            pieGradient += segments.join(', ') + ")";
-        } else { pieGradient = "none"; }
+            if (segments.length > 0) pieGradient = `conic-gradient(${segments.join(', ')})`;
+        }
 
         let probPlayableHand = 0;
         if (totalCards > 0 && typeCounts.Land > 0) {
@@ -1982,8 +1942,8 @@
             const p4 = calcHypergeometric(totalCards, typeCounts.Land, 7, 4);
             probPlayableHand = ((p2 + p3 + p4) * 100).toFixed(1);
         }
-      
-        return (
+
+      return (
            <div className="max-w-2xl mx-auto space-y-4">
              <button onClick={() => navigate('mydecks')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-2 shadow transition-colors">⬅ Indietro ai Mazzi</button>
              
@@ -1997,7 +1957,7 @@
                <div className="grid grid-cols-3 gap-2 mb-6 text-center">
                  <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
                     <p className="text-xs text-gray-400 font-bold uppercase">Carte</p>
-                    <p className={`text-2xl font-black ${totalCards===(formatName.toLowerCase()==='commander'?100:60) ? 'text-green-400':'text-red-400'}`}>{totalCards}</p>
+                    <p className={`text-2xl font-black ${totalCards===(String(formatName).toLowerCase()==='commander'?100:60) ? 'text-green-400':'text-red-400'}`}>{totalCards}</p>
                  </div>
                  <div className="bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-inner">
                     <p className="text-xs text-gray-400 font-bold uppercase">Terre</p>
@@ -2043,12 +2003,12 @@
                            <p className="text-gray-500 text-xs font-bold text-center">Nessuna fonte rilevata</p>
                        )}
                        <div className="flex flex-wrap justify-center gap-3 mt-4">
-                           {ManaColors.map(m => manaSources[m.id] > 0 && (
+                           {ManaColors.map(m => (manaSources[m.id] > 0) ? (
                                <div key={m.id} className="flex items-center gap-1">
-                                   <span className={`w-3 h-3 rounded-full ${m.color.split(' ')[0]} border border-gray-500`}></span>
+                                   <span className={`w-3 h-3 rounded-full ${String(m.color).split(' ')[0]} border border-gray-500`}></span>
                                    <span className="text-[10px] text-gray-300 font-bold">{manaSources[m.id]}</span>
                                </div>
-                           ))}
+                           ) : null)}
                        </div>
                    </div>
                </div>
@@ -2104,7 +2064,7 @@
                  <button onClick={() => setShowHyperModal(true)} className="w-full bg-teal-700 hover:bg-teal-600 text-white font-black py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all">🧮 CALCOLATORE PROBABILITÀ</button>
                  
                  {/* --- SEZIONE BRACKET COMMANDER --- */}
-                 {formatName.toLowerCase() === 'commander' && (
+                 {String(formatName).toLowerCase() === 'commander' && (
                      <div className="bg-gray-800 p-4 rounded-xl border-2 border-orange-500 shadow-lg mt-6">
                          <div className="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
                              <h3 className="text-xl font-black text-white flex items-center gap-2">⚖️ Commander Bracket</h3>
@@ -2210,7 +2170,7 @@
                      </div>
                  , document.body)}
 
-                 {/* MODALI RIDUCI E AUMENTA POTENZA */}
+                 {/* MODALI RIDUCI E AUMENTA POTENZA (Esistenti) */}
                  {showAltModal && altTarget && ReactDOM.createPortal(
                      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 animate-fade">
                          <div className="bg-gray-800 border-2 border-orange-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
@@ -2226,7 +2186,7 @@
                                          <div key={idx} className="bg-gray-900 p-2 rounded-lg border border-gray-600 flex justify-between items-center group cursor-pointer" onClick={() => { navigator.clipboard.writeText(res.name); alert('Copiato: ' + res.name); }}>
                                              <div className="flex-1 truncate pr-2">
                                                  <p className="text-white font-bold text-sm group-hover:text-orange-400 truncate">{res.name} 📋</p>
-                                                 <p className="text-[10px] text-gray-400 truncate">{res.type_line}</p>
+                                                 <p className="text-[10px] text-gray-400 truncate">{String(res.type_line)}</p>
                                              </div>
                                              <span className="bg-emerald-800 text-emerald-200 px-2 py-1 rounded text-xs font-black shadow whitespace-nowrap">
                                                  €{res.prices && res.prices.eur ? res.prices.eur : '-'}
