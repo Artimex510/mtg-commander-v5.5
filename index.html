@@ -2303,7 +2303,7 @@
       );
     };
 
-    // --- GAME UTILITY E ARCHENEMY CON BLOCCO SCHERMO INTELLIGENTE ---
+    // --- GAME UTILITY, ARCHENEMY E GESTIONE SCHERMO (WAKE LOCK + ROTATION) ---
     const GameUtility = ({view, setView}) => {
       const [setup, setSetup] = useState(true);
       const [numPlayers, setNumPlayers] = useState(4);
@@ -2318,12 +2318,12 @@
           active: false, playerId: null, schemes: [], ongoing: [], currentScheme: null, showModal: false, enlargedImage: null
       });
 
-      // Riferimenti per leggere lo stato attuale all'interno degli Event Listener
+      const wakeLockRef = React.useRef(null);
       const stateRef = React.useRef({ numPlayers, archenemy, activeModal });
       useEffect(() => { stateRef.current = { numPlayers, archenemy, activeModal }; }, [numPlayers, archenemy, activeModal]);
 
-      // FUNZIONE PER APPLICARE E FORZARE IL BLOCCO DELLO SCHERMO
-      const applyScreenLock = async (forcePortrait = false) => {
+      // FORZATURA SCHERMO (FULLSCREEN + ROTAZIONE)
+      const applyScreenLock = async (forcePortrait = false, playersCount = numPlayers) => {
           try {
               if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
                   await document.documentElement.requestFullscreen();
@@ -2332,22 +2332,48 @@
                   if (forcePortrait) {
                       await window.screen.orientation.lock('portrait');
                   } else {
-                      if (numPlayers <= 2) await window.screen.orientation.lock('portrait');
+                      if (playersCount <= 2) await window.screen.orientation.lock('portrait');
                       else await window.screen.orientation.lock('landscape');
                   }
               }
-          } catch (e) { console.log("Fullscreen o Blocco non supportati", e); }
+          } catch (e) { console.log("Fullscreen o Blocco non supportati o bloccati dal browser."); }
       };
 
-      // Applica il blocco all'avvio e quando apriamo Archenemy/Search
+      // WAKE LOCK (IMPEDISCE ALLO SCHERMO DI SPEGNERSI DURANTE LA PARTITA)
+      const requestWakeLock = async () => {
+          try {
+              if ('wakeLock' in navigator) {
+                  wakeLockRef.current = await navigator.wakeLock.request('screen');
+              }
+          } catch (err) { console.log("Wake Lock non supportato."); }
+      };
+
       useEffect(() => {
           if (view === 'game_active') {
               const isVerticalMode = archenemy.showModal || (activeModal && activeModal.type === 'search');
-              applyScreenLock(isVerticalMode);
+              applyScreenLock(isVerticalMode, numPlayers);
+              requestWakeLock();
+              
+              // Se si esce e rientra nell'app (es. da un'altra app), ripristina blocco e Wake Lock
+              const handleVisibilityChange = () => {
+                  if (document.visibilityState === 'visible' && view === 'game_active') {
+                      requestWakeLock();
+                      applyScreenLock(isVerticalMode, numPlayers);
+                  }
+              };
+              document.addEventListener('visibilitychange', handleVisibilityChange);
+              return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
           }
-      }, [archenemy.showModal, activeModal, numPlayers, view]);
+      }, [view, numPlayers, archenemy.showModal, activeModal]);
 
-      // GESTIONE DEL TASTO INDIETRO DELLO SMARTPHONE (Anti-Uscita Accidentale)
+      // PULIZIA WAKE LOCK ALLA CHIUSURA ASSOLUTA
+      useEffect(() => {
+          return () => {
+              if (wakeLockRef.current) { wakeLockRef.current.release().catch(()=>{}); }
+          }
+      }, []);
+
+      // BLOCCO DEL TASTO INDIETRO (ANTI-USCITA)
       useEffect(() => {
           if (view === 'game_active') {
               const handlePopState = async (e) => {
@@ -2355,22 +2381,14 @@
                   if (window.confirm("Sei sicuro di voler uscire dalla partita e tornare al Menu?")) {
                       if (document.exitFullscreen) document.exitFullscreen().catch(err=>{});
                       if (window.screen && window.screen.orientation && window.screen.orientation.unlock) window.screen.orientation.unlock();
+                      if (wakeLockRef.current) wakeLockRef.current.release().catch(()=>{});
                       setView('game');
                   } else {
-                      // Se l'utente ANNULLA, ri-forziamo la pagina in avanti per non uscire
                       window.history.pushState(null, "", window.location.href);
-                      
-                      // E ri-applichiamo il Fullscreen/Lock che il browser potrebbe aver fatto saltare
                       const curr = stateRef.current;
                       const isVertical = curr.archenemy.showModal || (curr.activeModal && curr.activeModal.type === 'search');
-                      try {
-                          if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
-                          if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
-                              if (isVertical) await window.screen.orientation.lock('portrait');
-                              else if (curr.numPlayers <= 2) await window.screen.orientation.lock('portrait');
-                              else await window.screen.orientation.lock('landscape');
-                          }
-                      } catch(err){}
+                      // Ritenta il blocco in automatico
+                      applyScreenLock(isVertical, curr.numPlayers);
                   }
               };
               window.history.pushState(null, "", window.location.href);
@@ -2428,7 +2446,12 @@
           if (window.confirm("Sei sicuro di voler uscire e tornare al Menu?")) { 
               if (document.exitFullscreen) document.exitFullscreen().catch(e=>console.log(e));
               if (window.screen && window.screen.orientation && window.screen.orientation.unlock) window.screen.orientation.unlock();
+              if (wakeLockRef.current) wakeLockRef.current.release().catch(()=>{});
               setView('game'); 
+          } else {
+              // Se annulla, riforziamo lo schermo
+              const isVerticalMode = archenemy.showModal || (activeModal && activeModal.type === 'search');
+              applyScreenLock(isVerticalMode, numPlayers);
           }
       };
 
@@ -2550,7 +2573,7 @@
                  );
              })}
 
-             {/* LA BARRA CENTRALE (Esci, Dadi, Archenemy, Reset) */}
+             {/* LA BARRA CENTRALE */}
              <div className={
                  players.length <= 2 
                  ? "row-start-2 col-start-1 col-span-full bg-gray-950 border-y border-gray-700 flex flex-row items-center justify-around shadow-2xl z-[120] py-1 px-4"
@@ -2573,12 +2596,12 @@
              </div>
           </div>
 
-          {/* RENDER MODALI GLOBALI (Ruotati verso il giocatore) */}
+          {/* RENDER MODALI GLOBALI IN PORTAL */}
           {activeModal && ReactDOM.createPortal(
               <PlayerModals type={activeModal.type} player={players.find(p => p.id === activeModal.playerId)} opponents={players.filter(p => p.id !== activeModal.playerId)} onClose={() => setActiveModal(null)} updateStat={updateStat} updateMana={updateMana} toggleImmunity={toggleImmunity} updatePlayerConfig={updatePlayerConfig} rotation={activeModal.rotation} />
           , document.body)}
 
-          {/* MODALE ARCHENEMY (Verticale Forzato) */}
+          {/* MODALE ARCHENEMY */}
           {archenemy.showModal && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-gray-900 z-[9999] flex flex-col p-4 animate-fade overflow-hidden">
                 <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2 shrink-0">
@@ -2610,7 +2633,6 @@
                                🔥 {currentArchenemyName} È IL NEMICO 🔥
                             </p>
                             
-                            {/* Schemi Permanenti in alto */}
                             {archenemy.ongoing.length > 0 && (
                                <div className="mb-4 bg-gray-800 p-3 rounded-xl border border-purple-500 shadow-inner shrink-0">
                                   <p className="text-purple-400 text-xs font-bold uppercase mb-2">Schemi Permanenti (Ongoing):</p>
@@ -2622,7 +2644,6 @@
                                </div>
                             )}
 
-                            {/* Schema Attuale Centrale */}
                             <div className="flex-1 flex flex-col items-center justify-center mb-4 min-h-0">
                                {archenemy.currentScheme ? (
                                   <div className="relative group cursor-pointer h-full flex items-center justify-center" onClick={() => setArchenemy(prev => ({...prev, enlargedImage: archenemy.currentScheme.img}))}>
@@ -2644,7 +2665,6 @@
              </div>
           , document.body)}
 
-          {/* ZOOM IMMAGINE SCHEMI E DADI */}
           {archenemy.enlargedImage && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-black/95 z-[10000] flex items-center justify-center p-4 animate-fade" onClick={() => setArchenemy(prev => ({...prev, enlargedImage: null}))}>
                 <img src={archenemy.enlargedImage} className="max-w-full max-h-[90vh] rounded-xl shadow-2xl border border-gray-600" />
