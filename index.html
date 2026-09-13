@@ -2135,16 +2135,18 @@
                }).catch(e => { console.error(e); setIsSearching(false); });
          };
 
-        // WRAPPER INTELLIGENTE: Se il giocatore è girato di 90 gradi, inverte width e height per non tagliare la finestra!
+        // WRAPPER INTELLIGENTE: Per le Stats e Mana adatta la rotazione senza tagliare.
+        // Se è 'search', la rotazione viene azzerata perché il sistema blocca fisicamente il telefono in verticale!
+        const effectiveRotation = type === 'search' ? 0 : rotation;
         const Wrapper = ({ children }) => {
-            const isSideways = rotation === 90 || rotation === -90;
+            const isSideways = effectiveRotation === 90 || effectiveRotation === -90;
             const modalStyle = {
                 width: isSideways ? '100vh' : '100vw',
                 height: isSideways ? '100vw' : '100vh',
-                transform: `rotate(${rotation}deg)`
+                transform: `rotate(${effectiveRotation}deg)`
             };
             return (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-sm overflow-hidden">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-md overflow-hidden">
                     <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-4 sm:p-6 pointer-events-auto" style={modalStyle}>
                         {children}
                     </div>
@@ -2246,7 +2248,7 @@
         return null;
     };
 
-    // --- CARTELLA GIOCATORE (DIMENSIONI FONT OTTIMIZZATE) ---
+    // --- CARTELLA GIOCATORE (PUNTI VITA RIDOTTI PER NON SOVRAPPORSI) ---
     const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig }) => {
       const [isEditingName, setIsEditingName] = useState(false);
       const [tempName, setTempName] = useState(player.name);
@@ -2294,14 +2296,14 @@
           
           <div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%] w-full">
             <button onClick={() => updateStat(player.id, 'life', -1)} className="w-1/4 h-full flex items-center justify-center text-5xl md:text-6xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
-            <div className="w-2/4 text-center text-6xl md:text-7xl lg:text-8xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)] truncate">{player.life}</div>
+            <div className="w-2/4 text-center text-5xl md:text-6xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)] truncate">{player.life}</div>
             <button onClick={() => updateStat(player.id, 'life', 1)} className="w-1/4 h-full flex items-center justify-center text-5xl md:text-6xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
           </div>
         </React.Fragment>
       );
     };
-    
-    // --- GAME UTILITY E ARCHENEMY ---
+
+    // --- GAME UTILITY E ARCHENEMY CON BLOCCO SCHERMO INTELLIGENTE ---
     const GameUtility = ({view, setView}) => {
       const [setup, setSetup] = useState(true);
       const [numPlayers, setNumPlayers] = useState(4);
@@ -2312,28 +2314,63 @@
       const [diceResult, setDiceResult] = useState(null);
       const [activeModal, setActiveModal] = useState(null); 
       
-      // STATO ARCHENEMY
       const [archenemy, setArchenemy] = useState({
-          active: false,
-          playerId: null,
-          schemes: [],
-          ongoing: [],
-          currentScheme: null,
-          showModal: false,
-          enlargedImage: null
+          active: false, playerId: null, schemes: [], ongoing: [], currentScheme: null, showModal: false, enlargedImage: null
       });
 
-      // BLOCCO DEL TASTO INDIETRO E ORIENTAMENTO
+      // Riferimenti per leggere lo stato attuale all'interno degli Event Listener
+      const stateRef = React.useRef({ numPlayers, archenemy, activeModal });
+      useEffect(() => { stateRef.current = { numPlayers, archenemy, activeModal }; }, [numPlayers, archenemy, activeModal]);
+
+      // FUNZIONE PER APPLICARE E FORZARE IL BLOCCO DELLO SCHERMO
+      const applyScreenLock = async (forcePortrait = false) => {
+          try {
+              if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+                  await document.documentElement.requestFullscreen();
+              }
+              if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+                  if (forcePortrait) {
+                      await window.screen.orientation.lock('portrait');
+                  } else {
+                      if (numPlayers <= 2) await window.screen.orientation.lock('portrait');
+                      else await window.screen.orientation.lock('landscape');
+                  }
+              }
+          } catch (e) { console.log("Fullscreen o Blocco non supportati", e); }
+      };
+
+      // Applica il blocco all'avvio e quando apriamo Archenemy/Search
       useEffect(() => {
           if (view === 'game_active') {
-              const handlePopState = (e) => {
+              const isVerticalMode = archenemy.showModal || (activeModal && activeModal.type === 'search');
+              applyScreenLock(isVerticalMode);
+          }
+      }, [archenemy.showModal, activeModal, numPlayers, view]);
+
+      // GESTIONE DEL TASTO INDIETRO DELLO SMARTPHONE (Anti-Uscita Accidentale)
+      useEffect(() => {
+          if (view === 'game_active') {
+              const handlePopState = async (e) => {
                   e.preventDefault();
                   if (window.confirm("Sei sicuro di voler uscire dalla partita e tornare al Menu?")) {
                       if (document.exitFullscreen) document.exitFullscreen().catch(err=>{});
                       if (window.screen && window.screen.orientation && window.screen.orientation.unlock) window.screen.orientation.unlock();
                       setView('game');
                   } else {
+                      // Se l'utente ANNULLA, ri-forziamo la pagina in avanti per non uscire
                       window.history.pushState(null, "", window.location.href);
+                      
+                      // E ri-applichiamo il Fullscreen/Lock che il browser potrebbe aver fatto saltare
+                      const curr = stateRef.current;
+                      const isVertical = curr.archenemy.showModal || (curr.activeModal && curr.activeModal.type === 'search');
+                      try {
+                          if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+                          if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+                              if (isVertical) await window.screen.orientation.lock('portrait');
+                              else if (curr.numPlayers <= 2) await window.screen.orientation.lock('portrait');
+                              else await window.screen.orientation.lock('landscape');
+                          }
+                      } catch(err){}
                   }
               };
               window.history.pushState(null, "", window.location.href);
@@ -2343,19 +2380,13 @@
       }, [view, setView]);
 
       useEffect(() => {
-          fetch('https://api.scryfall.com/cards/search?q=t:scheme')
-              .then(res => res.json())
-              .then(data => {
+          fetch('https://api.scryfall.com/cards/search?q=t:scheme').then(res => res.json()).then(data => {
                   if (data && data.data) {
                       let fetched = data.data.map(c => {
                           let imageUrl = "";
-                          if (c.image_uris && c.image_uris.normal) {
-                              imageUrl = c.image_uris.normal;
-                          } else if (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris && c.card_faces[0].image_uris.normal) {
-                              imageUrl = c.card_faces[0].image_uris.normal;
-                          }
-                          let isOng = false;
-                          if (c.type_line && c.type_line.includes("Ongoing")) isOng = true;
+                          if (c.image_uris && c.image_uris.normal) imageUrl = c.image_uris.normal;
+                          else if (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris && c.card_faces[0].image_uris.normal) imageUrl = c.card_faces[0].image_uris.normal;
+                          let isOng = false; if (c.type_line && c.type_line.includes("Ongoing")) isOng = true;
                           return { id: c.id, name: c.name, img: imageUrl, isOngoing: isOng };
                       }).filter(c => c.img !== "");
                       setArchenemy(prev => ({ ...prev, schemes: fetched.sort(() => Math.random() - 0.5) }));
@@ -2370,7 +2401,7 @@
          setTimeout(() => setDiceResult(null), 2500);
       };
 
-      const startGame = async () => {
+      const startGame = () => {
         let newPlayers = [];
         for(let i=1; i<=numPlayers; i++) {
           let cmdDmg = {}; for(let j=1; j<=numPlayers; j++) { if(i!==j) cmdDmg[`P${j}`] = 0; }
@@ -2381,24 +2412,13 @@
         }
         setPlayers(newPlayers); 
         setView('game_active');
-
-        // FORZA IL FULLSCREEN E L'ORIENTAMENTO SCHERMO
-        try {
-            if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
-            if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
-                if (numPlayers <= 2) await window.screen.orientation.lock('portrait');
-                else await window.screen.orientation.lock('landscape');
-            }
-        } catch (e) { console.log("Fullscreen o Blocco Rotazione non supportati."); }
       };
 
       const resetGame = () => {
-          if (window.confirm("Vuoi davvero resettare la partita? Punti vita e segnalini torneranno ai valori iniziali (gli Sfondi Comandante verranno mantenuti).")) {
+          if (window.confirm("Vuoi davvero resettare la partita? Punti vita e segnalini torneranno ai valori iniziali (gli Sfondi verranno mantenuti).")) {
               setArchenemy(prev => ({...prev, active: false, playerId: null, ongoing: [], currentScheme: null}));
-              
               setPlayers(prev => prev.map(p => {
-                  let resetDmg = {};
-                  prev.forEach(op => { if(op.id !== p.id) resetDmg[`${op.id}`] = 0; });
+                  let resetDmg = {}; prev.forEach(op => { if(op.id !== p.id) resetDmg[`${op.id}`] = 0; });
                   return { ...p, life: startLife, poison: 0, cmdCasts: 0, emblems: 0, rad: 0, energy: 0, exp: 0, ticket: 0, cmdDmg: resetDmg, monarch: false, initiative: false, blessing: false, dayNight: 'none', immune: false, mana: {W:0, U:0, B:0, R:0, G:0, C:0} };
               }));
           }
@@ -2450,12 +2470,10 @@
       if (view === 'game') return (
         <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl shadow-lg border border-gray-600 mt-4 backdrop-blur-sm animate-fade">
           <h2 className="text-3xl font-black mb-6 text-center text-red-500 drop-shadow-md">Setup Partita</h2>
-          
           <div className="bg-blue-900/50 border border-blue-500 rounded-lg p-4 mb-6 shadow-inner text-center">
              <p className="text-blue-200 text-sm font-bold uppercase tracking-wider mb-2">Posizione del Telefono:</p>
              <p className="text-white text-xs font-semibold">2 Giocatori ➡️ Tieni in Verticale<br/>3 - 6 Giocatori ➡️ Tieni in Orizzontale al centro</p>
           </div>
-
           <div className="mb-4">
             <label className="block text-gray-300 font-bold mb-2">Numero Giocatori (1-6)</label>
             <input type="number" min="1" max="6" value={numPlayers} onChange={e => setNumPlayers(parseInt(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white text-center text-xl font-bold outline-none" />
@@ -2495,12 +2513,12 @@
                  
                  // POSIZIONAMENTO LOGICO
                  if (players.length <= 2) {
-                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; } // Sopra
-                     if (index === 1) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }   // Sotto
+                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
+                     if (index === 1) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }
                  } else if (players.length === 3) {
                      if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                      if (index === 1) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
-                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rowSpan = "row-span-2"; rotDeg = -90; } // Destra Capotavola
+                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rowSpan = "row-span-2"; rotDeg = -90; }
                  } else if (players.length === 4) {
                      if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                      if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = 180; }
@@ -2511,32 +2529,28 @@
                      if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
                      if (index === 2) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
                      if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
-                     if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-4"; rowSpan = "row-span-2"; rotDeg = -90; } // Destra Capotavola
+                     if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-4"; rowSpan = "row-span-2"; rotDeg = -90; }
                  } else if (players.length === 6) {
-                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rowSpan = "row-span-2"; rotDeg = 90; }  // Sinistra Capotavola
+                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rowSpan = "row-span-2"; rotDeg = 90; }
                      if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
                      if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-4"; rotDeg = 180; }
                      if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
                      if (index === 4) { rowStart = "row-start-2"; colStart = "col-start-4"; rotDeg = 0; }
-                     if (index === 5) { rowStart = "row-start-1"; colStart = "col-start-5"; rowSpan = "row-span-2"; rotDeg = -90; } // Destra Capotavola
+                     if (index === 5) { rowStart = "row-start-1"; colStart = "col-start-5"; rowSpan = "row-span-2"; rotDeg = -90; }
                  }
 
                  const isSideways = rotDeg === 90 || rotDeg === -90;
                  return (
                      <div key={p.id} className={`${wrapperClass} ${rowStart} ${colStart} ${rowSpan}`} style={{ containerType: 'size' }}>
                          <div className={`absolute flex flex-col bg-gray-900 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] ${isSideways ? 'top-1/2 left-1/2' : 'inset-0'}`} 
-                              style={{
-                                  width: isSideways ? '100cqh' : '100cqw', 
-                                  height: isSideways ? '100cqw' : '100cqh', 
-                                  transform: isSideways ? `translate(-50%, -50%) rotate(${rotDeg}deg)` : `rotate(${rotDeg}deg)`
-                              }}>
+                              style={{ width: isSideways ? '100cqh' : '100cqw', height: isSideways ? '100cqw' : '100cqh', transform: isSideways ? `translate(-50%, -50%) rotate(${rotDeg}deg)` : `rotate(${rotDeg}deg)` }}>
                              <PlayerCard player={p} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={rotDeg} onOpenModal={(type) => setActiveModal({type, playerId: p.id, rotation: rotDeg})} />
                          </div>
                      </div>
                  );
              })}
 
-             {/* LA BARRA CENTRALE (Dadi, Reset, Esci, Archenemy) */}
+             {/* LA BARRA CENTRALE (Esci, Dadi, Archenemy, Reset) */}
              <div className={
                  players.length <= 2 
                  ? "row-start-2 col-start-1 col-span-full bg-gray-950 border-y border-gray-700 flex flex-row items-center justify-around shadow-2xl z-[120] py-1 px-4"
@@ -2559,22 +2573,12 @@
              </div>
           </div>
 
-          {/* RENDER MODALI GLOBALI (A TUTTO SCHERMO CON PORTAL) */}
+          {/* RENDER MODALI GLOBALI (Ruotati verso il giocatore) */}
           {activeModal && ReactDOM.createPortal(
-              <PlayerModals 
-                 type={activeModal.type} 
-                 player={players.find(p => p.id === activeModal.playerId)} 
-                 opponents={players.filter(p => p.id !== activeModal.playerId)}
-                 onClose={() => setActiveModal(null)} 
-                 updateStat={updateStat} 
-                 updateMana={updateMana} 
-                 toggleImmunity={toggleImmunity} 
-                 updatePlayerConfig={updatePlayerConfig} 
-                 rotation={activeModal.rotation}
-              />
+              <PlayerModals type={activeModal.type} player={players.find(p => p.id === activeModal.playerId)} opponents={players.filter(p => p.id !== activeModal.playerId)} onClose={() => setActiveModal(null)} updateStat={updateStat} updateMana={updateMana} toggleImmunity={toggleImmunity} updatePlayerConfig={updatePlayerConfig} rotation={activeModal.rotation} />
           , document.body)}
 
-          {/* MODALE ARCHENEMY */}
+          {/* MODALE ARCHENEMY (Verticale Forzato) */}
           {archenemy.showModal && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-gray-900 z-[9999] flex flex-col p-4 animate-fade overflow-hidden">
                 <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2 shrink-0">
@@ -2640,7 +2644,7 @@
              </div>
           , document.body)}
 
-          {/* ZOOM IMMAGINE SCHEMI */}
+          {/* ZOOM IMMAGINE SCHEMI E DADI */}
           {archenemy.enlargedImage && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-black/95 z-[10000] flex items-center justify-center p-4 animate-fade" onClick={() => setArchenemy(prev => ({...prev, enlargedImage: null}))}>
                 <img src={archenemy.enlargedImage} className="max-w-full max-h-[90vh] rounded-xl shadow-2xl border border-gray-600" />
@@ -2648,7 +2652,6 @@
              </div>
           , document.body)}
 
-          {/* MODALE DADI */}
           {showDice && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 animate-fade" onClick={() => setShowDice(false)}>
                 <div className="bg-gray-900 border border-purple-500 rounded-2xl p-6 shadow-2xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
