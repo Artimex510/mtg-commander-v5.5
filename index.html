@@ -2384,6 +2384,25 @@
       const stateRef = React.useRef({ numPlayers, archenemy, activeModal });
       useEffect(() => { stateRef.current = { numPlayers, archenemy, activeModal }; }, [numPlayers, archenemy, activeModal]);
 
+      // SBLOCCO DI SICUREZZA UNIVERSALE (FAIL-SAFE)
+      // Se usciamo dalla partita (in qualsiasi modo), sblocca forzatamente rotazione e fullscreen
+      useEffect(() => {
+          if (view !== 'game_active') {
+              try {
+                  if (document.fullscreenElement && document.exitFullscreen) {
+                      document.exitFullscreen().catch(()=>{});
+                  }
+                  if (window.screen && window.screen.orientation && window.screen.orientation.unlock) {
+                      window.screen.orientation.unlock();
+                  }
+                  if (wakeLockRef.current) {
+                      wakeLockRef.current.release().catch(()=>{});
+                      wakeLockRef.current = null;
+                  }
+              } catch(e) {}
+          }
+      }, [view]);
+
       const applyScreenLock = async (forcePortrait = false, playersCount = numPlayers) => {
           try {
               if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
@@ -2410,7 +2429,6 @@
 
       useEffect(() => {
           if (view === 'game_active') {
-              // Ora controlliamo sia 'search' che 'editName' per forzare il verticale
               const isVerticalMode = archenemy.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'));
               applyScreenLock(isVerticalMode, numPlayers);
               requestWakeLock();
@@ -2427,19 +2445,10 @@
       }, [view, numPlayers, archenemy.showModal, activeModal]);
 
       useEffect(() => {
-          return () => {
-              if (wakeLockRef.current) { wakeLockRef.current.release().catch(()=>{}); }
-          }
-      }, []);
-
-      useEffect(() => {
           if (view === 'game_active') {
               const handlePopState = async (e) => {
                   e.preventDefault();
                   if (window.confirm("Sei sicuro di voler uscire dalla partita e tornare al Menu?")) {
-                      if (document.exitFullscreen) document.exitFullscreen().catch(err=>{});
-                      if (window.screen && window.screen.orientation && window.screen.orientation.unlock) window.screen.orientation.unlock();
-                      if (wakeLockRef.current) wakeLockRef.current.release().catch(()=>{});
                       setView('game');
                   } else {
                       window.history.pushState(null, "", window.location.href);
@@ -2505,9 +2514,6 @@
 
       const exitGame = () => {
           if (window.confirm("Sei sicuro di voler uscire e tornare al Menu?")) { 
-              if (document.exitFullscreen) document.exitFullscreen().catch(e=>console.log(e));
-              if (window.screen && window.screen.orientation && window.screen.orientation.unlock) window.screen.orientation.unlock();
-              if (wakeLockRef.current) wakeLockRef.current.release().catch(()=>{});
               setView('game'); 
           } else {
               const isVerticalMode = archenemy.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'));
