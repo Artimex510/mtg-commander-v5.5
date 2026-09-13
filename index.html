@@ -589,6 +589,8 @@
                 {view === 'cardsearch' && <CardSearchExplorer navigate={navigate} />}
                 {view === 'mydecks' && <MyDecks navigate={navigate} />}
                 {view === 'cart' && <CartView navigate={navigate} />}
+                {view === 'trade' && <TradeEvaluator setView={setView} />}
+                {view === 'print' && <PrintView printQueue={printQueue} setPrintQueue={setPrintQueue} setView={setView} />}
                 {view === 'myproxies' && <MyProxies navigate={navigate} />}
                 {view === 'viewdeck' && <DeckViewer deck={activeDeck} navigate={navigate} />}
                 {view === 'analysis' && <DeckAnalysis deck={activeDeck} navigate={navigate} />}
