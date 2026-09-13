@@ -191,6 +191,23 @@
       const [activeDeck, setActiveDeck] = useState(null);
       const videoRef = useRef(null);
 
+      // --- NUOVI STATI PER STAMPA, TRADE E COLLEZIONE ---
+      const [printQueue, setPrintQueue] = useState([]);
+      const [collection, setCollection] = useState([]);
+
+      // (Opzionale) Carica/Salva su localStorage all'avvio
+      useEffect(() => {
+          const savedPrint = localStorage.getItem('mtg_printQueue');
+          const savedColl = localStorage.getItem('mtg_collection');
+          if (savedPrint) { try { setPrintQueue(JSON.parse(savedPrint)); } catch(e){} }
+          if (savedColl) { try { setCollection(JSON.parse(savedColl)); } catch(e){} }
+      }, []);
+
+      useEffect(() => {
+          localStorage.setItem('mtg_printQueue', JSON.stringify(printQueue));
+          localStorage.setItem('mtg_collection', JSON.stringify(collection));
+      }, [printQueue, collection]);
+      
       // --- GESTIONE NATIVA TASTO INDIETRO DELLO SMARTPHONE ---
 
   // 1. Ascolta il tasto indietro (fisico o swipe) del telefono
@@ -344,6 +361,8 @@
                       <MenuBtn icon={<Icons.Home/>} text="Home" onClick={() => navigate('home')} />
                       <MenuBtn icon="🔍" text="Database & Scan" onClick={() => navigate('cardsearch')} />
                       <MenuBtn icon="🎴" text="Deckbuilding" onClick={() => navigate('deckbuilder')} />
+                      <MenuBtn icon="⚖️" text="Bilancia Scambi (Trade)" onClick={() => navigate('trade')} />
+                      <MenuBtn icon="🖨️" text={`Area Stampa Proxy (${printQueue.length})`} onClick={() => navigate('print')} />
                       <MenuBtn icon="🛠️" text="Strumenti Pro" onClick={() => navigate('protools')} />
                       <MenuBtn icon="📚" text="I Miei Mazzi" onClick={() => navigate('mydecks')} />
                       <MenuBtn icon="🛒" text="Carrello" onClick={() => navigate('cart')} />
