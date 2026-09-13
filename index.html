@@ -1754,7 +1754,7 @@
         return (prob * 100).toFixed(1);
     };
 
-    // --- DECK ANALYSIS E CONDIVISIONE ---
+    // --- DECK ANALYSIS ---
     const DeckAnalysis = ({deck, navigate}) => {
         const ManaColors = [ { id: 'W', color: 'bg-yellow-100 text-yellow-900', label: 'W' }, { id: 'U', color: 'bg-blue-500 text-white', label: 'U' }, { id: 'B', color: 'bg-gray-800 text-white', label: 'B' }, { id: 'R', color: 'bg-red-500 text-white', label: 'R' }, { id: 'G', color: 'bg-green-500 text-white', label: 'G' }, { id: 'C', color: 'bg-gray-400 text-gray-900', label: 'C' } ];
 
@@ -1765,7 +1765,6 @@
         const [altResults, setAltResults] = useState([]);
         const [altLoading, setAltLoading] = useState(false);
         const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-        
         const [showHyperModal, setShowHyperModal] = useState(false);
         const [hyperTarget, setHyperTarget] = useState(10); 
         const [hyperDraws, setHyperDraws] = useState(7);    
@@ -1779,7 +1778,30 @@
         const cmds = (deck && isDeckCardsArray) ? deck.cards.filter(c => c.isCommander) : [];
         const cmdName = cmds.length > 0 ? cmds[0].name : "Nessun Comandante";
 
-        const copyPrompt = (type) => {
+        const handleComboSpellbook = () => {
+            navigator.clipboard.writeText(listText).then(() => {
+                alert("🪄 Lista copiata!\n\nIncollala su Commander Spellbook per scoprire le tue combo.");
+                window.open('https://commanderspellbook.com/find-my-combos/', '_blank');
+            });
+        };
+
+        const handleEdhrec = () => {
+            if (cmds.length === 0) { alert("Nessun Comandante impostato per cercare su EDHREC."); return; }
+            let cName = cmds[0].name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+            window.open(`https://edhrec.com/commanders/${cName}`, '_blank');
+        };
+
+        const copyTextList = () => {
+            navigator.clipboard.writeText(listText).then(() => {
+                alert("📋 Lista Testuale copiata negli appunti!");
+            });
+        };
+
+        const openMtggoldfish = () => {
+            const fmt = String(formatName).toLowerCase().replace(" ", "");
+            window.open(`https://www.mtggoldfish.com/metagame/${fmt}#paper`, '_blank');
+        };
+      const copyPrompt = (type) => {
             let prompt = "";
             if (type === 'general') prompt = `Agisci come un Master professionista e Deckbuilder esperto di Magic: The Gathering.\nFormato: ${formatName}. ${formatName==='Commander'? `Comandante: ${cmdName}.`:''}\nAnalizza curva di mana, banlist e dammi consigli su cosa tagliare e aggiungere.\nLista:\n${listText}`;
             if (type === 'budget') prompt = `Analizza questa lista di un mazzo ${formatName}:\n\n${listText}\n\nIl mio obiettivo è abbassare il costo totale facendolo rientrare in un budget MASSIMO di ${targetBudget}€, mantenendolo però competitivo. Suggeriscimi quali carte costose tagliare e con quali alternative economiche sostituirle. Spiega il perché.`;
@@ -1796,18 +1818,6 @@
             });
         };
 
-        const openMtggoldfish = () => {
-            const fmt = String(formatName).toLowerCase().replace(" ", "");
-            window.open(`https://www.mtggoldfish.com/metagame/${fmt}#paper`, '_blank');
-        };
-
-        const shareDeck = async () => {
-           const shareData = { title: `Mazzo MTG: ${deck.name}`, text: `Ecco il mio mazzo "${deck.name}":\n\n${listText}`, };
-           if (navigator.share) { try { await navigator.share(shareData); } catch(e) {} } 
-           else { navigator.clipboard.writeText(listText); alert("Copiato negli appunti!"); }
-        };
-
-        // --- BRACKET COMMANDER WOTC ---
         const GC_COLORS = { "Enlightened Tutor": ["W"], "Humility": ["W"], "Serra's Sanctum": ["W"], "Smothering Tithe": ["W"], "Teferi's Protection": ["W"], "Trouble in Pairs": ["W"], "Consecrated Sphinx": ["U"], "Cyclonic Rift": ["U"], "Expropriate": ["U"], "Force of Will": ["U"], "Fierce Guardianship": ["U"], "Gifts Ungiven": ["U"], "Intuition": ["U"], "Jin-Gitaxias, Core Augur": ["U"], "Mystical Tutor": ["U"], "Narset, Parter of Veils": ["U"], "Rhystic Study": ["U"], "Sway of the Stars": ["U"], "Thassa's Oracle": ["U"], "Urza, Lord High Artificer": ["U"], "Bolas's Citadel": ["B"], "Braids, Cabal Minion": ["B"], "Demonic Tutor": ["B"], "Imperial Seal": ["B"], "Necropotence": ["B"], "Opposition Agent": ["B"], "Orcish Bowmasters": ["B"], "Tergrid, God of Fright": ["B"], "Vampiric Tutor": ["B"], "Ad Nauseam": ["B"], "Deflecting Swat": ["R"], "Gamble": ["R"], "Jeska's Will": ["R"], "Underworld Breach": ["R"], "Dockside Extortionist": ["R"], "Biorhythm": ["G"], "Crop Rotation": ["G"], "Food Chain": ["G"], "Gaea's Cradle": ["G"], "Natural Order": ["G"], "Seedborn Muse": ["G"], "Survival of the Fittest": ["G"], "Vorinclex, Voice of Hunger": ["G"], "Worldly Tutor": ["G"], "Aura Shards": ["W","G"], "Coalition Victory": ["W","U","B","R","G"], "Grand Arbiter Augustin IV": ["W","U"], "Kinnan, Bonder Prodigy": ["U","G"], "Yuriko, the Tiger's Shadow": ["U","B"], "Notion Thief": ["U","B"], "Winota, Joiner of Forces": ["W","R"], "Ancient Tomb": [], "Chrome Mox": [], "Field of the Dead": [], "Glacial Chasm": [], "Grim Monolith": [], "Lion's Eye Diamond": [], "Mana Vault": [], "Mishra's Workshop": [], "Mox Diamond": [], "Panoptic Mirror": [], "The One Ring": [], "The Tabernacle at Pendrell Vale": [], "Trinisphere": [], "Mana Crypt": [], "Jeweled Lotus": [] };
         const GAMECHANGERS = Object.keys(GC_COLORS);
         let gameChangerCards = []; let deckBracket = 2;
@@ -1826,9 +1836,7 @@
             let typeQuery = "t:land";
             const t = String(card.type || card.type_line || "").toLowerCase();
             if (t.includes("creature")) typeQuery = "t:creature"; else if (t.includes("enchantment")) typeQuery = "t:enchantment"; else if (t.includes("artifact")) typeQuery = "t:artifact"; else if (t.includes("instant")) typeQuery = "t:instant"; else if (t.includes("sorcery")) typeQuery = "t:sorcery"; else if (t.includes("planeswalker")) typeQuery = "t:planeswalker";
-            
             let colorQuery = "c:c"; if (Array.isArray(card.colors) && card.colors.length > 0) colorQuery = "c<=" + card.colors.join('');
-            
             fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(`${typeQuery} ${colorQuery} eur<5 -name:"${card.name}" sort:edhrec`)}`).then(res => res.json()).then(data => {
                 if (data.data) setAltResults(data.data.filter(c => !deckNames.includes(c.name) && !GAMECHANGERS.includes(c.name)).slice(0, 5));
                 setAltLoading(false);
@@ -1847,19 +1855,14 @@
 
         const doUpgradePrompt = () => {
             const prompt = `Agisci come un deckbuilder.\nEcco la lista ${formatName}:\n${listText}\n\nSuggeriscimi i 5 migliori "Gamechanger" essenziali per portarlo a Bracket 4 rispettando la mia identità di colore, e dimmi perché.`;
-            navigator.clipboard.writeText(prompt).then(() => {
-                setShowUpgradeModal(false);
-                alert("🪄 Prompt copiato! Incollalo su Gemini."); window.open('https://gemini.google.com/', '_blank');
-            });
+            navigator.clipboard.writeText(prompt).then(() => { setShowUpgradeModal(false); alert("🪄 Prompt copiato! Incollalo su Gemini."); window.open('https://gemini.google.com/', '_blank'); });
         };
 
-        // --- MOTORE ANALISI MAZZO ANTI-CRASH ---
+        // --- MOTORE ANALISI TESTUALE (Tipi, Fonti e Ruoli Sistemati) ---
         let totalCards = 0; let avgCMC = 0;
         const curve = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, '6+':0}; let maxCurve = 0; 
         const typeCounts = { Creature:0, Artifact:0, Enchantment:0, Instant:0, Sorcery:0, Planeswalker:0, Land:0 };
         const manaSources = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
-        const spellColors = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 }; let maxSpellColor = 0;
-        const landColors = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 }; let maxLandColor = 0;
         const roles = { ramp: 0, draw: 0, recursion: 0, counter: 0, wipe: 0, tutor: 0 };
 
         if (deck && isDeckCardsArray) {
@@ -1869,41 +1872,41 @@
             mainboard.forEach(c => {
                const typeLower = String(c.type || c.type_line || "").toLowerCase();
                const oracleLower = String(c.oracle_text || "").toLowerCase();
+               const isLand = typeLower.includes('land');
 
                if (typeLower.includes('creature')) typeCounts.Creature++;
-               else if (typeLower.includes('land')) typeCounts.Land++;
+               else if (isLand) typeCounts.Land++;
                else if (typeLower.includes('artifact')) typeCounts.Artifact++;
                else if (typeLower.includes('enchantment')) typeCounts.Enchantment++;
                else if (typeLower.includes('instant')) typeCounts.Instant++;
                else if (typeLower.includes('sorcery')) typeCounts.Sorcery++;
                else if (typeLower.includes('planeswalker')) typeCounts.Planeswalker++;
 
-               const isLand = typeLower.includes('land');
-               
-               if(!isLand) {
-                  let cmc = Number(c.cmc) || 0; 
-                  if (cmc >= 6) curve['6+']++; else curve[cmc]++;
-                  
-                  if (Array.isArray(c.colors) && c.colors.length > 0) {
-                      c.colors.forEach(col => { if(spellColors[col] !== undefined) spellColors[col]++; });
-                  } else { spellColors['C']++; }
-               } else {
-                  if (Array.isArray(c.color_identity) && c.color_identity.length > 0) {
-                      c.color_identity.forEach(col => { if(landColors[col] !== undefined) landColors[col]++; });
-                  } else { landColors['C']++; }
-               }
+               if(!isLand) { let cmc = Number(c.cmc) || 0; if (cmc >= 6) curve['6+']++; else curve[cmc]++; }
 
-               if (Array.isArray(c.produced_mana)) {
-                   c.produced_mana.forEach(m => {
-                       if (manaSources[m] !== undefined) manaSources[m]++;
-                   });
+               // FONTI DI MANA: Fallback su Oracle Text o Color Identity se produced_mana manca
+               let localProduced = c.produced_mana || [];
+               if (!c.produced_mana || c.produced_mana.length === 0) {
+                   if (isLand && Array.isArray(c.color_identity)) {
+                       localProduced = c.color_identity;
+                   } else if (oracleLower.includes("add {") || oracleLower.includes("add one mana")) {
+                       if (oracleLower.includes("{w}")) localProduced.push('W');
+                       if (oracleLower.includes("{u}")) localProduced.push('U');
+                       if (oracleLower.includes("{b}")) localProduced.push('B');
+                       if (oracleLower.includes("{r}")) localProduced.push('R');
+                       if (oracleLower.includes("{g}")) localProduced.push('G');
+                       if (oracleLower.includes("{c}")) localProduced.push('C');
+                       if (localProduced.length === 0) localProduced.push('C'); // Fallback per mana generico
+                   }
                }
+               localProduced.forEach(m => { if (manaSources[m] !== undefined) manaSources[m]++; });
 
+               // RUOLI STRATEGICI: Basati sul testo esatto suggerito
                if (!isLand) {
-                   if (Array.isArray(c.produced_mana) || oracleLower.includes("search your library for a basic land") || oracleLower.includes("put it onto the battlefield tapped")) roles.ramp++;
-                   if (oracleLower.includes("draw ") && !oracleLower.includes("draw the game")) roles.draw++;
+                   if (oracleLower.includes("add ") || oracleLower.includes("search your library for a basic land")) roles.ramp++;
+                   if (oracleLower.includes("draw ") && !oracleLower.includes("draw the game") && !oracleLower.includes("draw a card at the beginning of the next month's upkeep")) roles.draw++;
                    if (oracleLower.includes("return target") && oracleLower.includes("graveyard")) roles.recursion++;
-                   if (oracleLower.includes("counter target spell")) roles.counter++;
+                   if (oracleLower.includes("counter target")) roles.counter++;
                    if (oracleLower.includes("destroy all") || oracleLower.includes("exile all") || oracleLower.includes("damage to each creature")) roles.wipe++;
                    if (oracleLower.includes("search your library for a card") || oracleLower.includes("scry ") || oracleLower.includes("surveil ")) roles.tutor++;
                }
@@ -1911,10 +1914,7 @@
 
             const nonLandCount = totalCards - typeCounts.Land;
             avgCMC = mainboard.filter(c => !String(c.type || "").toLowerCase().includes('land')).reduce((acc, c) => acc + (Number(c.cmc) || 0), 0) / (nonLandCount > 0 ? nonLandCount : 1);
-            
             Object.values(curve).forEach(v => { if(v > maxCurve) maxCurve = v; });
-            Object.values(spellColors).forEach(v => { if(v > maxSpellColor) maxSpellColor = v; });
-            Object.values(landColors).forEach(v => { if(v > maxLandColor) maxLandColor = v; });
         }
 
         const typeTotalNonLand = totalCards - typeCounts.Land;
@@ -1942,16 +1942,20 @@
             const p4 = calcHypergeometric(totalCards, typeCounts.Land, 7, 4);
             probPlayableHand = ((p2 + p3 + p4) * 100).toFixed(1);
         }
-
       return (
            <div className="max-w-2xl mx-auto space-y-4">
              <button onClick={() => navigate('mydecks')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-2 shadow transition-colors">⬅ Indietro ai Mazzi</button>
              
              <div className="bg-gray-800/90 p-6 rounded-xl border border-gray-600 shadow-xl backdrop-blur-sm">
                <h2 className="text-3xl font-black text-white mb-1 drop-shadow-md">{deck.name}</h2>
-               <div className="flex justify-between items-center mb-6">
+               <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
                    <p className="text-gray-300 font-bold">Formato: <span className="text-blue-400 uppercase">{deck.format || 'Commander'}</span></p>
-                   <button onClick={openMtggoldfish} className="bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] sm:text-xs font-black px-3 py-2 rounded shadow shadow-yellow-500/50 transition-all uppercase flex items-center gap-1 active:scale-95">🏆 Meta MTGGoldfish</button>
+                   <div className="flex gap-2">
+                       <button onClick={openMtggoldfish} className="bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] sm:text-xs font-black px-3 py-2 rounded shadow transition-all uppercase flex items-center gap-1">🏆 Meta MTGGoldfish</button>
+                       {String(formatName).toLowerCase() === 'commander' && (
+                           <button onClick={handleEdhrec} className="bg-orange-600 hover:bg-orange-500 text-white text-[10px] sm:text-xs font-black px-3 py-2 rounded shadow transition-all uppercase flex items-center gap-1">📊 Sinergie EDHREC</button>
+                       )}
+                   </div>
                </div>
 
                <div className="grid grid-cols-3 gap-2 mb-6 text-center">
@@ -1969,9 +1973,7 @@
                  </div>
                </div>
 
-               {/* --- NUOVA SEZIONE: TIPI CARTA E FONTI MANA --- */}
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                   {/* Colonna Sinistra: Distribuzione Tipi */}
                    <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner">
                        <h3 className="text-xs font-black text-purple-400 mb-4 uppercase tracking-widest text-center">Tipologia Magie</h3>
                        <div className="space-y-3">
@@ -1994,14 +1996,11 @@
                        </div>
                    </div>
 
-                   {/* Colonna Destra: Torta Fonti Mana */}
                    <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner flex flex-col items-center justify-center">
                        <h3 className="text-xs font-black text-emerald-400 mb-4 uppercase tracking-widest text-center">Fonti di Mana (Terre+Sassi)</h3>
                        {totalSources > 0 ? (
                            <div className="w-32 h-32 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.5)] border-4 border-gray-800" style={{ background: pieGradient }}></div>
-                       ) : (
-                           <p className="text-gray-500 text-xs font-bold text-center">Nessuna fonte rilevata</p>
-                       )}
+                       ) : ( <p className="text-gray-500 text-xs font-bold text-center">Nessuna fonte rilevata</p> )}
                        <div className="flex flex-wrap justify-center gap-3 mt-4">
                            {ManaColors.map(m => (manaSources[m.id] > 0) ? (
                                <div key={m.id} className="flex items-center gap-1">
@@ -2013,37 +2012,17 @@
                    </div>
                </div>
 
-               {/* --- NUOVA SEZIONE: ANALISI STRATEGICA (ROLES) --- */}
                <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner mb-6">
-                   <h3 className="text-sm font-bold text-indigo-400 mb-3 text-center uppercase tracking-widest">Analisi Ruoli (Stima)</h3>
+                   <h3 className="text-sm font-bold text-indigo-400 mb-3 text-center uppercase tracking-widest">Analisi Ruoli (Lettura Testo)</h3>
                    <div className="grid grid-cols-3 gap-2">
-                       <div className="bg-gray-800 border border-gray-600 rounded p-2 text-center">
-                           <p className="text-[10px] text-gray-400 uppercase font-bold">Ramp / Sassi</p>
-                           <p className="text-lg font-black text-green-400">{roles.ramp}</p>
-                       </div>
-                       <div className="bg-gray-800 border border-gray-600 rounded p-2 text-center">
-                           <p className="text-[10px] text-gray-400 uppercase font-bold">Peschini</p>
-                           <p className="text-lg font-black text-blue-400">{roles.draw}</p>
-                       </div>
-                       <div className="bg-gray-800 border border-gray-600 rounded p-2 text-center">
-                           <p className="text-[10px] text-gray-400 uppercase font-bold">Gestione / Tutori</p>
-                           <p className="text-lg font-black text-purple-400">{roles.tutor}</p>
-                       </div>
-                       <div className="bg-gray-800 border border-gray-600 rounded p-2 text-center">
-                           <p className="text-[10px] text-gray-400 uppercase font-bold">Counter</p>
-                           <p className="text-lg font-black text-blue-300">{roles.counter}</p>
-                       </div>
-                       <div className="bg-gray-800 border border-gray-600 rounded p-2 text-center">
-                           <p className="text-[10px] text-gray-400 uppercase font-bold">Wratte</p>
-                           <p className="text-lg font-black text-red-400">{roles.wipe}</p>
-                       </div>
-                       <div className="bg-gray-800 border border-gray-600 rounded p-2 text-center">
-                           <p className="text-[10px] text-gray-400 uppercase font-bold">Cimitero</p>
-                           <p className="text-lg font-black text-yellow-500">{roles.recursion}</p>
-                       </div>
+                       <div className="bg-gray-800 border border-gray-600 rounded p-2 text-center"><p className="text-[10px] text-gray-400 uppercase font-bold">Ramp/Sassi</p><p className="text-lg font-black text-green-400">{roles.ramp}</p></div>
+                       <div className="bg-gray-800 border border-gray-600 rounded p-2 text-center"><p className="text-[10px] text-gray-400 uppercase font-bold">Peschini</p><p className="text-lg font-black text-blue-400">{roles.draw}</p></div>
+                       <div className="bg-gray-800 border border-gray-600 rounded p-2 text-center"><p className="text-[10px] text-gray-400 uppercase font-bold">Gestione</p><p className="text-lg font-black text-purple-400">{roles.tutor}</p></div>
+                       <div className="bg-gray-800 border border-gray-600 rounded p-2 text-center"><p className="text-[10px] text-gray-400 uppercase font-bold">Counter</p><p className="text-lg font-black text-blue-300">{roles.counter}</p></div>
+                       <div className="bg-gray-800 border border-gray-600 rounded p-2 text-center"><p className="text-[10px] text-gray-400 uppercase font-bold">Wratte</p><p className="text-lg font-black text-red-400">{roles.wipe}</p></div>
+                       <div className="bg-gray-800 border border-gray-600 rounded p-2 text-center"><p className="text-[10px] text-gray-400 uppercase font-bold">Cimitero</p><p className="text-lg font-black text-yellow-500">{roles.recursion}</p></div>
                    </div>
                </div>
-
                <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner mb-6">
                  <h3 className="text-sm font-bold text-blue-400 mb-4 text-center uppercase">Curva di Mana (No Terre)</h3>
                  <div className="flex items-end gap-2 h-28">
@@ -2061,9 +2040,11 @@
                </div>
 
                <div className="space-y-3">
-                 <button onClick={() => setShowHyperModal(true)} className="w-full bg-teal-700 hover:bg-teal-600 text-white font-black py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all">🧮 CALCOLATORE PROBABILITÀ</button>
+                 <div className="grid grid-cols-2 gap-2">
+                     <button onClick={copyTextList} className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl shadow text-xs">📋 COPIA LISTA TESTUALE</button>
+                     <button onClick={() => setShowHyperModal(true)} className="bg-teal-700 hover:bg-teal-600 text-white font-black py-3 rounded-xl shadow text-xs">🧮 CALCOLATORE PROBABILITÀ</button>
+                 </div>
                  
-                 {/* --- SEZIONE BRACKET COMMANDER --- */}
                  {String(formatName).toLowerCase() === 'commander' && (
                      <div className="bg-gray-800 p-4 rounded-xl border-2 border-orange-500 shadow-lg mt-6">
                          <div className="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
@@ -2078,7 +2059,6 @@
                          
                          {gameChangerCards.length > 0 ? (
                              <div className="space-y-3 mb-4">
-                                 <h4 className="text-orange-400 font-bold text-sm">Carte Gamechanger Rilevate:</h4>
                                  {gameChangerCards.map((c, i) => (
                                      <div key={i} className="bg-gray-900 border border-gray-700 p-3 rounded-lg flex justify-between items-center">
                                          <p className="text-white font-bold">{c.name}</p>
@@ -2095,64 +2075,44 @@
                      </div>
                  )}
 
-                 {/* --- SEZIONE STRUMENTI AVANZATI IA --- */}
                  <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 shadow-lg mt-6">
-                     <h3 className="text-xl font-black text-white mb-4 flex items-center gap-2 border-b border-gray-700 pb-2">🤖 Analisi AI Avanzata</h3>
+                     <h3 className="text-xl font-black text-white mb-4 flex items-center gap-2 border-b border-gray-700 pb-2">🤖 Strumenti Intelligenza Artificiale</h3>
                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                         <button onClick={() => copyPrompt('general')} className="bg-blue-900 hover:bg-blue-800 border border-blue-500 text-white text-xs font-black py-3 rounded-lg shadow transition-colors col-span-1 sm:col-span-2">🤖 COPIA PROMPT ANALISI GENERICA</button>
+                         <button onClick={handleComboSpellbook} className="bg-purple-700 hover:bg-purple-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">♾️ CERCA COMBO INFINITE</button>
                          <button onClick={() => copyPrompt('rule0')} className="bg-pink-700 hover:bg-pink-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">⚖️ GENERATORE "RULE 0"</button>
                          <button onClick={() => copyPrompt('synergy')} className="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">🧩 SINERGIE NASCOSTE</button>
                          <button onClick={() => copyPrompt('curve')} className="bg-blue-700 hover:bg-blue-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">📉 SNELLISCI CURVA</button>
                          <button onClick={() => copyPrompt('bling')} className="bg-yellow-700 hover:bg-yellow-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">✨ TROVA RISTAMPE</button>
-                         <button onClick={() => setShowBudgetModal(true)} className="bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2 col-span-1 sm:col-span-2">💸 BUDGETIZZA MAZZO INTERO</button>
+                         <button onClick={() => copyPrompt('top5')} className="bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">💸 ALTERNATIVE TOP 5</button>
+                         <button onClick={() => setShowBudgetModal(true)} className="bg-indigo-900 border border-indigo-500 hover:bg-indigo-800 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2 col-span-1 sm:col-span-2">💸 BUDGETIZZA INTERO MAZZO</button>
                      </div>
                  </div>
 
-                 {/* MODALE IPERGEOMETRICA */}
                  {showHyperModal && ReactDOM.createPortal(
                      <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[9999] p-4 animate-fade overflow-y-auto">
                          <div className="bg-gray-800 border-2 border-teal-500 rounded-xl p-6 w-full max-w-md shadow-2xl relative">
                              <button onClick={() => setShowHyperModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
                              <h3 className="text-xl font-black text-white mb-1">Calcolatore Probabilità</h3>
                              <p className="text-gray-400 text-[10px] font-bold mb-4 border-b border-gray-700 pb-4">Usa la distribuzione ipergeometrica per capire quanto è affidabile il tuo mazzo.</p>
-                             
                              <div className="bg-teal-900/30 p-3 rounded-lg border border-teal-800 mb-6 text-center shadow-inner">
                                  <p className="text-teal-400 text-[10px] font-bold uppercase tracking-wider mb-1">Analisi Mano Iniziale</p>
                                  <p className="text-white text-xs font-semibold">Probabilità di avere <span className="font-black text-teal-300">da 2 a 4 Terre</span> nella mano di partenza (7 carte):</p>
                                  <p className="text-4xl font-black text-teal-400 mt-2">{probPlayableHand}%</p>
                              </div>
-
                              <div className="space-y-4">
-                                 <div>
-                                     <label className="block text-gray-300 text-xs font-bold mb-1">Dimensioni del Mazzo</label>
-                                     <div className="bg-gray-900 text-gray-500 font-black p-3 rounded-lg border border-gray-700">{totalCards} Carte</div>
-                                 </div>
+                                 <div><label className="block text-gray-300 text-xs font-bold mb-1">Dimensioni del Mazzo</label><div className="bg-gray-900 text-gray-500 font-black p-3 rounded-lg border border-gray-700">{totalCards} Carte</div></div>
                                  <div className="grid grid-cols-2 gap-4">
-                                     <div>
-                                         <label className="block text-gray-300 text-xs font-bold mb-1">Carte Bersaglio nel Mazzo</label>
-                                         <input type="number" value={hyperTarget} onChange={e=>setHyperTarget(parseInt(e.target.value)||0)} className="w-full bg-gray-900 text-white font-bold p-3 rounded-lg border border-gray-600 outline-none focus:border-teal-500" />
-                                         <p className="text-[9px] text-gray-500 mt-1 leading-tight">Es: ho 10 peschini nel mazzo.</p>
-                                     </div>
-                                     <div>
-                                         <label className="block text-gray-300 text-xs font-bold mb-1">Carte Pescate Totali</label>
-                                         <input type="number" value={hyperDraws} onChange={e=>setHyperDraws(parseInt(e.target.value)||0)} className="w-full bg-gray-900 text-white font-bold p-3 rounded-lg border border-gray-600 outline-none focus:border-teal-500" />
-                                         <p className="text-[9px] text-gray-500 mt-1 leading-tight">Es: Mano iniziale = 7.</p>
-                                     </div>
+                                     <div><label className="block text-gray-300 text-xs font-bold mb-1">Carte Bersaglio nel Mazzo</label><input type="number" value={hyperTarget} onChange={e=>setHyperTarget(parseInt(e.target.value)||0)} className="w-full bg-gray-900 text-white font-bold p-3 rounded-lg border border-gray-600 outline-none focus:border-teal-500" /></div>
+                                     <div><label className="block text-gray-300 text-xs font-bold mb-1">Carte Pescate Totali</label><input type="number" value={hyperDraws} onChange={e=>setHyperDraws(parseInt(e.target.value)||0)} className="w-full bg-gray-900 text-white font-bold p-3 rounded-lg border border-gray-600 outline-none focus:border-teal-500" /></div>
                                  </div>
-                                 <div>
-                                     <label className="block text-gray-300 text-xs font-bold mb-1">Ne vuoi trovare ALMENO:</label>
-                                     <input type="number" value={hyperMin} onChange={e=>setHyperMin(parseInt(e.target.value)||0)} className="w-full bg-gray-900 text-white font-bold p-3 rounded-lg border border-gray-600 outline-none focus:border-teal-500" />
-                                 </div>
+                                 <div><label className="block text-gray-300 text-xs font-bold mb-1">Ne vuoi trovare ALMENO:</label><input type="number" value={hyperMin} onChange={e=>setHyperMin(parseInt(e.target.value)||0)} className="w-full bg-gray-900 text-white font-bold p-3 rounded-lg border border-gray-600 outline-none focus:border-teal-500" /></div>
                              </div>
-
-                             <div className="mt-6 bg-gray-900 p-4 rounded-xl border border-gray-700 text-center shadow-inner">
-                                 <p className="text-gray-400 text-xs font-bold mb-1 uppercase tracking-widest">Probabilità di Successo</p>
-                                 <p className="text-5xl font-black text-white drop-shadow-[0_0_15px_rgba(20,184,166,0.8)]">{calcAtLeast(totalCards, hyperTarget, hyperDraws, hyperMin)}%</p>
-                             </div>
+                             <div className="mt-6 bg-gray-900 p-4 rounded-xl border border-gray-700 text-center shadow-inner"><p className="text-gray-400 text-xs font-bold mb-1 uppercase tracking-widest">Probabilità di Successo</p><p className="text-5xl font-black text-white drop-shadow-[0_0_15px_rgba(20,184,166,0.8)]">{calcAtLeast(totalCards, hyperTarget, hyperDraws, hyperMin)}%</p></div>
                          </div>
                      </div>
                  , document.body)}
 
-                 {/* MODALE BUDGET */}
                  {showBudgetModal && ReactDOM.createPortal(
                      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 animate-fade">
                          <div className="bg-gray-800 border-2 border-indigo-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
@@ -2160,37 +2120,25 @@
                              <h3 className="text-xl font-black text-white mb-2">Imposta il tuo Target</h3>
                              <p className="text-gray-300 text-xs font-bold mb-4">Quanto vuoi spendere al massimo per questo mazzo?</p>
                              <form onSubmit={(e) => { e.preventDefault(); copyPrompt('budget'); }} className="flex flex-col gap-4">
-                                 <div className="relative">
-                                     <span className="absolute left-4 top-3 text-white font-black">€</span>
-                                     <input type="number" value={targetBudget} onChange={e => setTargetBudget(e.target.value)} placeholder="es. 50" className="w-full bg-gray-900 border border-gray-600 rounded-lg pl-8 pr-4 py-3 text-white font-bold outline-none focus:border-indigo-500" required />
-                                 </div>
+                                 <div className="relative"><span className="absolute left-4 top-3 text-white font-black">€</span><input type="number" value={targetBudget} onChange={e => setTargetBudget(e.target.value)} placeholder="es. 50" className="w-full bg-gray-900 border border-gray-600 rounded-lg pl-8 pr-4 py-3 text-white font-bold outline-none focus:border-indigo-500" required /></div>
                                  <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-lg shadow-lg transition-all active:scale-95">GENERA PROMPT & VAI SU GEMINI</button>
                              </form>
                          </div>
                      </div>
                  , document.body)}
 
-                 {/* MODALI RIDUCI E AUMENTA POTENZA (Esistenti) */}
                  {showAltModal && altTarget && ReactDOM.createPortal(
                      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 animate-fade">
                          <div className="bg-gray-800 border-2 border-orange-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
                              <button onClick={() => setShowAltModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
                              <h3 className="text-lg font-black text-white mb-2">Alternative a {altTarget.name}</h3>
                              <p className="text-gray-300 text-xs font-bold mb-4">Ecco 5 carte simili non-gamechanger che non hai nel mazzo:</p>
-                             
-                             {altLoading ? (
-                                 <p className="text-yellow-400 font-bold text-center py-4">Ricerca in corso su Scryfall...</p>
-                             ) : (
+                             {altLoading ? (<p className="text-yellow-400 font-bold text-center py-4">Ricerca in corso su Scryfall...</p>) : (
                                  <div className="space-y-2">
                                      {altResults.map((res, idx) => (
                                          <div key={idx} className="bg-gray-900 p-2 rounded-lg border border-gray-600 flex justify-between items-center group cursor-pointer" onClick={() => { navigator.clipboard.writeText(res.name); alert('Copiato: ' + res.name); }}>
-                                             <div className="flex-1 truncate pr-2">
-                                                 <p className="text-white font-bold text-sm group-hover:text-orange-400 truncate">{res.name} 📋</p>
-                                                 <p className="text-[10px] text-gray-400 truncate">{String(res.type_line)}</p>
-                                             </div>
-                                             <span className="bg-emerald-800 text-emerald-200 px-2 py-1 rounded text-xs font-black shadow whitespace-nowrap">
-                                                 €{res.prices && res.prices.eur ? res.prices.eur : '-'}
-                                             </span>
+                                             <div className="flex-1 truncate pr-2"><p className="text-white font-bold text-sm group-hover:text-orange-400 truncate">{res.name} 📋</p><p className="text-[10px] text-gray-400 truncate">{String(res.type_line)}</p></div>
+                                             <span className="bg-emerald-800 text-emerald-200 px-2 py-1 rounded text-xs font-black shadow whitespace-nowrap">€{res.prices && res.prices.eur ? res.prices.eur : '-'}</span>
                                          </div>
                                      ))}
                                      {altResults.length === 0 && <p className="text-red-400 text-sm text-center">Nessuna alternativa trovata.</p>}
@@ -2206,7 +2154,6 @@
                              <button onClick={() => setShowUpgradeModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
                              <h3 className="text-lg font-black text-white mb-2">Upgrade a Bracket 3 / 4</h3>
                              <p className="text-gray-300 text-xs font-bold mb-4">Gamechanger ufficiali per i tuoi colori:</p>
-                             
                              <div className="space-y-2 mb-4 overflow-y-auto flex-1 pr-1">
                                  {upgradeSuggestions.map((name, idx) => (
                                      <div key={idx} className="bg-gray-900 p-3 rounded-lg border border-gray-600 flex justify-between items-center group cursor-pointer" onClick={() => { navigator.clipboard.writeText(name); alert('Copiato: ' + name); }}>
@@ -2215,7 +2162,6 @@
                                  ))}
                                  {upgradeSuggestions.length === 0 && <p className="text-red-400 text-sm text-center font-bold">Hai già i migliori Gamechanger per i tuoi colori!</p>}
                              </div>
-
                              <button onClick={doUpgradePrompt} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-lg shadow flex items-center justify-center gap-2 mt-auto">🤖 CHIEDI A GEMINI UN PARERE</button>
                          </div>
                      </div>
