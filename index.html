@@ -2098,7 +2098,6 @@
       );
     };
 
-    // --- BIG STATS ROW (COMPONENTI GRAFICI PER IL LIFE TRACKER) ---
     // --- BIG STATS ROW ---
     const BigStatRow = ({ label, value, onSub, onAdd }) => (
       <div className="flex justify-between items-center bg-gray-900 rounded-xl px-3 py-2 mb-2 border border-gray-700 shadow-inner">
@@ -2111,8 +2110,8 @@
       </div>
     );
 
-    // --- COMPONENTE MODALI A TUTTO SCHERMO (STATS/MANA/RICERCA) ---
-    const PlayerModals = ({ type, player, opponents, onClose, updateStat, updateMana, toggleImmunity, updatePlayerConfig }) => {
+    // --- COMPONENTE MODALI A TUTTO SCHERMO (RUOTATI VERSO IL GIOCATORE) ---
+    const PlayerModals = ({ type, player, opponents, onClose, updateStat, updateMana, toggleImmunity, updatePlayerConfig, rotation }) => {
         const [cmdQuery, setCmdQuery] = useState("");
         const [cmdResults, setCmdResults] = useState([]);
         const [isSearching, setIsSearching] = useState(false);
@@ -2134,14 +2133,22 @@
                }).catch(e => { console.error(e); setIsSearching(false); });
          };
 
+        const Wrapper = ({ children }) => (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-sm">
+                <div className="bg-gray-900 w-[100dvw] h-[100dvh] md:w-[80dvw] md:h-[90dvh] md:rounded-2xl border-2 border-gray-600 shadow-2xl flex flex-col p-4 pointer-events-auto transition-transform duration-300" style={{ transform: `rotate(${rotation}deg)` }}>
+                    {children}
+                </div>
+            </div>
+        );
+
         if (type === 'stats') {
             return (
-                <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-[9999] flex flex-col p-4 sm:p-6 animate-fade" style={{ margin: 0, borderRadius: 0 }}>
+                <Wrapper>
                     <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2">
                         <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">⚙️ Statistiche: {player.name}</h3>
                         <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
                     </div>
-                    <div className="flex-1 overflow-y-auto pb-10 space-y-6">
+                    <div className="flex-1 overflow-y-auto pb-10 space-y-6 px-2">
                         <div>
                             <h4 className="text-blue-400 font-black text-lg mb-2 uppercase border-b border-gray-700 pb-1">⚔️ Danni Comandante</h4>
                             {opponents.map(opp => (
@@ -2168,17 +2175,17 @@
                             </div>
                         </div>
                         <div className="pt-4 flex flex-col gap-3">
-                            <button onClick={() => toggleImmunity(player.id)} className={`w-full py-4 font-black rounded-xl shadow-lg border text-lg ${player.immune ? 'bg-cyan-600 text-white border-cyan-400' : 'bg-gray-800 text-gray-300 border-gray-600'}`}>{player.immune ? '🛡️ Immunità Attiva' : 'Attiva Immunità (Ferma Danni)'}</button>
+                            <button onClick={() => toggleImmunity(player.id)} className={`w-full py-4 font-black rounded-xl shadow-lg border text-lg ${player.immune ? 'bg-cyan-600 text-white border-cyan-400' : 'bg-gray-800 text-gray-300 border-gray-600'}`}>{player.immune ? '🛡️ Immunità Attiva (Ferma Danni)' : 'Attiva Immunità'}</button>
                         </div>
                     </div>
-                </div>
+                </Wrapper>
             );
         }
 
         if (type === 'mana') {
             const ManaColors = [ { id: 'W', color: 'bg-yellow-100 text-yellow-900', label: 'W' }, { id: 'U', color: 'bg-blue-500 text-white', label: 'U' }, { id: 'B', color: 'bg-gray-800 text-white', label: 'B' }, { id: 'R', color: 'bg-red-500 text-white', label: 'R' }, { id: 'G', color: 'bg-green-500 text-white', label: 'G' }, { id: 'C', color: 'bg-gray-400 text-gray-900', label: 'C' } ];
             return (
-                <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-[9999] flex flex-col p-4 sm:p-6 animate-fade" style={{ margin: 0, borderRadius: 0 }}>
+                <Wrapper>
                     <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3 mt-2">
                         <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">🔮 Mana Pool: {player.name}</h3>
                         <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
@@ -2196,13 +2203,13 @@
                         ))}
                     </div>
                     <button onClick={() => { ManaColors.forEach(m => updatePlayerConfig(player.id, 'mana', {W:0,U:0,B:0,R:0,G:0,C:0})) }} className="w-full mt-auto py-4 font-black shadow-[0_0_15px_rgba(220,38,38,0.4)] bg-red-700 hover:bg-red-600 text-white rounded-xl transition-all text-xl">🔄 SVUOTA MANA POOL</button>
-                </div>
+                </Wrapper>
             );
         }
 
         if (type === 'search') {
             return (
-                <div className="fixed inset-0 bg-gray-900/95 backdrop-blur-xl z-[9999] flex flex-col p-4 sm:p-6 animate-fade" style={{ margin: 0, borderRadius: 0 }}>
+                <Wrapper>
                     <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2">
                         <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">🔍 Sfondo: {player.name}</h3>
                         <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
@@ -2222,13 +2229,13 @@
                         ))}
                         {cmdResults.length === 0 && !isSearching && <p className="col-span-full text-center text-gray-400 font-bold mt-10 text-xl">Cerca un Comandante per impostare lo sfondo.</p>}
                     </div>
-                </div>
+                </Wrapper>
             );
         }
         return null;
     };
 
-    // --- CARTELLA GIOCATORE ---
+    // --- CARTELLA GIOCATORE (PURA GRAFICA, NESSUN BOTTONE INTRALCIANTE) ---
     const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig }) => {
       const [isEditingName, setIsEditingName] = useState(false);
       const [tempName, setTempName] = useState(player.name);
@@ -2247,43 +2254,43 @@
           {isDead && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-50 pointer-events-none z-10">💀</div>}
           {player.immune && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-30 pointer-events-none text-blue-500 drop-shadow-lg z-10">🛡️</div>}
           
-          <div className="relative flex justify-between items-center bg-black/50 p-2 z-30 border-b border-gray-700 h-[25%] min-h-[50px] w-full px-4">
+          <div className="relative flex justify-between items-center bg-black/50 p-2 z-30 border-b border-gray-700 h-[25%] min-h-[50px] w-full px-2 md:px-4">
             <button onClick={() => onOpenModal('search')} className="text-gray-400 hover:text-white transition-colors" title="Imposta Sfondo"><span className="text-xl">🖼️</span></button>
-            <div className="flex flex-col items-center justify-center overflow-hidden z-20 flex-1 px-2">
-               {isEditingName ? ( <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} onBlur={saveName} onKeyDown={e => e.key === 'Enter' && saveName()} className="bg-gray-700 text-white text-sm px-1 py-1 rounded outline-none w-full max-w-[120px] border border-gray-500 font-bold text-center" /> ) : (
-                  <span onClick={() => setIsEditingName(true)} className="font-bold text-white text-lg drop-shadow-md truncate cursor-pointer text-center w-full">{player.name} ✎</span>
+            
+            <div className="flex flex-col items-center justify-center overflow-hidden z-20 flex-1 px-1">
+               {isEditingName ? ( <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} onBlur={saveName} onKeyDown={e => e.key === 'Enter' && saveName()} className="bg-gray-700 text-white text-sm px-1 py-1 rounded outline-none w-full max-w-[100px] border border-gray-500 font-bold text-center" /> ) : (
+                  <span onClick={() => setIsEditingName(true)} className="font-bold text-white text-sm md:text-lg drop-shadow-md truncate cursor-pointer text-center w-full">{player.name} ✎</span>
                )}
-               <div className="flex gap-2 mt-1 justify-center flex-wrap">
-                  {player.poison > 0 && <span className="text-green-400 text-xs font-black drop-shadow-md">💧{player.poison}</span>}
-                  {player.cmdCasts > 0 && <span className="text-gray-300 text-xs font-black drop-shadow-md">⚔️{player.cmdCasts}</span>}
-                  {player.emblems > 0 && <span className="text-purple-400 text-xs font-black drop-shadow-md">🛡️{player.emblems}</span>}
-                  {player.rad > 0 && <span className="text-lime-400 text-xs font-black drop-shadow-md">☢️{player.rad}</span>}
-                  {player.energy > 0 && <span className="text-blue-400 text-xs font-black drop-shadow-md">⚡{player.energy}</span>}
-                  {player.exp > 0 && <span className="text-yellow-400 text-xs font-black drop-shadow-md">✨{player.exp}</span>}
-                  {player.ticket > 0 && <span className="text-orange-400 text-xs font-black drop-shadow-md">🎫{player.ticket}</span>}
-                  {player.monarch && <span className="text-yellow-500 text-xs font-black drop-shadow-md">👑</span>}
-                  {player.initiative && <span className="text-red-400 text-xs font-black drop-shadow-md">🗡️</span>}
-                  {player.blessing && <span className="text-yellow-100 text-xs font-black drop-shadow-md">🏛️</span>}
-                  {player.dayNight === 'day' && <span className="text-yellow-300 text-xs font-black drop-shadow-md">☀️</span>}
-                  {player.dayNight === 'night' && <span className="text-indigo-300 text-xs font-black drop-shadow-md">🌙</span>}
+               <div className="flex gap-1 mt-1 justify-center flex-wrap">
+                  {player.poison > 0 && <span className="text-green-400 text-[10px] md:text-xs font-black drop-shadow-md">💧{player.poison}</span>}
+                  {player.cmdCasts > 0 && <span className="text-gray-300 text-[10px] md:text-xs font-black drop-shadow-md">⚔️{player.cmdCasts}</span>}
+                  {player.emblems > 0 && <span className="text-purple-400 text-[10px] md:text-xs font-black drop-shadow-md">🛡️{player.emblems}</span>}
+                  {player.rad > 0 && <span className="text-lime-400 text-[10px] md:text-xs font-black drop-shadow-md">☢️{player.rad}</span>}
+                  {player.energy > 0 && <span className="text-blue-400 text-[10px] md:text-xs font-black drop-shadow-md">⚡{player.energy}</span>}
+                  {player.exp > 0 && <span className="text-yellow-400 text-[10px] md:text-xs font-black drop-shadow-md">✨{player.exp}</span>}
+                  {player.ticket > 0 && <span className="text-orange-400 text-[10px] md:text-xs font-black drop-shadow-md">🎫{player.ticket}</span>}
+                  {player.monarch && <span className="text-yellow-500 text-[10px] md:text-xs font-black drop-shadow-md">👑</span>}
+                  {player.initiative && <span className="text-red-400 text-[10px] md:text-xs font-black drop-shadow-md">🗡️</span>}
+                  {player.blessing && <span className="text-yellow-100 text-[10px] md:text-xs font-black drop-shadow-md">🏛️</span>}
                </div>
             </div>
+            
             <div className="flex flex-col gap-1 z-30 shrink-0">
-               <button onClick={() => onOpenModal('mana')} className="px-3 py-1 rounded shadow-lg text-[10px] font-bold bg-emerald-700 text-white hover:bg-emerald-600 transition-colors">Mana</button>
-               <button onClick={() => onOpenModal('stats')} className="px-3 py-1 rounded shadow-lg text-[10px] font-bold bg-gray-700 text-white hover:bg-gray-600 transition-colors">Stats</button>
+               <button onClick={() => onOpenModal('mana')} className="px-2 py-1 rounded shadow-lg text-[10px] font-bold bg-emerald-700 text-white hover:bg-emerald-600 transition-colors">Mana</button>
+               <button onClick={() => onOpenModal('stats')} className="px-2 py-1 rounded shadow-lg text-[10px] font-bold bg-gray-700 text-white hover:bg-gray-600 transition-colors">Stats</button>
             </div>
           </div>
           
           <div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%] w-full">
             <button onClick={() => updateStat(player.id, 'life', -1)} className="w-1/4 h-full flex items-center justify-center text-6xl md:text-7xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
-            <div className="w-2/4 text-center text-7xl md:text-9xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)]">{player.life}</div>
+            <div className="w-2/4 text-center text-6xl md:text-8xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)]">{player.life}</div>
             <button onClick={() => updateStat(player.id, 'life', 1)} className="w-1/4 h-full flex items-center justify-center text-6xl md:text-7xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
           </div>
         </React.Fragment>
       );
     };
 
-    // --- GAME UTILITY (IL TAVOLO DA GIOCO) ---
+    // --- GAME UTILITY (IL TAVOLO DA GIOCO E BARRA CENTRALE) ---
     const GameUtility = ({view, setView}) => {
       const [setup, setSetup] = useState(true);
       const [numPlayers, setNumPlayers] = useState(4);
@@ -2292,7 +2299,26 @@
       
       const [showDice, setShowDice] = useState(false);
       const [diceResult, setDiceResult] = useState(null);
-      const [activeModal, setActiveModal] = useState(null); 
+      const [activeModal, setActiveModal] = useState(null); // { type, playerId, rotation }
+      
+      // STATO ARCHENEMY
+      const [archenemy, setArchenemy] = useState({
+          active: false, playerId: null, schemes: [], ongoing: [], currentScheme: null, showModal: false, enlargedImage: null
+      });
+
+      useEffect(() => {
+          fetch('https://api.scryfall.com/cards/search?q=t:scheme').then(res => res.json()).then(data => {
+                  if (data.data) {
+                      let fetched = data.data.map(c => {
+                          let imageUrl = "";
+                          if (c.image_uris && c.image_uris.normal) imageUrl = c.image_uris.normal;
+                          else if (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris) imageUrl = c.card_faces[0].image_uris.normal;
+                          return { id: c.id, name: c.name, img: imageUrl, isOngoing: (c.type_line||"").includes("Ongoing") };
+                      }).filter(c => c.img);
+                      setArchenemy(prev => ({ ...prev, schemes: fetched.sort(() => Math.random() - 0.5) }));
+                  }
+              }).catch(e => console.log("Errore Archenemy"));
+      }, []);
 
       const rollDice = (max) => {
          const res = Math.floor(Math.random() * max) + 1;
@@ -2310,13 +2336,30 @@
              rad: 0, energy: 0, exp: 0, ticket: 0, monarch: false, initiative: false, blessing: false, dayNight: 'none'
           });
         }
-        setPlayers(newPlayers); setView('game_active');
+        setPlayers(newPlayers); 
+        setView('game_active');
       };
 
       const resetGame = () => {
-          if (window.confirm("Sei sicuro di voler resettare la partita? Tutti i punti vita e i segnalini verranno azzerati.")) {
+          if (window.confirm("Vuoi davvero resettare la partita? Punti vita e segnalini torneranno ai valori iniziali.")) {
+              setArchenemy(prev => ({...prev, active: false, playerId: null, ongoing: [], currentScheme: null}));
               startGame();
           }
+      };
+
+      const exitGame = () => {
+          if (window.confirm("Sei sicuro di voler uscire e tornare al Menu?")) { setView('game'); }
+      };
+
+      const nextScheme = () => {
+          setArchenemy(prev => {
+              if (prev.schemes.length === 0) return prev;
+              let newSchemes = [...prev.schemes];
+              let next = newSchemes.pop();
+              let newOngoing = [...prev.ongoing];
+              if (prev.currentScheme && prev.currentScheme.isOngoing) { newOngoing.push(prev.currentScheme); }
+              return { ...prev, currentScheme: next, schemes: newSchemes, ongoing: newOngoing };
+          });
       };
 
       const updateStat = (playerId, stat, amount, opponentId = null) => {
@@ -2344,9 +2387,12 @@
       const toggleImmunity = (playerId) => { setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, immune: !p.immune } : p)); };
 
       if (view === 'game') return (
-        <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl shadow-lg border border-gray-600 mt-4 backdrop-blur-sm">
+        <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl shadow-lg border border-gray-600 mt-4 backdrop-blur-sm animate-fade">
           <h2 className="text-3xl font-black mb-6 text-center text-red-500 drop-shadow-md">Setup Partita</h2>
-          <p className="text-xs text-center text-gray-300 font-bold mb-4 bg-gray-900 p-2 rounded border border-gray-700">📱 Metti il telefono in orizzontale al centro del tavolo: le postazioni si ruoteranno in automatico!</p>
+          <div className="bg-blue-900/50 border border-blue-500 rounded-lg p-4 mb-6 shadow-inner text-center">
+             <p className="text-blue-200 text-sm font-bold uppercase tracking-wider mb-2">Posizione del Telefono:</p>
+             <p className="text-white text-xs font-semibold">2 Giocatori ➡️ Verticale<br/>3 - 6 Giocatori ➡️ Orizzontale al centro</p>
+          </div>
           <div className="mb-4">
             <label className="block text-gray-300 font-bold mb-2">Numero Giocatori (1-6)</label>
             <input type="number" min="1" max="6" value={numPlayers} onChange={e => setNumPlayers(parseInt(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white text-center text-xl font-bold outline-none" />
@@ -2357,86 +2403,94 @@
               <option value={40}>40 (Commander)</option><option value={20}>20 (Standard)</option>
             </select>
           </div>
-          <button onClick={startGame} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl text-xl shadow-[0_0_15px_rgba(220,38,38,0.5)] transition-all">INIZIA</button>
+          <button onClick={startGame} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl text-xl shadow-[0_0_15px_rgba(220,38,38,0.5)] transition-all">INIZIA PARTITA</button>
         </div>
       );
 
-      // GRIGLIE DINAMICHE CON BARRA CENTRALE
+      // --- LOGICA GRIGLIE E BARRA ---
       let gridClass = '';
       if (players.length <= 2) gridClass = 'grid-cols-1 grid-rows-[1fr_55px_1fr]';
       else if (players.length === 3) gridClass = 'grid-cols-[1fr_55px_1fr] grid-rows-2';
-      else if (players.length === 4) gridClass = 'grid-cols-2 grid-rows-[1fr_55px_1fr]';
-      else if (players.length === 5) gridClass = 'grid-cols-[1fr_1fr_55px_1fr] grid-rows-2';
-      else if (players.length === 6) gridClass = 'grid-cols-3 grid-rows-[1fr_55px_1fr]';
+      else if (players.length === 4) gridClass = 'grid-cols-[1fr_55px_1fr] grid-rows-2';
+      else if (players.length === 5) gridClass = 'grid-cols-[1fr_1fr_55px_1.2fr] grid-rows-2';
+      else if (players.length === 6) gridClass = 'grid-cols-[1.2fr_1fr_55px_1fr_1.2fr] grid-rows-2';
 
       return (
         <div className="fixed inset-0 z-[100] bg-black flex flex-col h-[100dvh] w-[100dvw]">
-          <button onClick={() => setView('game')} className="absolute top-2 left-2 z-[150] bg-black/80 px-4 py-2 rounded-full text-white text-xs border border-gray-500 font-bold shadow-lg flex items-center gap-2">✖ Esci Partita</button>
-          
           <div className={`flex-1 grid ${gridClass} gap-1 h-full w-full p-1`}>
+             
+             {/* RENDER GIOCATORI */}
              {players.map((p, index) => {
-                 let wrapperClass = "relative overflow-hidden rounded-xl border-2 border-gray-700 bg-gray-900"; 
+                 let wrapperClass = "relative overflow-hidden rounded-xl border border-gray-600 bg-gray-900 shadow-xl"; 
                  let rotDeg = 0; let rowStart = ""; let colStart = ""; let rowSpan = "";
                  
-                 // POSIZIONAMENTO LOGICO PERFETTO
+                 // POSIZIONAMENTO LOGICO MATEMATICO
                  if (players.length <= 2) {
-                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; } // Giocatore in alto
-                     if (index === 1) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }   // Giocatore in basso
+                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; } // Sopra
+                     if (index === 1) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }   // Sotto
                  } else if (players.length === 3) {
                      if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                      if (index === 1) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
-                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola ruotato
+                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola Destro
                  } else if (players.length === 4) {
                      if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
-                     if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
-                     if (index === 2) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }
-                     if (index === 3) { rowStart = "row-start-3"; colStart = "col-start-2"; rotDeg = 0; }
+                     if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = 180; }
+                     if (index === 2) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
+                     if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-3"; rotDeg = 0; }
                  } else if (players.length === 5) {
                      if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                      if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
                      if (index === 2) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
                      if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
-                     if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-4"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola ruotato
+                     if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-4"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola Destro
                  } else if (players.length === 6) {
-                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
+                     if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rowSpan = "row-span-2"; rotDeg = 90; }  // Capotavola Sinistro
                      if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
-                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = 180; }
-                     if (index === 3) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }
-                     if (index === 4) { rowStart = "row-start-3"; colStart = "col-start-2"; rotDeg = 0; }
-                     if (index === 5) { rowStart = "row-start-3"; colStart = "col-start-3"; rotDeg = 0; }
+                     if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-4"; rotDeg = 180; }
+                     if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
+                     if (index === 4) { rowStart = "row-start-2"; colStart = "col-start-4"; rotDeg = 0; }
+                     if (index === 5) { rowStart = "row-start-1"; colStart = "col-start-5"; rowSpan = "row-span-2"; rotDeg = -90; } // Capotavola Destro
                  }
 
                  const isSideways = rotDeg === 90 || rotDeg === -90;
                  return (
-                     <div key={p.id} className={`${wrapperClass} ${rowStart} ${colStart} ${rowSpan} flex items-center justify-center`}>
-                         <div className={`absolute w-full h-full flex flex-col justify-center`} 
-                              style={{ transform: `rotate(${rotDeg}deg)` }}>
-                             <PlayerCard player={p} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} onOpenModal={(type) => setActiveModal({type, playerId: p.id})} />
+                     <div key={p.id} className={`${wrapperClass} ${rowStart} ${colStart} ${rowSpan}`} style={{ containerType: 'size' }}>
+                         <div className={`absolute flex flex-col bg-gray-900 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] ${isSideways ? 'top-1/2 left-1/2' : 'inset-0'}`} 
+                              style={{
+                                  width: isSideways ? '100cqh' : '100cqw', 
+                                  height: isSideways ? '100cqw' : '100cqh', 
+                                  transform: isSideways ? `translate(-50%, -50%) rotate(${rotDeg}deg)` : `rotate(${rotDeg}deg)`
+                              }}>
+                             <PlayerCard player={p} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={rotDeg} onOpenModal={(type) => setActiveModal({type, playerId: p.id, rotation: rotDeg})} />
                          </div>
                      </div>
                  );
              })}
 
-             {/* LA BARRA CENTRALE (Dadi, Reset, Stats Partita) */}
+             {/* LA BARRA CENTRALE (Dadi, Reset, Esci, Archenemy) */}
              <div className={
-                 players.length === 3 || players.length === 5 
-                 ? `row-start-1 row-span-full ${players.length===5 ? 'col-start-3' : 'col-start-2'} bg-gray-950 border-x border-gray-700 flex flex-col items-center justify-center gap-8 shadow-2xl z-[120] py-4`
-                 : "row-start-2 col-start-1 col-span-full bg-gray-950 border-y border-gray-700 flex flex-row items-center justify-center gap-10 shadow-2xl z-[120] py-2"
+                 players.length <= 2 
+                 ? "row-start-2 col-start-1 col-span-full bg-gray-950 border-y border-gray-700 flex flex-row items-center justify-around shadow-2xl z-[120] py-1 px-4"
+                 : `row-start-1 row-span-full ${players.length===3 || players.length===4 ? 'col-start-2' : 'col-start-3'} bg-gray-950 border-x border-gray-700 flex flex-col items-center justify-around shadow-2xl z-[120] py-4 px-1`
              }>
+                <button onClick={exitGame} className="flex flex-col items-center gap-1 text-red-500 font-bold hover:text-red-400 transition-colors" title="Esci dalla Partita">
+                    <span className="text-xl">✖</span> <span className="text-[10px] uppercase">Esci</span>
+                </button>
+                <div className={players.length <= 2 ? "w-px h-6 bg-gray-700" : "w-6 h-px bg-gray-700"}></div>
                 <button onClick={() => setShowDice(true)} className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 w-12 h-12 rounded-xl shadow-lg border border-gray-600 transform transition-transform active:scale-90" title="Lancia Dadi">
                     <span className="text-2xl drop-shadow-md">🎲</span>
                 </button>
-                <div className={players.length === 3 || players.length === 5 ? "w-6 h-px bg-gray-700" : "w-px h-6 bg-gray-700"}></div>
-                <button onClick={resetGame} className="flex flex-col items-center gap-1 text-gray-400 font-bold hover:text-white transition-colors" title="Azzera e Ricomincia">
-                    <span className="text-xl">🔄</span>
+                <button onClick={() => setArchenemy(prev => ({...prev, showModal: true}))} className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-lg border transform transition-transform active:scale-90 ${archenemy.active ? 'bg-red-800 border-red-500 animate-pulse' : 'bg-gray-800 border-gray-600 hover:bg-gray-700'}`} title="Archenemy">
+                    <span className="text-2xl drop-shadow-md">👿</span>
                 </button>
-                <button onClick={() => alert("Cronologia partite in arrivo nel prossimo aggiornamento!")} className="flex flex-col items-center gap-1 text-gray-400 font-bold hover:text-white transition-colors" title="Storico Partite">
-                    <span className="text-xl">📊</span>
+                <div className={players.length <= 2 ? "w-px h-6 bg-gray-700" : "w-6 h-px bg-gray-700"}></div>
+                <button onClick={resetGame} className="flex flex-col items-center gap-1 text-gray-400 font-bold hover:text-white transition-colors" title="Azzera e Ricomincia">
+                    <span className="text-xl">🔄</span> <span className="text-[10px] uppercase">Reset</span>
                 </button>
              </div>
           </div>
 
-          {/* RENDER MODALI GLOBALI IN PORTAL */}
+          {/* RENDER MODALI GLOBALI (Ruotati verso il giocatore) */}
           {activeModal && ReactDOM.createPortal(
               <PlayerModals 
                  type={activeModal.type} 
@@ -2447,7 +2501,82 @@
                  updateMana={updateMana} 
                  toggleImmunity={toggleImmunity} 
                  updatePlayerConfig={updatePlayerConfig} 
+                 rotation={activeModal.rotation}
               />
+          , document.body)}
+
+          {/* MODALE ARCHENEMY (Verticale a tutto schermo) */}
+          {archenemy.showModal && ReactDOM.createPortal(
+             <div className="fixed inset-0 bg-gray-900 z-[9999] flex flex-col p-4 animate-fade overflow-hidden">
+                <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2">
+                   <h3 className="text-white font-black text-2xl truncate pr-2 flex items-center gap-2">👿 Archenemy</h3>
+                   <button onClick={() => setArchenemy(prev => ({...prev, showModal: false}))} className="bg-gray-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg">Chiudi</button>
+                </div>
+                
+                <div className="flex items-center justify-between bg-gray-800 p-4 rounded-xl border border-gray-600 shadow mb-4">
+                   <span className="text-gray-300 font-bold">Stato Archenemy:</span>
+                   <button onClick={() => setArchenemy(prev => ({...prev, active: !prev.active}))} className={`px-6 py-2 font-black rounded-lg transition-colors ${archenemy.active ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400'}`}>
+                      {archenemy.active ? 'ACCESO (ON)' : 'SPENTO (OFF)'}
+                   </button>
+                </div>
+
+                {archenemy.active && (
+                   <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
+                      {!archenemy.playerId ? (
+                         <div className="bg-gray-800 p-4 rounded-xl border border-gray-600 shadow">
+                            <h4 className="text-white font-bold mb-3 text-center">Chi è l'Archenemy?</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                               {players.map(p => (
+                                  <button key={p.id} onClick={() => { setArchenemy(prev => ({...prev, playerId: p.id})); nextScheme(); }} className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg border border-gray-500 shadow">{p.name}</button>
+                               ))}
+                            </div>
+                         </div>
+                      ) : (
+                         <div className="flex-1 flex flex-col">
+                            <p className="text-center text-red-400 font-black mb-2 bg-red-900/30 p-2 rounded border border-red-800 uppercase tracking-widest">
+                               🔥 {players.find(p=>p.id===archenemy.playerId)?.name} È IL NEMICO 🔥
+                            </p>
+                            
+                            {/* Schemi Permanenti in alto */}
+                            {archenemy.ongoing.length > 0 && (
+                               <div className="mb-4 bg-gray-800 p-3 rounded-xl border border-purple-500 shadow-inner">
+                                  <p className="text-purple-400 text-xs font-bold uppercase mb-2">Schemi Permanenti (Ongoing):</p>
+                                  <div className="flex gap-2 overflow-x-auto pb-2">
+                                     {archenemy.ongoing.map((s, i) => (
+                                        <img key={i} src={s.img} className="w-24 rounded cursor-pointer shadow-lg active:scale-95 border border-purple-500 shrink-0" onClick={() => setArchenemy(prev => ({...prev, enlargedImage: s.img}))} />
+                                     ))}
+                                  </div>
+                               </div>
+                            )}
+
+                            {/* Schema Attuale Centrale */}
+                            <div className="flex-1 flex flex-col items-center justify-center mb-4">
+                               {archenemy.currentScheme ? (
+                                  <div className="relative group cursor-pointer" onClick={() => setArchenemy(prev => ({...prev, enlargedImage: archenemy.currentScheme.img}))}>
+                                     <img src={archenemy.currentScheme.img} className="max-h-[40vh] md:max-h-[50vh] rounded-xl shadow-2xl border-4 border-gray-700" />
+                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity rounded-xl pointer-events-none"><span className="text-4xl">🔍</span></div>
+                                  </div>
+                               ) : (
+                                  <p className="text-gray-500 font-bold">Nessuno schema attivo.</p>
+                               )}
+                            </div>
+
+                            <button onClick={nextScheme} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-xl text-xl shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-all mt-auto mb-6">
+                               🃏 PROSSIMO SCHEMA
+                            </button>
+                         </div>
+                      )}
+                   </div>
+                )}
+             </div>
+          , document.body)}
+
+          {/* ZOOM IMMAGINE SCHEMI */}
+          {archenemy.enlargedImage && ReactDOM.createPortal(
+             <div className="fixed inset-0 bg-black/95 z-[10000] flex items-center justify-center p-4 animate-fade" onClick={() => setArchenemy(prev => ({...prev, enlargedImage: null}))}>
+                <img src={archenemy.enlargedImage} className="max-w-full max-h-[90vh] rounded-xl shadow-2xl border border-gray-600" />
+                <p className="absolute bottom-6 text-gray-400 font-bold text-sm">Tocca per chiudere</p>
+             </div>
           , document.body)}
 
           {/* MODALE DADI */}
