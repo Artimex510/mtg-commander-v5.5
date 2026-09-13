@@ -1774,8 +1774,31 @@
         return (prob * 100).toFixed(1);
     };
 
+    // --- HELPER MATEMATICI PER PROBABILITA' (IPERGEOMETRICA) ---
+    const calcCombinations = (n, k) => {
+        if (k < 0 || k > n) return 0;
+        if (k === 0 || k === n) return 1;
+        let res = 1;
+        for (let i = 1; i <= k; i++) { res = res * (n - i + 1) / i; }
+        return res;
+    };
+    const calcHypergeometric = (popSize, successPop, sampleSize, successSample) => {
+        if (sampleSize > popSize || successPop > popSize) return 0;
+        return (calcCombinations(successPop, successSample) * calcCombinations(popSize - successPop, sampleSize - successSample)) / calcCombinations(popSize, sampleSize);
+    };
+    const calcAtLeast = (popSize, successPop, sampleSize, minSuccess) => {
+        let prob = 0;
+        for (let i = minSuccess; i <= Math.min(successPop, sampleSize); i++) {
+            prob += calcHypergeometric(popSize, successPop, sampleSize, i);
+        }
+        return (prob * 100).toFixed(1);
+    };
+
     // --- DECK ANALYSIS E CONDIVISIONE ---
     const DeckAnalysis = ({deck, navigate}) => {
+        // ARRAY COLORI MANA AGGIUNTO QUI PER NON FAR CRASHARE I GRAFICI
+        const ManaColors = [ { id: 'W', color: 'bg-yellow-100 text-yellow-900', label: 'W' }, { id: 'U', color: 'bg-blue-500 text-white', label: 'U' }, { id: 'B', color: 'bg-gray-800 text-white', label: 'B' }, { id: 'R', color: 'bg-red-500 text-white', label: 'R' }, { id: 'G', color: 'bg-green-500 text-white', label: 'G' }, { id: 'C', color: 'bg-gray-400 text-gray-900', label: 'C' } ];
+
         const [showBudgetModal, setShowBudgetModal] = useState(false);
         const [targetBudget, setTargetBudget] = useState("");
         const [showAltModal, setShowAltModal] = useState(false);
@@ -1861,15 +1884,25 @@
             return reqColors.every(col => deckColors.has(col));
         }).sort(() => 0.5 - Math.random()).slice(0, 5);
 
+        const doUpgradePrompt = () => {
+            const prompt = `Agisci come un deckbuilder.\nEcco la lista ${formatName}:\n${listText}\n\nSuggeriscimi i 5 migliori "Gamechanger" essenziali per portarlo a Bracket 4 rispettando la mia identità di colore, e dimmi perché.`;
+            navigator.clipboard.writeText(prompt).then(() => {
+                setShowUpgradeModal(false);
+                alert("🪄 Prompt copiato! Incollalo su Gemini."); window.open('https://gemini.google.com/', '_blank');
+            });
+        };
+
         // --- MOTORE ANALISI MAZZO (Tipi, Fonti Mana, Strategia) ---
         let totalCards = 0; let avgCMC = 0;
         const curve = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, '6+':0}; let maxCurve = 0; 
         
         // TIPI CARTA
         const typeCounts = { Creature:0, Artifact:0, Enchantment:0, Instant:0, Sorcery:0, Planeswalker:0, Land:0 };
-        // FONTI DI MANA REALI (Usa produced_mana di Scryfall per Terre, Sassi e Dork)
+        // FONTI DI MANA REALI
         const manaSources = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
-        // ANALISI STRATEGICA (Regex / Lettura Oracle Text)
+        const spellColors = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 }; let maxSpellColor = 0;
+        const landColors = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 }; let maxLandColor = 0;
+        // ANALISI STRATEGICA
         const roles = { ramp: 0, draw: 0, recursion: 0, counter: 0, wipe: 0, tutor: 0 };
 
         if (deck && deck.cards) {
@@ -1889,9 +1922,14 @@
                else if (typeLower.includes('sorcery')) typeCounts.Sorcery++;
                else if (typeLower.includes('planeswalker')) typeCounts.Planeswalker++;
 
-               // Curva di Mana (Escludi terre)
+               // Curva e Colori Magie (Escludi terre)
                if(!typeLower.includes('land')) {
                   let cmc = c.cmc || 0; if (cmc >= 6) curve['6+']++; else curve[cmc]++;
+                  if (c.colors && c.colors.length > 0) c.colors.forEach(col => { if(spellColors[col] !== undefined) spellColors[col]++; });
+                  else spellColors['C']++;
+               } else {
+                  if (c.color_identity && c.color_identity.length > 0) c.color_identity.forEach(col => { if(landColors[col] !== undefined) landColors[col]++; });
+                  else landColors['C']++;
                }
 
                // Lettura Fonti di Mana (Prodotte realmente da Scryfall, include Sassi e Dork!)
@@ -1903,29 +1941,24 @@
 
                // Lettura Strategica tramite Oracle Text
                if (!typeLower.includes('land')) {
-                   // Ramp: produce mana o cerca terre base
                    if (c.produced_mana || oracleLower.includes("search your library for a basic land") || oracleLower.includes("put it onto the battlefield tapped")) roles.ramp++;
-                   // Draw: "draw a card", "draw cards" (esclude draw the game)
                    if (oracleLower.includes("draw ") && !oracleLower.includes("draw the game")) roles.draw++;
-                   // Recursion: dal cimitero alla mano/campo
                    if (oracleLower.includes("return target") && oracleLower.includes("graveyard")) roles.recursion++;
-                   // Counters
                    if (oracleLower.includes("counter target spell")) roles.counter++;
-                   // Board Wipes
                    if (oracleLower.includes("destroy all") || oracleLower.includes("exile all") || oracleLower.includes("damage to each creature")) roles.wipe++;
-                   // Tutors / Deck Manipulation
                    if (oracleLower.includes("search your library for a card") || oracleLower.includes("scry ") || oracleLower.includes("surveil ")) roles.tutor++;
                }
             });
 
             avgCMC = mainboard.filter(c => !(c.type || "").toLowerCase().includes('land')).reduce((acc, c) => acc + (c.cmc || 0), 0) / (totalCards - typeCounts.Land || 1);
             Object.values(curve).forEach(v => { if(v > maxCurve) maxCurve = v; });
+            Object.values(spellColors).forEach(v => { if(v > maxSpellColor) maxSpellColor = v; });
+            Object.values(landColors).forEach(v => { if(v > maxLandColor) maxLandColor = v; });
         }
 
-        // Calcolo Percentuali Tipi per Barre Progress
         const typeTotalNonLand = totalCards - typeCounts.Land;
 
-        // Calcolo Grafico a Torta (Conic Gradient in CSS Puro)
+        // Calcolo Grafico a Torta (Conic Gradient)
         const totalSources = Object.values(manaSources).reduce((a,b)=>a+b, 0);
         let pieGradient = "conic-gradient(";
         if (totalSources > 0) {
@@ -1942,7 +1975,6 @@
             pieGradient += segments.join(', ') + ")";
         } else { pieGradient = "none"; }
 
-        // Ipergeometrica Base: Probabilità di 2-4 Terre iniziali
         let probPlayableHand = 0;
         if (totalCards > 0 && typeCounts.Land > 0) {
             const p2 = calcHypergeometric(totalCards, typeCounts.Land, 7, 2);
@@ -1950,7 +1982,7 @@
             const p4 = calcHypergeometric(totalCards, typeCounts.Land, 7, 4);
             probPlayableHand = ((p2 + p3 + p4) * 100).toFixed(1);
         }
-
+      
         return (
            <div className="max-w-2xl mx-auto space-y-4">
              <button onClick={() => navigate('mydecks')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-2 shadow transition-colors">⬅ Indietro ai Mazzi</button>
@@ -2050,6 +2082,22 @@
                            <p className="text-lg font-black text-yellow-500">{roles.recursion}</p>
                        </div>
                    </div>
+               </div>
+
+               <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner mb-6">
+                 <h3 className="text-sm font-bold text-blue-400 mb-4 text-center uppercase">Curva di Mana (No Terre)</h3>
+                 <div className="flex items-end gap-2 h-28">
+                    {Object.keys(curve).map(k => {
+                       const hPerc = maxCurve === 0 ? 0 : (curve[k] / maxCurve) * 100;
+                       return (
+                         <div key={k} className="flex-1 flex flex-col items-center justify-end h-full">
+                           <span className="text-[10px] text-gray-300 font-bold mb-1">{curve[k]}</span>
+                           <div className="w-full bg-gradient-to-t from-blue-700 to-blue-400 rounded-t-sm" style={{ height: `${hPerc}%` }}></div>
+                           <span className="text-[10px] text-gray-400 mt-1 font-bold">{k}</span>
+                         </div>
+                       );
+                    })}
+                 </div>
                </div>
 
                <div className="space-y-3">
@@ -2162,7 +2210,7 @@
                      </div>
                  , document.body)}
 
-                 {/* MODALI RIDUCI E AUMENTA POTENZA (Esistenti) */}
+                 {/* MODALI RIDUCI E AUMENTA POTENZA */}
                  {showAltModal && altTarget && ReactDOM.createPortal(
                      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 animate-fade">
                          <div className="bg-gray-800 border-2 border-orange-500 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
