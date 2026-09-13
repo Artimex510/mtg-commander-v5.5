@@ -191,6 +191,41 @@
       const [activeDeck, setActiveDeck] = useState(null);
       const videoRef = useRef(null);
 
+      // --- GESTIONE NATIVA TASTO INDIETRO DELLO SMARTPHONE ---
+
+  // 1. Ascolta il tasto indietro (fisico o swipe) del telefono
+  useEffect(() => {
+      // Inizializza la "memoria" del telefono al primo avvio (se vuota)
+      if (!window.history.state || !window.history.state.view) {
+          window.history.replaceState({ view: 'home' }, '');
+      }
+
+      const handleBackButton = (event) => {
+          // Se la cronologia ha una schermata salvata, torna a quella fluidamente
+          if (event.state && event.state.view) {
+              setView(event.state.view);
+          } else {
+              // Se sei arrivato all'inizio della cronologia
+              setView('home');
+          }
+      };
+
+      // Attiva l'ascolto del pulsante "Indietro"
+      window.addEventListener('popstate', handleBackButton);
+      return () => window.removeEventListener('popstate', handleBackButton);
+  }, []);
+
+  // 2. Sincronizza ogni cambio pagina dell'App con la cronologia del telefono
+  useEffect(() => {
+      // NON registriamo i movimenti se siamo dentro il Life Tracker, 
+      // perché lì abbiamo già il pop-up di sicurezza "Vuoi uscire dalla partita?"
+      if (view !== 'game_active') {
+          if (!window.history.state || window.history.state.view !== view) {
+              window.history.pushState({ view: view }, '');
+          }
+      }
+  }, [view]);
+     
       useEffect(() => {
         let unsubscribeSnapshot = null;
         const unsubscribeAuth = auth.onAuthStateChanged(u => {
