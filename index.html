@@ -2135,8 +2135,6 @@
                }).catch(e => { console.error(e); setIsSearching(false); });
          };
 
-        // WRAPPER INTELLIGENTE: Per le Stats e Mana adatta la rotazione senza tagliare.
-        // Se è 'search', la rotazione viene azzerata perché il sistema blocca fisicamente il telefono in verticale!
         const effectiveRotation = type === 'search' ? 0 : rotation;
         const Wrapper = ({ children }) => {
             const isSideways = effectiveRotation === 90 || effectiveRotation === -90;
@@ -2248,8 +2246,8 @@
         return null;
     };
 
-    // --- CARTELLA GIOCATORE (PUNTI VITA RIDOTTI PER NON SOVRAPPORSI) ---
-    const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig }) => {
+    // --- CARTELLA GIOCATORE CON ICONA ARCHENEMY ---
+    const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig, isArchenemy }) => {
       const [isEditingName, setIsEditingName] = useState(false);
       const [tempName, setTempName] = useState(player.name);
       
@@ -2272,7 +2270,10 @@
             
             <div className="flex flex-col items-center justify-center overflow-hidden z-20 flex-1 px-1">
                {isEditingName ? ( <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} onBlur={saveName} onKeyDown={e => e.key === 'Enter' && saveName()} className="bg-gray-700 text-white text-sm px-1 py-1 rounded outline-none w-full max-w-[100px] border border-gray-500 font-bold text-center" /> ) : (
-                  <span onClick={() => setIsEditingName(true)} className="font-bold text-white text-sm md:text-lg drop-shadow-md truncate cursor-pointer text-center w-full">{player.name} ✎</span>
+                  <span onClick={() => setIsEditingName(true)} className="font-bold text-white text-sm md:text-lg drop-shadow-md truncate cursor-pointer text-center w-full">
+                      {isArchenemy && <span className="mr-1 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]" title="Archenemy">👿</span>}
+                      {player.name} ✎
+                  </span>
                )}
                <div className="flex gap-1 mt-1 justify-center flex-wrap">
                   {player.poison > 0 && <span className="text-green-400 text-[10px] md:text-xs font-black drop-shadow-md">💧{player.poison}</span>}
@@ -2296,14 +2297,14 @@
           
           <div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%] w-full">
             <button onClick={() => updateStat(player.id, 'life', -1)} className="w-1/4 h-full flex items-center justify-center text-5xl md:text-6xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
-            <div className="w-2/4 text-center text-5xl md:text-6xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)] truncate">{player.life}</div>
+            <div className="w-2/4 text-center text-5xl md:text-6xl lg:text-7xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)] truncate">{player.life}</div>
             <button onClick={() => updateStat(player.id, 'life', 1)} className="w-1/4 h-full flex items-center justify-center text-5xl md:text-6xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
           </div>
         </React.Fragment>
       );
     };
 
-    // --- GAME UTILITY, ARCHENEMY E GESTIONE SCHERMO (WAKE LOCK + ROTATION) ---
+    // --- GAME UTILITY E ARCHENEMY CON BLOCCO SCHERMO INTELLIGENTE E WAKE LOCK ---
     const GameUtility = ({view, setView}) => {
       const [setup, setSetup] = useState(true);
       const [numPlayers, setNumPlayers] = useState(4);
@@ -2322,7 +2323,6 @@
       const stateRef = React.useRef({ numPlayers, archenemy, activeModal });
       useEffect(() => { stateRef.current = { numPlayers, archenemy, activeModal }; }, [numPlayers, archenemy, activeModal]);
 
-      // FORZATURA SCHERMO (FULLSCREEN + ROTAZIONE)
       const applyScreenLock = async (forcePortrait = false, playersCount = numPlayers) => {
           try {
               if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
@@ -2336,10 +2336,9 @@
                       else await window.screen.orientation.lock('landscape');
                   }
               }
-          } catch (e) { console.log("Fullscreen o Blocco non supportati o bloccati dal browser."); }
+          } catch (e) { console.log("Fullscreen o Blocco non supportati", e); }
       };
 
-      // WAKE LOCK (IMPEDISCE ALLO SCHERMO DI SPEGNERSI DURANTE LA PARTITA)
       const requestWakeLock = async () => {
           try {
               if ('wakeLock' in navigator) {
@@ -2354,7 +2353,6 @@
               applyScreenLock(isVerticalMode, numPlayers);
               requestWakeLock();
               
-              // Se si esce e rientra nell'app (es. da un'altra app), ripristina blocco e Wake Lock
               const handleVisibilityChange = () => {
                   if (document.visibilityState === 'visible' && view === 'game_active') {
                       requestWakeLock();
@@ -2366,14 +2364,12 @@
           }
       }, [view, numPlayers, archenemy.showModal, activeModal]);
 
-      // PULIZIA WAKE LOCK ALLA CHIUSURA ASSOLUTA
       useEffect(() => {
           return () => {
               if (wakeLockRef.current) { wakeLockRef.current.release().catch(()=>{}); }
           }
       }, []);
 
-      // BLOCCO DEL TASTO INDIETRO (ANTI-USCITA)
       useEffect(() => {
           if (view === 'game_active') {
               const handlePopState = async (e) => {
@@ -2387,7 +2383,6 @@
                       window.history.pushState(null, "", window.location.href);
                       const curr = stateRef.current;
                       const isVertical = curr.archenemy.showModal || (curr.activeModal && curr.activeModal.type === 'search');
-                      // Ritenta il blocco in automatico
                       applyScreenLock(isVertical, curr.numPlayers);
                   }
               };
@@ -2449,7 +2444,6 @@
               if (wakeLockRef.current) wakeLockRef.current.release().catch(()=>{});
               setView('game'); 
           } else {
-              // Se annulla, riforziamo lo schermo
               const isVerticalMode = archenemy.showModal || (activeModal && activeModal.type === 'search');
               applyScreenLock(isVerticalMode, numPlayers);
           }
@@ -2567,7 +2561,7 @@
                      <div key={p.id} className={`${wrapperClass} ${rowStart} ${colStart} ${rowSpan}`} style={{ containerType: 'size' }}>
                          <div className={`absolute flex flex-col bg-gray-900 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] ${isSideways ? 'top-1/2 left-1/2' : 'inset-0'}`} 
                               style={{ width: isSideways ? '100cqh' : '100cqw', height: isSideways ? '100cqw' : '100cqh', transform: isSideways ? `translate(-50%, -50%) rotate(${rotDeg}deg)` : `rotate(${rotDeg}deg)` }}>
-                             <PlayerCard player={p} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={rotDeg} onOpenModal={(type) => setActiveModal({type, playerId: p.id, rotation: rotDeg})} />
+                             <PlayerCard player={p} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={rotDeg} isArchenemy={archenemy.playerId === p.id} onOpenModal={(type) => setActiveModal({type, playerId: p.id, rotation: rotDeg})} />
                          </div>
                      </div>
                  );
@@ -2601,7 +2595,7 @@
               <PlayerModals type={activeModal.type} player={players.find(p => p.id === activeModal.playerId)} opponents={players.filter(p => p.id !== activeModal.playerId)} onClose={() => setActiveModal(null)} updateStat={updateStat} updateMana={updateMana} toggleImmunity={toggleImmunity} updatePlayerConfig={updatePlayerConfig} rotation={activeModal.rotation} />
           , document.body)}
 
-          {/* MODALE ARCHENEMY */}
+          {/* MODALE ARCHENEMY (Verticale Forzato) */}
           {archenemy.showModal && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-gray-900 z-[9999] flex flex-col p-4 animate-fade overflow-hidden">
                 <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2 shrink-0">
@@ -2665,6 +2659,7 @@
              </div>
           , document.body)}
 
+          {/* ZOOM IMMAGINE SCHEMI */}
           {archenemy.enlargedImage && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-black/95 z-[10000] flex items-center justify-center p-4 animate-fade" onClick={() => setArchenemy(prev => ({...prev, enlargedImage: null}))}>
                 <img src={archenemy.enlargedImage} className="max-w-full max-h-[90vh] rounded-xl shadow-2xl border border-gray-600" />
@@ -2672,6 +2667,7 @@
              </div>
           , document.body)}
 
+          {/* MODALE DADI */}
           {showDice && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 animate-fade" onClick={() => setShowDice(false)}>
                 <div className="bg-gray-900 border border-purple-500 rounded-2xl p-6 shadow-2xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
