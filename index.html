@@ -136,6 +136,176 @@
       Back: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
     };
 
+    // --- TRADE EVALUATOR (BILANCIA SCAMBI) ---
+    const TradeEvaluator = ({ setView }) => {
+        const [leftCards, setLeftCards] = useState([]);
+        const [rightCards, setRightCards] = useState([]);
+        const [searchQ, setSearchQ] = useState("");
+        const [searchResults, setSearchResults] = useState([]);
+        const [activeSide, setActiveSide] = useState(null);
+
+        const searchCardForTrade = (e) => {
+            e.preventDefault();
+            if (!searchQ.trim()) return;
+            fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(searchQ.trim())}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.data) { setSearchResults(data.data.slice(0, 10)); } 
+                    else { setSearchResults([]); }
+                }).catch(() => setSearchResults([]));
+        };
+
+        const addCardToTrade = (card) => {
+            let price = 0;
+            if (card.prices && card.prices.eur) { price = parseFloat(card.prices.eur); }
+            const tradeCard = { 
+                id: card.id + Math.random(), 
+                name: card.name, 
+                price: price,
+                img: card.image_uris && card.image_uris.normal ? card.image_uris.normal : ""
+            };
+
+            if (activeSide === 'left') setLeftCards([...leftCards, tradeCard]);
+            if (activeSide === 'right') setRightCards([...rightCards, tradeCard]);
+            
+            setSearchResults([]); setSearchQ(""); setActiveSide(null);
+        };
+
+        const removeCard = (id, side) => {
+            if (side === 'left') setLeftCards(leftCards.filter(c => c.id !== id));
+            if (side === 'right') setRightCards(rightCards.filter(c => c.id !== id));
+        };
+
+        const leftTotal = leftCards.reduce((acc, c) => acc + c.price, 0);
+        const rightTotal = rightCards.reduce((acc, c) => acc + c.price, 0);
+        const diff = Math.abs(leftTotal - rightTotal).toFixed(2);
+        
+        let verdict = "SCAMBIO EQUO ⚖️";
+        let verdictColor = "text-yellow-400";
+        if (leftTotal > rightTotal + 1) { verdict = "TU CI PERDI 📉"; verdictColor = "text-red-500"; }
+        if (rightTotal > leftTotal + 1) { verdict = "TU CI GUADAGNI 📈"; verdictColor = "text-green-500"; }
+
+        return (
+            <div className="max-w-4xl mx-auto space-y-4 p-4 text-white">
+                <button onClick={() => setView('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-2">⬅ Torna Indietro</button>
+                <div className="bg-gray-800 p-6 rounded-xl border-2 border-orange-500 shadow-2xl">
+                    <h2 className="text-3xl font-black text-white text-center mb-6">⚖️ Bilancia Scambi</h2>
+                    <div className="bg-gray-900 p-4 rounded-xl text-center border border-gray-600 mb-6">
+                        <p className="text-gray-400 text-sm font-bold uppercase mb-1">Valutazione Scambio</p>
+                        <p className={`text-3xl font-black ${verdictColor}`}>{verdict}</p>
+                        {diff > 0 && <p className="text-white font-bold mt-2">Differenza di valore: <span className="text-orange-400">€{diff}</span></p>}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-gray-900 p-4 rounded-xl border border-blue-500">
+                            <h3 className="text-xl font-black text-blue-400 text-center mb-2">IO DO</h3>
+                            <p className="text-4xl font-black text-white text-center mb-4">€{leftTotal.toFixed(2)}</p>
+                            <button onClick={() => setActiveSide('left')} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg mb-4">+ Aggiungi Carta</button>
+                            <div className="space-y-2">
+                                {leftCards.map(c => (
+                                    <div key={c.id} className="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-600">
+                                        <span className="text-white font-bold text-sm truncate flex-1">{c.name}</span>
+                                        <span className="text-emerald-400 font-black mx-2">€{c.price.toFixed(2)}</span>
+                                        <button onClick={() => removeCard(c.id, 'left')} className="text-red-500 font-black px-2">X</button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="bg-gray-900 p-4 rounded-xl border border-red-500">
+                            <h3 className="text-xl font-black text-red-400 text-center mb-2">TU DAI</h3>
+                            <p className="text-4xl font-black text-white text-center mb-4">€{rightTotal.toFixed(2)}</p>
+                            <button onClick={() => setActiveSide('right')} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-2 rounded-lg mb-4">+ Aggiungi Carta</button>
+                            <div className="space-y-2">
+                                {rightCards.map(c => (
+                                    <div key={c.id} className="flex justify-between items-center bg-gray-800 p-2 rounded border border-gray-600">
+                                        <span className="text-white font-bold text-sm truncate flex-1">{c.name}</span>
+                                        <span className="text-emerald-400 font-black mx-2">€{c.price.toFixed(2)}</span>
+                                        <button onClick={() => removeCard(c.id, 'right')} className="text-red-500 font-black px-2">X</button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {activeSide && (
+                    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[9999] p-4">
+                        <div className="bg-gray-800 p-6 rounded-xl w-full max-w-md border border-gray-600">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-white font-bold text-xl">Cerca Carta</h3>
+                                <button onClick={() => setActiveSide(null)} className="text-gray-400 text-2xl font-black">✕</button>
+                            </div>
+                            <form onSubmit={searchCardForTrade} className="flex gap-2 mb-4">
+                                <input type="text" value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Nome carta..." className="flex-1 bg-gray-900 text-white p-3 rounded-lg outline-none" autoFocus />
+                                <button type="submit" className="bg-orange-600 text-white font-bold px-4 rounded-lg">Cerca</button>
+                            </form>
+                            <div className="max-h-64 overflow-y-auto space-y-2">
+                                {searchResults.map(res => {
+                                    let p = res.prices && res.prices.eur ? res.prices.eur : "0.00";
+                                    return (
+                                        <div key={res.id} onClick={() => addCardToTrade(res)} className="bg-gray-900 p-3 rounded border border-gray-700 flex justify-between items-center cursor-pointer hover:border-orange-500">
+                                            <span className="text-white font-bold text-sm">{res.name}</span>
+                                            <span className="text-emerald-400 font-black text-xs">€{p}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // --- AREA STAMPA (GENERATORE PROXY A4) ---
+    const PrintView = ({ printQueue, setPrintQueue, setView }) => {
+        useEffect(() => {
+            const style = document.createElement('style');
+            style.innerHTML = `
+                @media print {
+                    body * { visibility: hidden; }
+                    #print-area, #print-area * { visibility: visible; }
+                    #print-area { position: absolute; left: 0; top: 0; width: 210mm; margin: 0; padding: 0; }
+                    .no-print { display: none !important; }
+                    @page { margin: 5mm; }
+                }
+            `;
+            document.head.appendChild(style);
+            return () => document.head.removeChild(style);
+        }, []);
+
+        const removeFromQueue = (index) => {
+            const newQ = [...printQueue]; newQ.splice(index, 1); setPrintQueue(newQ);
+        };
+
+        const clearQueue = () => { if(window.confirm("Vuoi svuotare tutta l'area di stampa?")) setPrintQueue([]); };
+
+        return (
+            <div className="max-w-4xl mx-auto p-4 text-white">
+                <div className="no-print flex flex-wrap justify-between items-center mb-6 bg-gray-800 p-4 rounded-xl border border-gray-600 shadow-xl">
+                    <button onClick={() => setView('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold">⬅ Torna Indietro</button>
+                    <div className="text-center">
+                        <h2 className="text-2xl font-black text-white">🖨️ Area di Stampa Proxy</h2>
+                        <p className="text-gray-400 text-sm font-bold">{printQueue.length} carte in coda</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={clearQueue} className="bg-red-700 hover:bg-red-600 text-white px-4 py-2 rounded font-bold">Svuota</button>
+                        <button onClick={() => window.print()} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-black shadow-lg">STAMPA FOGLIO A4</button>
+                    </div>
+                </div>
+                <div id="print-area" className="bg-white mx-auto flex flex-wrap content-start" style={{ width: '210mm', minHeight: '297mm' }}>
+                    {printQueue.map((card, idx) => (
+                        <div key={idx} className="relative group" style={{ width: '63mm', height: '88mm', padding: '1mm', boxSizing: 'border-box' }}>
+                            <img src={card.img} alt={card.name} className="w-full h-full object-cover rounded-lg border border-black" />
+                            <button onClick={() => removeFromQueue(idx)} className="no-print absolute top-2 right-2 bg-red-600 text-white font-black w-8 h-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg">X</button>
+                        </div>
+                    ))}
+                    {printQueue.length === 0 && (
+                        <p className="no-print text-gray-500 text-xl font-bold w-full text-center mt-20">L'area di stampa è vuota.</p>
+                    )}
+                </div>
+            </div>
+        );
+    };
+    
     const ManaColors = [
       { id: 'W', color: 'bg-yellow-100 text-yellow-900', label: 'W' },
       { id: 'U', color: 'bg-blue-500 text-white', label: 'U' },
@@ -304,6 +474,22 @@
       
       const navigate = (newView, deck = null) => { setActiveDeck(deck); setView(newView); setMenuOpen(false); };
 
+     // --- STATI STAMPA E COLLEZIONE ---
+      const [printQueue, setPrintQueue] = useState([]);
+      const [collection, setCollection] = useState([]);
+
+      useEffect(() => {
+          const savedPrint = localStorage.getItem('mtg_printQueue');
+          const savedColl = localStorage.getItem('mtg_collection');
+          if (savedPrint) { try { setPrintQueue(JSON.parse(savedPrint)); } catch(e){} }
+          if (savedColl) { try { setCollection(JSON.parse(savedColl)); } catch(e){} }
+      }, []);
+
+      useEffect(() => {
+          localStorage.setItem('mtg_printQueue', JSON.stringify(printQueue));
+          localStorage.setItem('mtg_collection', JSON.stringify(collection));
+      }, [printQueue, collection]);
+      
       const handlePlayIntro = () => {
          if(videoRef.current) {
              const playPromise = videoRef.current.play();
