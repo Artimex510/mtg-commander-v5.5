@@ -1870,6 +1870,7 @@
             totalCards = mainboard.length;
             
             mainboard.forEach(c => {
+               const nameLower = String(c.name || "").toLowerCase();
                const typeLower = String(c.type || c.type_line || "").toLowerCase();
                const oracleLower = String(c.oracle_text || "").toLowerCase();
                const isLand = typeLower.includes('land');
@@ -1884,30 +1885,58 @@
 
                if(!isLand) { let cmc = Number(c.cmc) || 0; if (cmc >= 6) curve['6+']++; else curve[cmc]++; }
 
-               // FONTI DI MANA: Fallback su Oracle Text o Color Identity se produced_mana manca
-               let localProduced = c.produced_mana || [];
-               if (!c.produced_mana || c.produced_mana.length === 0) {
-                   if (isLand && Array.isArray(c.color_identity)) {
-                       localProduced = c.color_identity;
-                   } else if (oracleLower.includes("add {") || oracleLower.includes("add one mana")) {
-                       if (oracleLower.includes("{w}")) localProduced.push('W');
-                       if (oracleLower.includes("{u}")) localProduced.push('U');
-                       if (oracleLower.includes("{b}")) localProduced.push('B');
-                       if (oracleLower.includes("{r}")) localProduced.push('R');
-                       if (oracleLower.includes("{g}")) localProduced.push('G');
-                       if (oracleLower.includes("{c}")) localProduced.push('C');
-                       if (localProduced.length === 0) localProduced.push('C'); // Fallback per mana generico
+               // FONTI DI MANA: Riconoscimento Ibrido (Dati API + Sottotipi + Oracle Text)
+               let localProduced = [];
+               
+               if (Array.isArray(c.produced_mana) && c.produced_mana.length > 0) {
+                   localProduced = [...c.produced_mana];
+               } else {
+                   // 1. Lettura dai Tipi di Terra Base (Shocklands, Triomi, ecc.)
+                   if (typeLower.includes("plains") || nameLower.includes("plains")) localProduced.push('W');
+                   if (typeLower.includes("island") || nameLower.includes("island")) localProduced.push('U');
+                   if (typeLower.includes("swamp") || nameLower.includes("swamp")) localProduced.push('B');
+                   if (typeLower.includes("mountain") || nameLower.includes("mountain")) localProduced.push('R');
+                   if (typeLower.includes("forest") || nameLower.includes("forest")) localProduced.push('G');
+
+                   // 2. Lettura Testo (Sassi, Dork e "Any Color")
+                   if (oracleLower.includes("add {") || oracleLower.includes("add one mana") || oracleLower.includes("any color") || oracleLower.includes("add ")) {
+                       if (oracleLower.includes("{w}") || oracleLower.includes("white")) localProduced.push('W');
+                       if (oracleLower.includes("{u}") || oracleLower.includes("blue")) localProduced.push('U');
+                       if (oracleLower.includes("{b}") || oracleLower.includes("black")) localProduced.push('B');
+                       if (oracleLower.includes("{r}") || oracleLower.includes("red")) localProduced.push('R');
+                       if (oracleLower.includes("{g}") || oracleLower.includes("green")) localProduced.push('G');
+                       if (oracleLower.includes("{c}") || oracleLower.includes("colorless")) localProduced.push('C');
+                       
+                       // Assegna il "mana di qualsiasi colore" (Arcane Signet, Commander's Sphere) ai colori del Comandante!
+                       if (oracleLower.includes("any color")) {
+                           if (deckColors.size > 0) deckColors.forEach(col => localProduced.push(col));
+                           else localProduced.push('W','U','B','R','G');
+                       }
                    }
                }
+               
+               // Rimuovi duplicati (Es. Terra Isola che ha anche il testo "Add {U}")
+               localProduced = [...new Set(localProduced)];
+               
+               // Fallback Terre (Se non hanno né testo né tipo esatto ma sono terre incolore come Evolving Wilds)
+               if (localProduced.length === 0 && isLand && Array.isArray(c.color_identity) && c.color_identity.length > 0) localProduced = [...c.color_identity];
+               if (localProduced.length === 0 && isLand) localProduced.push('C');
+
                localProduced.forEach(m => { if (manaSources[m] !== undefined) manaSources[m]++; });
 
-               // RUOLI STRATEGICI: Basati sul testo esatto suggerito
+               // RUOLI STRATEGICI: Pattern Infallibili
                if (!isLand) {
-                   if (oracleLower.includes("add ") || oracleLower.includes("search your library for a basic land")) roles.ramp++;
-                   if (oracleLower.includes("draw ") && !oracleLower.includes("draw the game") && !oracleLower.includes("draw a card at the beginning of the next month's upkeep")) roles.draw++;
+                   // RAMP: Produce mana O cerca terre.
+                   if (localProduced.length > 0 || oracleLower.includes("search your library for a land") || oracleLower.includes("put it onto the battlefield tapped")) roles.ramp++;
+                   // PESCHINI: Evita il draw per il "draw the game" o segnalini
+                   if ((oracleLower.includes("draw ") && !oracleLower.includes("draw the game")) || oracleLower.includes("put it into your hand")) roles.draw++;
+                   // CIMITERO
                    if (oracleLower.includes("return target") && oracleLower.includes("graveyard")) roles.recursion++;
-                   if (oracleLower.includes("counter target")) roles.counter++;
-                   if (oracleLower.includes("destroy all") || oracleLower.includes("exile all") || oracleLower.includes("damage to each creature")) roles.wipe++;
+                   // COUNTER: Evita i segnalini "+1/+1 counter target"
+                   if (oracleLower.includes("counter target spell") || oracleLower.includes("counter target activated")) roles.counter++;
+                   // WRATTE: Sweepers
+                   if (oracleLower.includes("destroy all") || oracleLower.includes("exile all") || oracleLower.includes("damage to each")) roles.wipe++;
+                   // TUTORI
                    if (oracleLower.includes("search your library for a card") || oracleLower.includes("scry ") || oracleLower.includes("surveil ")) roles.tutor++;
                }
             });
