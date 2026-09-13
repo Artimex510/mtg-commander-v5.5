@@ -2150,6 +2150,21 @@
         const [cmdQuery, setCmdQuery] = useState("");
         const [cmdResults, setCmdResults] = useState([]);
         const [isSearching, setIsSearching] = useState(false);
+        const [tempName, setTempName] = useState("");
+
+        // Imposta il nome temporaneo quando si apre il modale EditName
+        useEffect(() => {
+            if (type === 'editName' && player) {
+                setTempName(player.name);
+            }
+        }, [type, player]);
+
+        const saveName = () => {
+            if (tempName.trim() !== "") {
+                updatePlayerConfig(player.id, 'name', tempName.trim());
+            }
+            onClose();
+        };
 
         const eseguiRicercaCmd = () => {
             if(!cmdQuery.trim()) return;
@@ -2170,7 +2185,8 @@
                }).catch(e => { console.error(e); setIsSearching(false); });
          };
 
-        const effectiveRotation = type === 'search' ? 0 : rotation;
+        // WRAPPER INTELLIGENTE: Per EditName e Search forza sempre il telefono in verticale (rotazione 0)
+        const effectiveRotation = (type === 'search' || type === 'editName') ? 0 : rotation;
         const Wrapper = ({ children }) => {
             const isSideways = effectiveRotation === 90 || effectiveRotation === -90;
             const modalStyle = {
@@ -2186,6 +2202,22 @@
                 </div>
             );
         };
+
+        if (type === 'editName') {
+            return (
+                <Wrapper>
+                    <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2 shrink-0">
+                        <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">✏️ Modifica Nome</h3>
+                        <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Annulla</button>
+                    </div>
+                    <div className="flex flex-col gap-4 mt-4 shrink-0 px-2 md:px-6">
+                        <p className="text-gray-400 text-sm font-bold text-center">Inserisci il nome del giocatore o del Comandante:</p>
+                        <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveName()} className="bg-gray-800 border border-gray-500 text-white rounded-xl p-4 outline-none font-black text-2xl focus:border-blue-500 text-center shadow-inner" placeholder="Nome" />
+                        <button onClick={saveName} className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-xl shadow-[0_0_15px_rgba(22,163,74,0.5)] transition-all text-xl mt-4">SALVA NOME</button>
+                    </div>
+                </Wrapper>
+            );
+        }
 
         if (type === 'stats') {
             return (
@@ -2281,18 +2313,13 @@
         return null;
     };
 
-    // --- CARTELLA GIOCATORE CON ICONA ARCHENEMY ---
+    // --- CARTELLA GIOCATORE ---
     const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig, isArchenemy }) => {
-      const [isEditingName, setIsEditingName] = useState(false);
-      const [tempName, setTempName] = useState(player.name);
-      
       let isDead = false;
       if (!player.immune) {
          if (player.life <= 0) isDead = true; if (player.poison >= 10) isDead = true;
          if (player.cmdDmg) { Object.keys(player.cmdDmg).forEach(key => { if (player.cmdDmg[key] >= 21) isDead = true; }); }
       }
-
-      const saveName = () => { setIsEditingName(false); if(tempName.trim() !== "") updatePlayerConfig(player.id, 'name', tempName.trim()); else setTempName(player.name); };
 
       return (
         <React.Fragment>
@@ -2304,12 +2331,11 @@
             <button onClick={() => onOpenModal('search')} className="text-gray-400 hover:text-white transition-colors" title="Imposta Sfondo"><span className="text-xl">🖼️</span></button>
             
             <div className="flex flex-col items-center justify-center overflow-hidden z-20 flex-1 px-1">
-               {isEditingName ? ( <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} onBlur={saveName} onKeyDown={e => e.key === 'Enter' && saveName()} className="bg-gray-700 text-white text-sm px-1 py-1 rounded outline-none w-full max-w-[100px] border border-gray-500 font-bold text-center" /> ) : (
-                  <span onClick={() => setIsEditingName(true)} className="font-bold text-white text-sm md:text-lg drop-shadow-md truncate cursor-pointer text-center w-full">
-                      {isArchenemy && <span className="mr-1 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]" title="Archenemy">👿</span>}
-                      {player.name} ✎
-                  </span>
-               )}
+               {/* Click sul nome ora apre il modale EditName verticale! */}
+               <span onClick={() => onOpenModal('editName')} className="font-bold text-white text-sm md:text-lg drop-shadow-md truncate cursor-pointer text-center w-full">
+                   {isArchenemy && <span className="mr-1 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]" title="Archenemy">👿</span>}
+                   {player.name} ✎
+               </span>
                <div className="flex gap-1 mt-1 justify-center flex-wrap">
                   {player.poison > 0 && <span className="text-green-400 text-[10px] md:text-xs font-black drop-shadow-md">💧{player.poison}</span>}
                   {player.cmdCasts > 0 && <span className="text-gray-300 text-[10px] md:text-xs font-black drop-shadow-md">⚔️{player.cmdCasts}</span>}
@@ -2384,7 +2410,8 @@
 
       useEffect(() => {
           if (view === 'game_active') {
-              const isVerticalMode = archenemy.showModal || (activeModal && activeModal.type === 'search');
+              // Ora controlliamo sia 'search' che 'editName' per forzare il verticale
+              const isVerticalMode = archenemy.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'));
               applyScreenLock(isVerticalMode, numPlayers);
               requestWakeLock();
               
@@ -2417,7 +2444,7 @@
                   } else {
                       window.history.pushState(null, "", window.location.href);
                       const curr = stateRef.current;
-                      const isVertical = curr.archenemy.showModal || (curr.activeModal && curr.activeModal.type === 'search');
+                      const isVertical = curr.archenemy.showModal || (curr.activeModal && (curr.activeModal.type === 'search' || curr.activeModal.type === 'editName'));
                       applyScreenLock(isVertical, curr.numPlayers);
                   }
               };
@@ -2472,8 +2499,7 @@
               }));
           }
           
-          // Re-inietta sempre il blocco schermo/rotazione dopo il popup nativo!
-          const isVerticalMode = archenemy.showModal || (activeModal && activeModal.type === 'search');
+          const isVerticalMode = archenemy.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'));
           applyScreenLock(isVerticalMode, numPlayers);
       };
 
@@ -2484,7 +2510,7 @@
               if (wakeLockRef.current) wakeLockRef.current.release().catch(()=>{});
               setView('game'); 
           } else {
-              const isVerticalMode = archenemy.showModal || (activeModal && activeModal.type === 'search');
+              const isVerticalMode = archenemy.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'));
               applyScreenLock(isVerticalMode, numPlayers);
           }
       };
