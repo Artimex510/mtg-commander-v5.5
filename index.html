@@ -584,7 +584,7 @@
                 {view === 'cart' && <CartView navigate={navigate} />}
                 {view === 'trade' && <TradeEvaluator setView={setView} />}
                 {view === 'print' && <ProxyPrintArea printQueue={printQueue} setPrintQueue={setPrintQueue} setView={setView} />}
-                {view === 'myproxies' && <MyProxies navigate={navigate} />}
+                {view === 'myproxies' && <MyProxies navigate={navigate} printQueue={printQueue} setPrintQueue={setPrintQueue} />}
                 {view === 'viewdeck' && <DeckViewer deck={activeDeck} navigate={navigate} />}
                 {view === 'analysis' && <DeckAnalysis deck={activeDeck} navigate={navigate} />}
                 {view === 'proxycreator' && <ProxyEditor isStandalone={true} />}
@@ -925,7 +925,7 @@
       );
     };
 
-    const MyProxies = ({navigate}) => {
+    const MyProxies = ({navigate, printQueue, setPrintQueue}) => {
       const [proxies, setProxies] = useState([]);
       
       useEffect(() => { 
@@ -964,6 +964,7 @@
                  <div key={p.id} className="bg-gray-800 rounded-xl border border-gray-600 overflow-hidden shadow-xl flex flex-col relative">
                     <img src={p.proxyImage} className="w-full object-contain" style={{ aspectRatio: '63/88' }} />
                     <button onClick={() => deleteProxy(p.id)} className="absolute top-2 right-2 bg-red-600/90 text-white w-8 h-8 rounded-full font-black shadow-lg flex items-center justify-center backdrop-blur hover:bg-red-500 active:scale-95 transition-all">✖</button>
+                    <button onClick={() => { setPrintQueue([...(printQueue || []), {img: p.proxyImage, name: p.name}]); alert("Proxy in coda di stampa!"); }} className="absolute top-2 left-2 bg-cyan-600/90 text-white w-8 h-8 rounded-full font-black shadow-lg flex items-center justify-center backdrop-blur hover:bg-cyan-500 active:scale-95 transition-all">🖨️</button>
                     <div className="bg-gray-900 p-2 text-center text-xs font-bold text-gray-300 truncate">{p.name}</div>
                  </div>
               ))}
@@ -3752,7 +3753,7 @@
         );
     }
     
-    const CardSearchExplorer = ({navigate}) => {
+    const CardSearchExplorer = ({navigate, printQueue, setPrintQueue}) => {
       const [query, setQuery] = useState("");
       const [oracleText, setOracleText] = useState("");
       const [mana, setMana] = useState([]);
@@ -3951,7 +3952,10 @@
                        <span className="text-gray-400 text-[10px] font-bold uppercase">Prezzo Scryfall</span>
                        <span className="text-yellow-400 font-black text-lg">{(viewingCard.prices && viewingCard.prices.eur) ? `€ ${viewingCard.prices.eur}` : ((viewingCard.prices && viewingCard.prices.usd) ? `$ ${viewingCard.prices.usd}` : "N/D")}</span>
                     </div>
-                    <button onClick={() => addToCart('single', viewingCard)} className="bg-yellow-600 hover:bg-yellow-500 text-white font-black px-4 py-2 rounded-lg shadow flex items-center gap-2 active:scale-95">🛒 AGGIUNGI</button>
+                    <div className="flex gap-2">
+                       <button onClick={() => { setPrintQueue([...(printQueue || []), {img: displayImg, name: viewingCard.name}]); alert("Aggiunta alla coda di stampa!"); }} className="bg-cyan-600 hover:bg-cyan-500 text-white font-black px-3 py-2 rounded-lg shadow active:scale-95 text-xl" title="Aggiungi all'Area Stampa">🖨️</button>
+                       <button onClick={() => addToCart('single', viewingCard)} className="bg-yellow-600 hover:bg-yellow-500 text-white font-black px-3 py-2 rounded-lg shadow flex items-center gap-2 active:scale-95" title="Aggiungi al Carrello">🛒</button>
+                    </div>
                  </div>
                  <div className="w-full max-w-sm mb-4 flex gap-2">
                     <button onClick={() => translateCard(viewingCard)} disabled={translating} className="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-[0_0_15px_rgba(67,56,202,0.4)] border border-indigo-500 transition-all text-xs">
