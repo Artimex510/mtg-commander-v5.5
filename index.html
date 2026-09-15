@@ -2857,32 +2857,34 @@
         }
 
         if (type === 'search') {
-            return renderModal(
-                <React.Fragment>
-                    <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2 shrink-0">
-                        <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">🔍 Sfondo: {player.name}</h3>
-                        <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
-                    </div>
-                    <div className="flex gap-2 mb-4 shrink-0">
-                        <input autoFocus type="text" placeholder="Scrivi nome es. Urza" value={cmdQuery} onChange={e=>setCmdQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&eseguiRicercaCmd()} className="flex-1 bg-gray-800 border border-gray-500 text-white rounded-xl p-3 outline-none font-bold text-lg focus:border-blue-500" />
-                        <button onClick={eseguiRicercaCmd} className="bg-blue-600 px-6 rounded-xl text-white font-black shadow-lg text-lg active:scale-95 transition-transform">{isSearching ? '...' : 'Cerca'}</button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto min-h-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 content-start pb-10 pr-2">
-                        {cmdResults.map(c => (
-                            <div key={c.id} className="relative rounded-xl overflow-hidden cursor-pointer border-2 border-transparent hover:border-blue-500 shadow-xl active:scale-95 transition-all bg-black h-28 sm:h-36 md:h-40" onClick={() => { updatePlayerConfig(player.id, 'bgUrl', c.img); onClose(); }}>
-                                <img src={c.img} className="absolute inset-0 w-full h-full object-cover opacity-90 hover:opacity-100" />
-                                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent p-2 pt-6 text-center flex flex-col justify-end h-full">
-                                    <span className="text-white text-[10px] md:text-xs font-bold drop-shadow-md leading-tight">{c.name}</span>
+            return (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-md overflow-hidden">
+                    <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-4 sm:p-6 pointer-events-auto" style={modalStyle}>
+                        <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2 shrink-0">
+                            <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">🔍 Sfondo: {player.name}</h3>
+                            <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
+                        </div>
+                        <div className="flex gap-2 mb-4 shrink-0">
+                            <input autoFocus type="text" placeholder="Scrivi nome es. Urza" value={cmdQuery} onChange={e=>setCmdQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&eseguiRicercaCmd()} className="flex-1 bg-gray-800 border border-gray-500 text-white rounded-xl p-3 outline-none font-bold text-lg focus:border-blue-500" />
+                            <button onClick={eseguiRicercaCmd} className="bg-blue-600 px-6 rounded-xl text-white font-black shadow-lg text-lg active:scale-95 transition-transform">{isSearching ? '...' : 'Cerca'}</button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto min-h-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 content-start pb-10 pr-2">
+                            {cmdResults.map(c => (
+                                <div key={c.id} className="relative rounded-xl overflow-hidden cursor-pointer border-2 border-transparent hover:border-blue-500 shadow-xl active:scale-95 transition-all bg-black h-28 sm:h-36 md:h-40" onClick={() => { updatePlayerConfig(player.id, 'bgUrl', c.img); onClose(); }}>
+                                    <img src={c.img} className="absolute inset-0 w-full h-full object-cover opacity-90 hover:opacity-100" />
+                                    <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent p-2 pt-6 text-center flex flex-col justify-end h-full">
+                                        <span className="text-white text-[10px] md:text-xs font-bold drop-shadow-md leading-tight">{c.name}</span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                        {cmdResults.length === 0 && !isSearching && <p className="col-span-full text-center text-gray-400 font-bold mt-10 text-xl">Cerca un Comandante per impostare lo sfondo.</p>}
+                            ))}
+                            {cmdResults.length === 0 && !isSearching && <p className="col-span-full text-center text-gray-400 font-bold mt-10 text-xl">Cerca un Comandante per impostare lo sfondo.</p>}
+                        </div>
                     </div>
-                </React.Fragment>
+                </div>
             );
         }
-       
-      if (type === 'tokens') {
+        
+        if (type === 'tokens') {
             const SfondiPedine = ['plains_sfondo.jpg', 'island_sfondo.jpg', 'swamp_sfondo.jpg', 'mountain_sfondo.jpg', 'forest_sfondo.jpg', 'kamigawa_sfondo.jpg'];
             
             const updateToken = (tId, field, val) => {
@@ -2975,7 +2977,7 @@
                             )}
                         </div>
 
-                        {/* Controlli Generazione (fuori dalla plancia per restare sempre visibili) */}
+                        {/* Controlli Generazione */}
                         <div className="flex gap-2 mt-4 shrink-0 z-20">
                             <button onClick={() => setShowBgMenu(true)} className="bg-indigo-700 hover:bg-indigo-600 px-4 rounded-xl text-white text-xl shadow-lg transition-transform active:scale-95 border border-indigo-500" title="Sfondo Battaglia">🖼️</button>
                             <input type="text" placeholder="Es. Drago 5/5 volante..." value={tokenQuery} onChange={e=>setTokenQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!isGeneratingToken&&generateToken()} className="flex-1 bg-gray-800 border border-gray-500 text-white rounded-xl p-3 outline-none font-bold focus:border-emerald-500 shadow-inner" />
@@ -2985,7 +2987,7 @@
                 </div>
             );
         }
-      return null;
+        return null;
     };
 
     // --- CARTELLA GIOCATORE ---
