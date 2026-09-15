@@ -2891,25 +2891,29 @@
             
             const [showSearchModal, setShowSearchModal] = useState(false);
 
-            // Gestisce l'orientamento: Verticale quando cerchi, Orizzontale (standard) quando sei sulla plancia
-            const openSearch = () => {
-                setShowSearchModal(true);
-                applyScreenLock(true, 4); // Forza verticale per la ricerca
-            };
+            // GESTIONE ORIENTAMENTO AUTOMATICO (Verticale per ricerca/sfondi, Orizzontale per la plancia)
+            useEffect(() => {
+                try {
+                    if (showSearchModal || showBgMenu) {
+                        window.screen?.orientation?.lock?.('portrait').catch(()=>{});
+                    } else {
+                        const isSide = rotation === 90 || rotation === -90;
+                        window.screen?.orientation?.lock?.(isSide ? 'landscape' : 'portrait').catch(()=>{});
+                    }
+                } catch(e) {}
+            }, [showSearchModal, showBgMenu, rotation]);
+
+            const openSearch = () => { setShowSearchModal(true); };
             const closeSearch = () => {
                 setShowSearchModal(false);
                 setCmdResults([]);
                 setTokenQuery(""); setTokenOracle(""); setTokenPT("");
-                // Ripristina l'orientamento della plancia di gioco
-                const isVerticalMode = archenemy.showModal || planechase.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'));
-                applyScreenLock(isVerticalMode, opponents.length + 1);
             };
 
             const updateToken = (tId, field, val) => {
                 const updated = (player.tokens || []).map(t => {
                     if (t.id === tId) {
                         let newObj = { ...t, [field]: val };
-                        // Se modifichi la quantità totale, assicurati che i tappati non superino il totale
                         if (field === 'qty' && newObj.tappedQty > val) {
                             newObj.tappedQty = val;
                         }
@@ -3007,68 +3011,99 @@
 
             return (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-md overflow-hidden">
-                    <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-4 sm:p-6 pointer-events-auto relative" style={modalStyle}>
+                    <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-2 sm:p-4 pointer-events-auto relative" style={modalStyle}>
                         
-                        {/* INTESTAZIONE PLANCIA PULITA */}
-                        <div className="flex justify-between items-center mb-2 border-b border-gray-700 pb-3 mt-2 shrink-0">
-                            <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">♟️ Plancia Pedine: {player.name}</h3>
-                            <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
+                        {/* INTESTAZIONE PLANCIA MOLTO COMPATTA */}
+                        <div className="flex justify-between items-center border-b border-gray-700 pb-1 px-2 mt-1 shrink-0">
+                            <h3 className="text-white font-black text-base sm:text-lg truncate pr-2">♟️ {player.name}</h3>
+                            <button onClick={onClose} className="bg-red-600 px-3 py-1 rounded text-white font-bold text-xs shadow-lg shrink-0">Chiudi</button>
                         </div>
 
-                        {/* CAMPO DI BATTAGGIA PULITO (MAZZETTI SOVRAPPOSTI) */}
-                        <div className="flex-1 relative bg-black overflow-hidden rounded-xl border border-gray-600 mt-2 flex flex-col">
+                        {/* CAMPO DI BATTAGGIA A TUTTO SCHERMO */}
+                        <div className="flex-1 relative bg-black overflow-hidden rounded-xl border border-gray-600 mt-1 flex flex-col">
                             {player.tokenBg && <img src={player.tokenBg} className="absolute inset-0 w-full h-full object-cover opacity-50 z-0 pointer-events-none" />}
                             
-                            <div className="flex-1 overflow-y-auto p-4 flex flex-wrap gap-x-8 gap-y-10 content-start z-10 relative items-start">
+                            <div className="flex-1 overflow-y-auto p-3 flex flex-wrap gap-4 content-start z-10 relative items-start">
                                 {(player.tokens || []).map(t => {
                                     const untapped = t.qty - (t.tappedQty || 0);
                                     const tapped = t.tappedQty || 0;
 
                                     return (
-                                        <div key={t.id} className="flex flex-col items-center bg-gray-800/90 p-3 rounded-xl border border-gray-700 shadow-xl w-36 shrink-0">
+                                        <div key={t.id} className="flex flex-col items-center bg-gray-800/90 p-2 rounded-xl border border-gray-700 shadow-xl shrink-0">
                                             
-                                            {/* MAZZETTO SOVRAPPOSTO (EFFETTO SOLITARIO) */}
-                                            <div className="relative w-28 h-36 cursor-pointer mb-2" onClick={() => updateToken(t.id, 'tappedQty', untapped > 0 ? tapped + 1 : 0)}>
-                                                {/* Scheda sotto se ci sono più pezzi */}
-                                                {untapped > 1 && (
-                                                    <div className="absolute inset-0 rounded-xl bg-gray-700 border border-gray-600 transform translate-x-1.5 translate-y-1.5 pointer-events-none"></div>
-                                                )}
+                                            {/* MAZZETTI AFFIANCATI (STAPPATE E TAPPATE DISTINTE) */}
+                                            <div className="flex items-center gap-2 mb-2">
                                                 
-                                                {/* Carta Principale (Fronte o Tappata) */}
-                                                <div className={`absolute inset-0 rounded-xl border-2 border-black shadow-lg flex flex-col overflow-hidden ${t.color || 'bg-gray-800'} ${tapped > 0 && untapped === 0 ? 'rotate-90 scale-95 opacity-90' : 'rotate-0'}`}>
-                                                    {t.img ? (
-                                                        <img src={t.img} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <React.Fragment>
-                                                            <div className="bg-black/60 p-1 text-center font-bold text-white text-[9px] truncate border-b border-black">{t.name}</div>
-                                                            <div className="flex-1 p-2 text-[8px] text-white/90 overflow-y-auto font-medium leading-tight">{t.abilities}</div>
-                                                            {t.pt && <div className="bg-black/90 text-white font-black text-center py-1 border-t border-black text-[10px]">{t.pt}</div>}
-                                                        </React.Fragment>
-                                                    )}
-                                                </div>
+                                                {/* STACK STAPPATO */}
+                                                {untapped > 0 && (
+                                                    <div className="relative w-20 h-28 cursor-pointer" onClick={() => updateToken(t.id, 'tappedQty', tapped + 1)} title="Tocca per tapparne una">
+                                                        {untapped > 1 && (
+                                                            <div className="absolute inset-0 rounded-lg bg-gray-700 border border-gray-600 transform translate-x-1 translate-y-1 pointer-events-none"></div>
+                                                        )}
+                                                        <div className={`absolute inset-0 rounded-lg border border-black shadow flex flex-col overflow-hidden ${t.color || 'bg-gray-800'}`}>
+                                                            {t.img ? (
+                                                                <img src={t.img} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <React.Fragment>
+                                                                    <div className="bg-black/60 p-0.5 text-center font-bold text-white text-[8px] truncate border-b border-black">{t.name}</div>
+                                                                    <div className="flex-1 p-1 text-[7px] text-white/90 overflow-y-auto leading-tight">{t.abilities}</div>
+                                                                    {t.pt && <div className="bg-black/90 text-white font-black text-center py-0.5 border-t border-black text-[8px]">{t.pt}</div>}
+                                                                </React.Fragment>
+                                                            )}
+                                                        </div>
+                                                        <div className="absolute -top-2 -right-2 bg-green-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full border border-black shadow z-20">
+                                                            {untapped}
+                                                        </div>
+                                                    </div>
+                                                )}
 
-                                                {/* Badge di Stato (Stato / Tappate) */}
-                                                <div className="absolute -top-2 -right-2 bg-black/90 text-white text-[10px] font-black px-2 py-0.5 rounded-full border border-gray-500 shadow z-20">
-                                                    {tapped > 0 ? `${untapped} st / ${tapped} tap` : `${t.qty} tot`}
-                                                </div>
+                                                {/* STACK TAPPATO (RUOTATO A 90°) */}
+                                                {tapped > 0 && (
+                                                    <div className="relative w-28 h-20 cursor-pointer flex items-center justify-center my-4" onClick={() => updateToken(t.id, 'tappedQty', untapped > 0 ? tapped - 1 : 0)} title="Tocca per stapparne una">
+                                                        <div className={`w-20 h-28 rounded-lg border border-black shadow flex flex-col overflow-hidden rotate-90 opacity-90 ${t.color || 'bg-gray-800'}`}>
+                                                            {t.img ? (
+                                                                <img src={t.img} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <React.Fragment>
+                                                                    <div className="bg-black/60 p-0.5 text-center font-bold text-white text-[8px] truncate border-b border-black">{t.name}</div>
+                                                                    <div className="flex-1 p-1 text-[7px] text-white/90 overflow-y-auto leading-tight">{t.abilities}</div>
+                                                                    {t.pt && <div className="bg-black/90 text-white font-black text-center py-0.5 border-t border-black text-[8px]">{t.pt}</div>}
+                                                                </React.Fragment>
+                                                            )}
+                                                        </div>
+                                                        <div className="absolute -top-3 right-0 bg-red-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full border border-black shadow z-20">
+                                                            {tapped} 💤
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                             </div>
 
-                                            {/* CONTROLLI RAPIDI SOTTO AL MAZZETTO */}
-                                            <div className="w-full space-y-1">
+                                            {/* CONTROLLI RAPIDI */}
+                                            <div className="w-32 space-y-1">
                                                 <div className="flex items-center justify-between gap-1">
-                                                    <button onClick={() => t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id)} className="w-7 h-7 bg-red-600 rounded-lg text-white font-black text-sm flex items-center justify-center active:scale-90">-</button>
+                                                    <button onClick={() => t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id)} className="w-6 h-6 bg-red-600 rounded text-white font-black text-xs flex items-center justify-center active:scale-90">-</button>
                                                     <input 
                                                         type="number" 
                                                         inputMode="numeric"
                                                         value={t.qty} 
                                                         onChange={e => updateToken(t.id, 'qty', Math.max(1, parseInt(e.target.value) || 1))} 
-                                                        className="w-12 bg-gray-900 border border-gray-600 text-white rounded text-center font-black text-xs py-1 outline-none" 
+                                                        className="w-10 bg-gray-900 border border-gray-600 text-white rounded text-center font-black text-xs py-0.5 outline-none" 
                                                     />
-                                                    <button onClick={() => updateToken(t.id, 'qty', t.qty + 1)} className="w-7 h-7 bg-green-600 rounded-lg text-white font-black text-sm flex items-center justify-center active:scale-90">+</button>
+                                                    <button onClick={() => updateToken(t.id, 'qty', t.qty + 1)} className="w-6 h-6 bg-green-600 rounded text-white font-black text-xs flex items-center justify-center active:scale-90">+</button>
                                                 </div>
-                                                <button onClick={() => updateToken(t.id, 'tappedQty', untapped > 0 ? tapped + 1 : 0)} className="w-full bg-indigo-700 hover:bg-indigo-600 text-white text-[10px] font-bold py-1 rounded shadow transition-colors">
-                                                    {untapped > 0 ? `Tappa 1 (${untapped} libere)` : 'Stappa Tutto'}
-                                                </button>
+                                                <div className="flex gap-1">
+                                                    {untapped > 0 && (
+                                                        <button onClick={() => updateToken(t.id, 'tappedQty', tapped + 1)} className="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white text-[9px] font-bold py-1 rounded shadow">
+                                                            Tappa
+                                                        </button>
+                                                    )}
+                                                    {tapped > 0 && (
+                                                        <button onClick={() => updateToken(t.id, 'tappedQty', tapped - 1)} className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white text-[9px] font-bold py-1 rounded shadow">
+                                                            Stappa
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
 
                                         </div>
@@ -3077,19 +3112,19 @@
 
                                 {(player.tokens || []).length === 0 && (
                                     <div className="w-full h-full flex items-center justify-center">
-                                        <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700">La plancia è vuota.<br/>Tocca il tasto 🔍 in basso per aggiungere pedine!</p>
+                                        <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700 text-sm">La plancia è vuota.<br/>Tocca il tasto in basso per aggiungere pedine!</p>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Menu Sfondi */}
+                            {/* Menu Sfondi (Forzato in verticale) */}
                             {showBgMenu && (
                                 <div className="absolute inset-0 z-30 bg-black/95 p-4 flex flex-col gap-4 animate-fade">
                                     <h4 className="text-white font-black text-xl mb-2 border-b border-gray-700 pb-2">Sfondo Battaglia</h4>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto content-start flex-1">
-                                        <div className="h-24 bg-gray-800 rounded-xl flex items-center justify-center text-gray-400 font-bold border-2 border-dashed border-gray-600 cursor-pointer text-center p-2" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', null); setShowBgMenu(false); }}>Sfondo Vuoto</div>
+                                    <div className="grid grid-cols-2 gap-4 overflow-y-auto content-start flex-1">
+                                        <div className="h-28 bg-gray-800 rounded-xl flex items-center justify-center text-gray-400 font-bold border-2 border-dashed border-gray-600 cursor-pointer text-center p-2" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', null); setShowBgMenu(false); }}>Sfondo Vuoto</div>
                                         {SfondiPedine.map(bg => (
-                                            <div key={bg} className="h-24 rounded-xl border-2 border-transparent hover:border-blue-500 cursor-pointer overflow-hidden relative shadow-lg" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', bg); setShowBgMenu(false); }}>
+                                            <div key={bg} className="h-28 rounded-xl border-2 border-transparent hover:border-blue-500 cursor-pointer overflow-hidden relative shadow-lg" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', bg); setShowBgMenu(false); }}>
                                                 <img src={bg} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
                                                 <span className="absolute bottom-0 w-full bg-black/80 text-white text-[10px] font-bold text-center py-1 truncate px-1">{bg}</span>
                                             </div>
@@ -3100,10 +3135,10 @@
                             )}
                         </div>
 
-                        {/* BARRA INFERIORE PULITA */}
-                        <div className="flex gap-2 mt-3 shrink-0 z-20 items-center justify-between">
-                            <button onClick={() => setShowBgMenu(true)} className="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-xl text-white text-xl shadow border border-gray-500" title="Sfondo Battaglia">🖼️</button>
-                            <button onClick={openSearch} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3 px-6 rounded-xl text-white font-black shadow-lg text-sm sm:text-base active:scale-95 transition-transform border border-emerald-400 flex items-center justify-center gap-2">
+                        {/* BARRA INFERIORE COMPATTA */}
+                        <div className="flex gap-2 mt-2 px-2 pb-1 shrink-0 z-20 items-center justify-between">
+                            <button onClick={() => setShowBgMenu(true)} className="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-white text-lg shadow border border-gray-500" title="Sfondo Battaglia">🖼️</button>
+                            <button onClick={openSearch} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2 px-4 rounded-lg text-white font-black shadow-lg text-xs sm:text-sm active:scale-95 transition-transform border border-emerald-400 flex items-center justify-center gap-1">
                                 🔍 CERCA / AGGIUNGI PEDINA
                             </button>
                         </div>
@@ -3146,12 +3181,12 @@
                                 {cmdResults.length > 0 && (
                                     <div className="flex-1 bg-black/60 p-3 rounded-xl border border-gray-700 overflow-y-auto">
                                         <p className="text-gray-300 text-xs font-bold mb-2">Risultati Trovati (Tocca per posizionare):</p>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        <div className="grid grid-cols-2 gap-3">
                                             {cmdResults.map(res => (
                                                 <div key={res.id} onClick={() => addOfficialToken(res)} className="cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-emerald-500 shadow-lg active:scale-95 transition-transform bg-gray-800">
-                                                    <img src={res.img} className="w-full h-36 object-cover" />
-                                                    <div className="p-1 bg-black/80 text-center">
-                                                        <span className="text-[10px] text-white font-bold truncate block">{res.name}</span>
+                                                    <img src={res.img} className="w-full h-40 object-cover" />
+                                                    <div className="p-1.5 bg-black/80 text-center">
+                                                        <span className="text-xs text-white font-bold truncate block">{res.name}</span>
                                                     </div>
                                                 </div>
                                             ))}
