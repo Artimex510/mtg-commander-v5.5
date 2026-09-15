@@ -2912,17 +2912,27 @@
                         body: JSON.stringify({ contents: [{ parts: [{ text: promptStr }] }] })
                     });
                     const data = await response.json();
+                    
+                    // 1. CATTURA SE GOOGLE RIFIUTA IL NOME DEL MODELLO O LA CHIAVE API
+                    if (data.error) throw new Error(data.error.message);
+                    
                     let jsonText = data.candidates[0].content.parts[0].text;
-                    jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
-                    let tokenData = JSON.parse(jsonText);
+                    
+                    // 2. ESTRAE SOLO IL CODICE E IGNORA TUTTE LE CHIACCHIERE DI GEMINI
+                    const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+                    if (!jsonMatch) throw new Error("Gemini non ha restituito un JSON valido. Ha detto: " + jsonText);
+                    
+                    let tokenData = JSON.parse(jsonMatch[0]);
                     
                     const newToken = { id: 'tok-' + Date.now(), name: (tokenData && tokenData.name) ? tokenData.name : "Pedina", pt: (tokenData && tokenData.pt) ? tokenData.pt : "", abilities: (tokenData && tokenData.abilities) ? tokenData.abilities : "", color: (tokenData && tokenData.color) ? tokenData.color : "bg-gray-800", qty: 1, tapped: false };
                     updatePlayerConfig(player.id, 'tokens', [...(player.tokens || []), newToken]);
                     setTokenQuery("");
-                } catch(e) { alert("Errore AI. Riprova con termini più semplici o controlla la connessione."); }
+                } catch(e) { 
+                    // 3. MOSTRA A SCHERMO ESATTAMENTE COSA E' ANDATO STORTO!
+                    alert("⚠️ ERRORE AI:\n" + e.message); 
+                }
                 setIsGeneratingToken(false);
             };
-
             return (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-md overflow-hidden">
                     <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-4 sm:p-6 pointer-events-auto" style={modalStyle}>
