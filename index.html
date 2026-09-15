@@ -2890,12 +2890,14 @@
             const SfondiPedine = ['plains_sfondo.jpg', 'island_sfondo.jpg', 'swamp_sfondo.jpg', 'mountain_sfondo.jpg', 'forest_sfondo.jpg', 'eldrazi_sfondo.jpg', 'yokai_sfondo.jpg', 'yokai2_sfondo.jpg', 'yokai3_sfondo.jpg'];
             
             const [showSearchModal, setShowSearchModal] = useState(false);
+            const [splittingTokenId, setSplittingTokenId] = useState(null);
+            const [splitQty, setSplitQty] = useState(1);
 
             // GESTIONE ORIENTAMENTO FLUIDA
             useEffect(() => {
                 try {
                     if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
-                        if (showSearchModal || showBgMenu) {
+                        if (showSearchModal || showBgMenu || splittingTokenId) {
                             window.screen.orientation.lock('portrait').catch(function(){});
                         } else {
                             window.screen.orientation.lock('landscape').catch(function(){});
@@ -2911,7 +2913,7 @@
                         }
                     } catch(e) {}
                 };
-            }, [showSearchModal, showBgMenu]);
+            }, [showSearchModal, showBgMenu, splittingTokenId]);
 
             const openSearch = () => { setShowSearchModal(true); };
             const closeSearch = () => {
@@ -2937,6 +2939,40 @@
             const deleteToken = (tId) => {
                 const updated = (player.tokens || []).filter(t => t.id !== tId);
                 updatePlayerConfig(player.id, 'tokens', updated);
+            };
+
+            const handleSplitConfirm = (t) => {
+                const amount = parseInt(splitQty) || 1;
+                if (amount <= 0 || amount >= t.qty) {
+                    alert("Quantità non valida per la divisione.");
+                    return;
+                }
+
+                // Crea il nuovo mazzetto splittato
+                const newToken = {
+                    ...t,
+                    id: 'tok-' + Date.now(),
+                    qty: amount,
+                    tappedQty: Math.min(t.tappedQty || 0, amount),
+                    counters: 0 // Il nuovo mazzetto parte senza segnalini
+                };
+
+                // Aggiorna il mazzetto originale sottraendo la quantità
+                const remainingQty = t.qty - amount;
+                const updated = (player.tokens || []).map(item => {
+                    if (item.id === t.id) {
+                        return {
+                            ...item,
+                            qty: remainingQty,
+                            tappedQty: Math.min(item.tappedQty || 0, remainingQty)
+                        };
+                    }
+                    return item;
+                });
+
+                updated.push(newToken);
+                updatePlayerConfig(player.id, 'tokens', updated);
+                setSplittingTokenId(null);
             };
 
             // 1. RICERCA PEDINE UFFICIALI SCRYFALL
@@ -3021,30 +3057,30 @@
 
             return (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-md overflow-hidden">
-                    <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-2 sm:p-4 pointer-events-auto relative" style={modalStyle}>
+                    <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-1 sm:p-2 pointer-events-auto relative" style={modalStyle}>
                         
-                        {/* INTESTAZIONE PLANCIA COMPATTA */}
-                        <div className="flex justify-between items-center border-b border-gray-700 pb-1 px-2 mt-1 shrink-0">
-                            <h3 className="text-white font-black text-sm sm:text-base truncate pr-2">♟️ Plancia Pedine: {player.name}</h3>
-                            <button onClick={onClose} className="bg-red-600 px-3 py-1 rounded text-white font-bold text-xs shadow-lg shrink-0">Chiudi</button>
+                        {/* INTESTAZIONE MINIMALE */}
+                        <div className="flex justify-between items-center border-b border-gray-700 pb-0.5 px-2 mt-0.5 shrink-0">
+                            <h3 className="text-white font-black text-xs sm:text-sm truncate pr-2">♟️ {player.name}</h3>
+                            <button onClick={onClose} className="bg-red-600 px-2 py-0.5 rounded text-white font-bold text-[10px] shadow shrink-0">Chiudi</button>
                         </div>
 
-                        {/* CAMPO DI BATTAGGIA CON SFONDO LUMINOSO E CARTE MAGGIORI */}
+                        {/* CAMPO DI BATTAGGIA MASSIMIZZATO E LUMINOSO */}
                         <div className="flex-1 relative bg-black overflow-hidden rounded-xl border border-gray-600 mt-1 flex flex-col">
-                            {/* SFONDO PIÙ LUMINOSO (OPACITY 75% INVECE DI 50%) */}
+                            {/* SFONDO LUMINOSO (75%) */}
                             {player.tokenBg && <img src={player.tokenBg} className="absolute inset-0 w-full h-full object-cover opacity-75 z-0 pointer-events-none" />}
                             
-                            <div className="flex-1 overflow-y-auto p-4 flex flex-wrap gap-6 content-start z-10 relative items-start">
+                            <div className="flex-1 overflow-y-auto p-2 sm:p-4 flex flex-wrap gap-4 sm:gap-6 content-start z-10 relative items-start">
                                 {(player.tokens || []).map(t => {
                                     const untapped = t.qty - (t.tappedQty || 0);
                                     const tapped = t.tappedQty || 0;
                                     const counters = t.counters || 0;
 
                                     return (
-                                        <div key={t.id} className="flex flex-col items-center bg-gray-900/75 backdrop-blur-sm p-3 rounded-xl border border-gray-600 shadow-2xl shrink-0">
+                                        <div key={t.id} className="flex flex-col items-center bg-gray-900/80 backdrop-blur-sm p-2 rounded-xl border border-gray-600 shadow-2xl shrink-0">
                                             
-                                            {/* MAZZETTI PIÙ GRANDI (W-28 H-40 / W-40 H-28) */}
-                                            <div className="flex items-center gap-3 mb-3">
+                                            {/* CARTE MAGGIORI */}
+                                            <div className="flex items-center gap-3 mb-2">
                                                 
                                                 {/* STACK STAPPATO */}
                                                 {untapped > 0 && (
@@ -3063,22 +3099,20 @@
                                                                 </React.Fragment>
                                                             )}
                                                         </div>
-                                                        {/* Badge Quantità Stappate */}
                                                         <div className="absolute -top-2.5 -right-2.5 bg-green-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">
                                                             {untapped}
                                                         </div>
-                                                        {/* Badge Segnalini +1/+1 se presenti */}
                                                         {counters > 0 && (
-                                                            <div className="absolute -top-2.5 -left-2.5 bg-blue-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20 animate-pulse">
+                                                            <div className="absolute -top-2.5 -left-2.5 bg-blue-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">
                                                                 +{counters}/+{counters}
                                                             </div>
                                                         )}
                                                     </div>
                                                 )}
 
-                                                {/* STACK TAPPATO (RUOTATO A 90°) */}
+                                                {/* STACK TAPPATO */}
                                                 {tapped > 0 && (
-                                                    <div className="relative w-40 h-28 cursor-pointer flex items-center justify-center my-6" onClick={() => updateToken(t.id, 'tappedQty', untapped > 0 ? tapped - 1 : 0)} title="Tocca per stapparne una">
+                                                    <div className="relative w-40 h-28 cursor-pointer flex items-center justify-center my-4" onClick={() => updateToken(t.id, 'tappedQty', untapped > 0 ? tapped - 1 : 0)} title="Tocca per stapparne una">
                                                         <div className={`w-28 h-40 rounded-xl border-2 border-black shadow-2xl flex flex-col overflow-hidden rotate-90 opacity-90 ${t.color || 'bg-gray-800'}`}>
                                                             {t.img ? (
                                                                 <img src={t.img} className="w-full h-full object-cover" />
@@ -3090,11 +3124,9 @@
                                                                 </React.Fragment>
                                                             )}
                                                         </div>
-                                                        {/* Badge Quantità Tappate */}
                                                         <div className="absolute -top-3 right-2 bg-red-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">
                                                             {tapped} 💤
                                                         </div>
-                                                        {/* Badge Segnalini sulle tappate */}
                                                         {counters > 0 && (
                                                             <div className="absolute -top-3 left-2 bg-blue-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">
                                                                 +{counters}/+{counters}
@@ -3105,41 +3137,43 @@
 
                                             </div>
 
-                                            {/* CONTROLLI QUANTITÀ E SEGNALINI +1/+1 */}
-                                            <div className="w-40 space-y-2">
-                                                {/* Quantità Totale */}
+                                            {/* CONTROLLI SOTTO AL MAZZETTO */}
+                                            <div className="w-40 space-y-1.5">
                                                 <div className="flex items-center justify-between gap-1 bg-black/40 p-1 rounded-lg border border-gray-700">
-                                                    <button onClick={() => t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id)} className="w-7 h-7 bg-red-600 rounded text-white font-black text-sm flex items-center justify-center active:scale-90">-</button>
+                                                    <button onClick={() => t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id)} className="w-6 h-6 bg-red-600 rounded text-white font-black text-xs flex items-center justify-center active:scale-90">-</button>
                                                     <input 
                                                         type="number" 
                                                         inputMode="numeric"
                                                         value={t.qty} 
                                                         onChange={e => updateToken(t.id, 'qty', Math.max(1, parseInt(e.target.value) || 1))} 
-                                                        className="w-12 bg-gray-900 border border-gray-600 text-white rounded text-center font-black text-sm py-0.5 outline-none" 
+                                                        className="w-10 bg-gray-900 border border-gray-600 text-white rounded text-center font-black text-xs py-0.5 outline-none" 
                                                     />
-                                                    <button onClick={() => updateToken(t.id, 'qty', t.qty + 1)} className="w-7 h-7 bg-green-600 rounded text-white font-black text-sm flex items-center justify-center active:scale-90">+</button>
+                                                    <button onClick={() => updateToken(t.id, 'qty', t.qty + 1)} className="w-6 h-6 bg-green-600 rounded text-white font-black text-xs flex items-center justify-center active:scale-90">+</button>
                                                 </div>
 
-                                                {/* Controllo Segnalini +1/+1 */}
                                                 <div className="flex items-center justify-between gap-1 bg-blue-950/50 p-1 rounded-lg border border-blue-800">
-                                                    <span className="text-[10px] font-bold text-blue-300 pl-1">+1/+1:</span>
+                                                    <span className="text-[9px] font-bold text-blue-300 pl-1">+1/+1:</span>
                                                     <div className="flex items-center gap-1">
-                                                        <button onClick={() => updateToken(t.id, 'counters', Math.max(0, counters - 1))} className="w-6 h-6 bg-blue-700 rounded text-white font-black text-xs flex items-center justify-center active:scale-90">-</button>
-                                                        <span className="w-6 text-center font-black text-white text-xs">{counters}</span>
-                                                        <button onClick={() => updateToken(t.id, 'counters', counters + 1)} className="w-6 h-6 bg-blue-700 rounded text-white font-black text-xs flex items-center justify-center active:scale-90">+</button>
+                                                        <button onClick={() => updateToken(t.id, 'counters', Math.max(0, counters - 1))} className="w-5 h-5 bg-blue-700 rounded text-white font-black text-[10px] flex items-center justify-center active:scale-90">-</button>
+                                                        <span className="w-5 text-center font-black text-white text-xs">{counters}</span>
+                                                        <button onClick={() => updateToken(t.id, 'counters', counters + 1)} className="w-5 h-5 bg-blue-700 rounded text-white font-black text-[10px] flex items-center justify-center active:scale-90">+</button>
                                                     </div>
                                                 </div>
 
-                                                {/* Tasto Tappa / Stappa Rapido */}
                                                 <div className="flex gap-1">
                                                     {untapped > 0 && (
-                                                        <button onClick={() => updateToken(t.id, 'tappedQty', tapped + 1)} className="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white text-[10px] font-bold py-1.5 rounded shadow">
-                                                            Tappa 1
+                                                        <button onClick={() => updateToken(t.id, 'tappedQty', tapped + 1)} className="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white text-[9px] font-bold py-1 rounded shadow">
+                                                            Tappa
                                                         </button>
                                                     )}
                                                     {tapped > 0 && (
-                                                        <button onClick={() => updateToken(t.id, 'tappedQty', tapped - 1)} className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-bold py-1.5 rounded shadow">
-                                                            Stappa 1
+                                                        <button onClick={() => updateToken(t.id, 'tappedQty', tapped - 1)} className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white text-[9px] font-bold py-1 rounded shadow">
+                                                            Stappa
+                                                        </button>
+                                                    )}
+                                                    {t.qty > 1 && (
+                                                        <button onClick={() => { setSplittingTokenId(t.id); setSplitQty(1); }} className="bg-amber-600 hover:bg-amber-500 text-white text-[9px] font-bold px-2 py-1 rounded shadow" title="Dividi mazzetto">
+                                                            ✂️
                                                         </button>
                                                     )}
                                                 </div>
@@ -3151,12 +3185,33 @@
 
                                 {(player.tokens || []).length === 0 && (
                                     <div className="w-full h-full flex items-center justify-center">
-                                        <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700 text-sm">La plancia è vuota.<br/>Tocca il tasto in basso per aggiungere pedine!</p>
+                                        <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700 text-xs">La plancia è vuota.<br/>Tocca il tasto in basso per aggiungere pedine!</p>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Menu Sfondi */}
+                            {/* MODALE DI SPLIT (DIVISIONE MAZZETTO) */}
+                            {splittingTokenId && (
+                                <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-sm p-4 flex flex-col items-center justify-center animate-fade">
+                                    <div className="bg-gray-800 border-2 border-amber-500 rounded-xl p-4 w-full max-w-xs shadow-2xl text-center space-y-3">
+                                        <h4 className="text-white font-black text-base">✂️ Dividi Mazzetto</h4>
+                                        <p className="text-gray-300 text-xs">Quante pedine vuoi separare in un nuovo mazzetto?</p>
+                                        
+                                        <div className="flex items-center justify-center gap-3 my-2">
+                                            <button onClick={() => setSplitQty(Math.max(1, splitQty - 1))} className="w-10 h-10 bg-red-600 text-white font-black text-xl rounded-lg">-</button>
+                                            <span className="text-2xl font-black text-white w-12">{splitQty}</span>
+                                            <button onClick={() => setSplitQty(splitQty + 1)} className="w-10 h-10 bg-green-600 text-white font-black text-xl rounded-lg">+</button>
+                                        </div>
+
+                                        <div className="flex gap-2 pt-2">
+                                            <button onClick={() => setSplittingTokenId(null)} className="flex-1 bg-gray-700 text-white font-bold py-2 rounded-lg text-xs">Annulla</button>
+                                            <button onClick={() => handleSplitConfirm(player.tokens.find(x => x.id === splittingTokenId))} className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-black py-2 rounded-lg text-xs shadow">Conferma</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Menu Sfondi (Con i tuoi nuovi sfondi inclusi!) */}
                             {showBgMenu && (
                                 <div className="absolute inset-0 z-30 bg-black/95 p-4 flex flex-col gap-4 animate-fade">
                                     <h4 className="text-white font-black text-xl mb-2 border-b border-gray-700 pb-2">Sfondo Battaglia</h4>
@@ -3175,9 +3230,9 @@
                         </div>
 
                         {/* BARRA INFERIORE */}
-                        <div className="flex gap-2 mt-2 px-2 pb-1 shrink-0 z-20 items-center justify-between">
-                            <button onClick={() => setShowBgMenu(true)} className="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-white text-lg shadow border border-gray-500" title="Sfondo Battaglia">🖼️</button>
-                            <button onClick={openSearch} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2 px-4 rounded-lg text-white font-black shadow-lg text-xs sm:text-sm active:scale-95 transition-transform border border-emerald-400 flex items-center justify-center gap-1">
+                        <div className="flex gap-2 mt-1 px-1 pb-0.5 shrink-0 z-20 items-center justify-between">
+                            <button onClick={() => setShowBgMenu(true)} className="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-white text-base shadow border border-gray-500" title="Sfondo Battaglia">🖼️</button>
+                            <button onClick={openSearch} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-1.5 px-4 rounded-lg text-white font-black shadow-lg text-xs sm:text-sm active:scale-95 transition-transform border border-emerald-400 flex items-center justify-center gap-1">
                                 🔍 CERCA / AGGIUNGI PEDINA
                             </button>
                         </div>
