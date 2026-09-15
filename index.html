@@ -364,13 +364,14 @@
     };
 
     // --- RACCOGLITORE CARTE (ALBUM VIRTUALE) ---
-    const CollectionBinder = ({ navigate, collection, setCollection }) => {
+    const CollectionBinder = ({ navigate, collection, setCollection, mtgSets }) => {
         const [searchQ, setSearchQ] = useState("");
         const [activeFolder, setActiveFolder] = useState("Tutte");
         const [colorFilter, setColorFilter] = useState([]);
         const [typeFilter, setTypeFilter] = useState("");
         const [rarityFilter, setRarityFilter] = useState("");
-        const [viewMode, setViewMode] = useState("album"); // 'album' o 'list'
+        const [expFilter, setExpFilter] = useState(""); // Filtro espansione
+        const [viewMode, setViewMode] = useState("album");
         const [albumPage, setAlbumPage] = useState(0);
 
         const folders = ["Tutte", "Generale", "Scambi", "Di Valore", "Da Vendere"];
@@ -395,11 +396,11 @@
             }
         };
 
-        // ORDINAMENTO: Colore > Tipo > Rarità > Espansione > Nome
+        // ORDINAMENTO MASTER: Colore > Tipo > Rarità > Espansione > Nome
         const rarityVal = { "mythic": 4, "rare": 3, "uncommon": 2, "common": 1 };
         const colorVal = (colors) => {
-            if (!colors || colors.length === 0) return 6; // Incolore
-            if (colors.length > 1) return 7; // Multicolore
+            if (!colors || colors.length === 0) return 6;
+            if (colors.length > 1) return 7;
             const order = { 'W':1, 'U':2, 'B':3, 'R':4, 'G':5 };
             return order[colors[0]] || 8;
         };
@@ -426,15 +427,15 @@
             }
             const matchType = typeFilter === "" || (c.type || "").toLowerCase().includes(typeFilter.toLowerCase());
             const matchRarity = rarityFilter === "" || (c.rarity || "") === rarityFilter;
-            return matchName && matchFolder && matchColor && matchType && matchRarity;
+            const matchExp = expFilter === "" || (c.setCode || "") === expFilter;
+            return matchName && matchFolder && matchColor && matchType && matchRarity && matchExp;
         });
 
-        useEffect(() => { setAlbumPage(0); }, [searchQ, activeFolder, colorFilter, typeFilter, rarityFilter, viewMode]);
+        useEffect(() => { setAlbumPage(0); }, [searchQ, activeFolder, colorFilter, typeFilter, rarityFilter, expFilter, viewMode]);
 
         const totalValue = processedCollection.reduce((acc, c) => acc + ((c.price || 0) * (c.qty || 1)), 0);
         const totalCards = processedCollection.reduce((acc, c) => acc + (c.qty || 1), 0);
 
-        // 9 carte per pagina (foglio 3x3)
         const CARDS_PER_PAGE = 9;
         const totalPages = Math.max(1, Math.ceil(processedCollection.length / CARDS_PER_PAGE));
         const currentAlbumCards = processedCollection.slice(albumPage * CARDS_PER_PAGE, (albumPage + 1) * CARDS_PER_PAGE);
@@ -444,7 +445,7 @@
                 <div className="bg-gray-800 p-6 rounded-xl border border-gray-600 shadow-xl">
                     <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
                         <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold shadow">⬅ Home</button>
-                        <h2 className="text-3xl font-black text-emerald-400 drop-shadow-md text-center">📁 La Mia Collezione</h2>
+                        <h2 className="text-3xl font-black text-emerald-400 drop-shadow-md text-center hidden md:block">📚 La Mia Collezione</h2>
                         <div className="flex gap-2">
                             <button onClick={()=>setViewMode('album')} className={`px-3 py-2 rounded font-black text-lg ${viewMode==='album' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-900 text-gray-500 border border-gray-600'}`} title="Vista Album">📖</button>
                             <button onClick={()=>setViewMode('list')} className={`px-3 py-2 rounded font-black text-lg ${viewMode==='list' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-900 text-gray-500 border border-gray-600'}`} title="Vista Elenco">📄</button>
@@ -470,6 +471,12 @@
                         </div>
                         <div className="flex gap-2">
                             <input type="text" placeholder="Cerca carta o espansione..." value={searchQ} onChange={e=>setSearchQ(e.target.value)} className="flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-white font-bold outline-none focus:border-emerald-500 text-sm" />
+                            <select value={expFilter} onChange={e => setExpFilter(e.target.value)} className="w-1/3 bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm outline-none focus:border-emerald-500 truncate font-bold">
+                                <option value="">Tutte le Espansioni</option>
+                                {(mtgSets || []).map(set => (
+                                    <option key={set.code} value={set.code}>{set.name}</option>
+                                ))}
+                            </select>
                         </div>
                         <div className="flex gap-2 overflow-x-auto pb-1 items-center">
                             {ManaColors.map(m => (
@@ -477,43 +484,32 @@
                             ))}
                             <div className="w-px h-6 bg-gray-700 mx-2 shrink-0"></div>
                             <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} className="bg-gray-800 text-white text-xs font-bold p-2 rounded border border-gray-600 outline-none shrink-0">
-                                <option value="">Tutti i Tipi</option>
-                                <option value="creature">Creature</option>
-                                <option value="artifact">Artefatti</option>
-                                <option value="enchantment">Incantesimi</option>
-                                <option value="instant">Istantanei</option>
-                                <option value="sorcery">Stregonerie</option>
-                                <option value="planeswalker">Planeswalker</option>
-                                <option value="land">Terre</option>
+                                <option value="">Tutti i Tipi</option><option value="creature">Creature</option><option value="artifact">Artefatti</option><option value="enchantment">Incantesimi</option><option value="instant">Istantanei</option><option value="sorcery">Stregonerie</option><option value="planeswalker">Planeswalker</option><option value="land">Terre</option>
                             </select>
                             <select value={rarityFilter} onChange={e=>setRarityFilter(e.target.value)} className="bg-gray-800 text-white text-xs font-bold p-2 rounded border border-gray-600 outline-none shrink-0">
-                                <option value="">Tutte Rarità</option>
-                                <option value="mythic">Mitiche</option>
-                                <option value="rare">Rare</option>
-                                <option value="uncommon">Non Comuni</option>
-                                <option value="common">Comuni</option>
+                                <option value="">Tutte Rarità</option><option value="mythic">Mitiche</option><option value="rare">Rare</option><option value="uncommon">Non Comuni</option><option value="common">Comuni</option>
                             </select>
                         </div>
                     </div>
 
                     {viewMode === 'album' && (
                         <div className="animate-fade">
-                            <div className="bg-black/60 p-4 sm:p-8 rounded-2xl shadow-[inset_0_0_30px_rgba(0,0,0,0.8)] border border-gray-700 mb-4 min-h-[50vh] flex flex-col justify-between">
+                            <div className="bg-black/60 p-4 sm:p-8 rounded-2xl shadow-[inset_0_0_30px_rgba(0,0,0,0.8)] border border-gray-700 mb-4 min-h-[50vh] flex flex-col justify-between" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/black-scales.png')" }}>
                                 {currentAlbumCards.length === 0 ? (
                                     <div className="flex-1 flex items-center justify-center"><p className="text-gray-500 font-black text-xl py-12">Pagina Vuota</p></div>
                                 ) : (
                                     <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6 mx-auto w-full">
                                         {currentAlbumCards.map(c => (
-                                            <div key={c.id} className="relative group">
-                                                <img src={c.img || "mtg-bg.jpg"} className="w-full rounded-lg shadow-lg border border-black/50 transition-transform group-hover:scale-105 group-hover:z-10" />
-                                                <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white font-black text-xs w-6 h-6 flex items-center justify-center rounded-full border-2 border-black shadow z-20">{c.qty}</div>
+                                            <div key={c.id} className="relative group perspective-1000">
+                                                <img src={c.img || "mtg-bg.jpg"} className="w-full rounded-lg shadow-[0_5px_15px_rgba(0,0,0,0.8)] border border-black/50 transition-transform group-hover:scale-105 group-hover:z-10" />
+                                                <div className="absolute -bottom-3 -right-2 bg-blue-600 text-white font-black text-xs w-7 h-7 flex items-center justify-center rounded-full border-2 border-black shadow-lg z-20">{c.qty}</div>
                                                 
                                                 <div className="absolute inset-0 bg-black/90 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg z-30 flex flex-col justify-center items-center p-2 text-center border border-gray-500 backdrop-blur-sm">
-                                                    <p className="text-yellow-400 font-black text-sm drop-shadow">€ {((c.price||0)*c.qty).toFixed(2)}</p>
+                                                    <p className="text-yellow-400 font-black text-lg drop-shadow-md">€ {((c.price||0)*c.qty).toFixed(2)}</p>
                                                     <p className="text-[10px] text-gray-300 truncate w-full uppercase mb-2">{c.setName || "Set"}</p>
-                                                    <div className="flex gap-2 bg-gray-900/80 p-1 rounded-lg border border-gray-600">
-                                                        <button onClick={()=>updateCard(c.id, c.qty-1, c.folder)} className="w-8 h-8 bg-red-600 text-white font-black rounded text-lg active:scale-90">-</button>
-                                                        <button onClick={()=>updateCard(c.id, c.qty+1, c.folder)} className="w-8 h-8 bg-green-600 text-white font-black rounded text-lg active:scale-90">+</button>
+                                                    <div className="flex gap-4 mt-4 bg-gray-900/80 p-2 rounded-xl border border-gray-600">
+                                                        <button onClick={()=>updateCard(c.id, c.qty-1, c.folder)} className="w-10 h-10 bg-red-600 text-white font-black rounded-lg text-xl hover:bg-red-500 active:scale-90">-</button>
+                                                        <button onClick={()=>updateCard(c.id, c.qty+1, c.folder)} className="w-10 h-10 bg-green-600 text-white font-black rounded-lg text-xl hover:bg-green-500 active:scale-90">+</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -523,9 +519,9 @@
                             </div>
                             
                             <div className="flex items-center justify-center gap-6 bg-gray-900 p-3 rounded-full border border-gray-700 w-max mx-auto shadow-xl">
-                                <button onClick={()=>setAlbumPage(Math.max(0, albumPage-1))} disabled={albumPage === 0} className="w-10 h-10 bg-indigo-600 disabled:bg-gray-700 text-white font-black rounded-full shadow text-lg active:scale-90 flex items-center justify-center">⬅</button>
-                                <span className="font-black text-gray-300 tracking-widest text-sm">PAG {albumPage + 1} / {totalPages}</span>
-                                <button onClick={()=>setAlbumPage(Math.min(totalPages-1, albumPage+1))} disabled={albumPage >= totalPages-1} className="w-10 h-10 bg-indigo-600 disabled:bg-gray-700 text-white font-black rounded-full shadow text-lg active:scale-90 flex items-center justify-center">➡</button>
+                                <button onClick={()=>setAlbumPage(Math.max(0, albumPage-1))} disabled={albumPage === 0} className="w-12 h-12 bg-indigo-600 disabled:bg-gray-700 text-white font-black rounded-full shadow-lg text-xl active:scale-90 flex items-center justify-center transition-all">⬅</button>
+                                <span className="font-black text-gray-300 tracking-widest text-lg">PAG {albumPage + 1} / {totalPages}</span>
+                                <button onClick={()=>setAlbumPage(Math.min(totalPages-1, albumPage+1))} disabled={albumPage >= totalPages-1} className="w-12 h-12 bg-indigo-600 disabled:bg-gray-700 text-white font-black rounded-full shadow-lg text-xl active:scale-90 flex items-center justify-center transition-all">➡</button>
                             </div>
                         </div>
                     )}
@@ -536,14 +532,14 @@
                                 <p className="text-gray-500 text-center col-span-full py-10 font-bold">Nessuna carta corrisponde ai filtri.</p>
                             ) : (
                                 processedCollection.map(c => (
-                                    <div key={c.id} className="bg-gray-900 flex gap-3 p-2 rounded-xl border border-gray-700 shadow relative overflow-hidden">
+                                    <div key={c.id} className="bg-gray-900 flex gap-3 p-2 rounded-xl border border-gray-700 shadow relative overflow-hidden group">
                                         <div className={`absolute left-0 top-0 bottom-0 w-1 ${c.rarity==='mythic' ? 'bg-orange-500' : (c.rarity==='rare' ? 'bg-yellow-500' : (c.rarity==='uncommon' ? 'bg-gray-400' : 'bg-black'))}`}></div>
-                                        <img src={c.img || "mtg-bg.jpg"} className="w-16 rounded object-cover shadow border border-black ml-2" />
+                                        <img src={c.img || "mtg-bg.jpg"} className="w-16 rounded object-cover shadow-md border border-black ml-2" />
                                         <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden pr-2">
                                             <div>
-                                                <h4 className="font-bold text-white text-sm truncate">{c.name}</h4>
+                                                <h4 className="font-bold text-white text-sm truncate pr-1">{c.name}</h4>
                                                 <div className="flex justify-between items-center mt-1">
-                                                    <p className="text-[10px] text-gray-400 truncate uppercase w-2/3">{c.setName || "Set Sconosciuto"}</p>
+                                                    <p className="text-[10px] text-gray-400 truncate uppercase w-2/3" title={c.setName}>{c.setName || "Set Sconosciuto"}</p>
                                                     <p className="text-emerald-400 font-black text-xs">€ {((c.price || 0) * c.qty).toFixed(2)}</p>
                                                 </div>
                                             </div>
@@ -552,9 +548,9 @@
                                                     {folders.filter(f=>f!=="Tutte").map(f => <option key={f} value={f}>{f}</option>)}
                                                 </select>
                                                 <div className="flex items-center bg-gray-800 rounded px-1 border border-gray-600 shadow-inner">
-                                                    <button onClick={() => updateCard(c.id, c.qty - 1, c.folder)} className="text-red-500 font-black text-lg px-2 active:scale-90">-</button>
+                                                    <button onClick={() => updateCard(c.id, c.qty - 1, c.folder)} className="text-red-500 font-black text-lg px-3 py-1 active:scale-90">-</button>
                                                     <span className="font-black text-white w-6 text-center">{c.qty}</span>
-                                                    <button onClick={() => updateCard(c.id, c.qty + 1, c.folder)} className="text-green-500 font-black text-lg px-2 active:scale-90">+</button>
+                                                    <button onClick={() => updateCard(c.id, c.qty + 1, c.folder)} className="text-green-500 font-black text-lg px-3 py-1 active:scale-90">+</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -797,9 +793,9 @@
               <main className={`${(view !== 'game_active' && view !== 'playtester_active') ? 'pt-20 px-2 pb-10' : ''} flex-1 relative z-10`}>
                 {view === 'home' && <HomeView navigate={navigate} />}
                 {view === 'deckbuilder' && <DeckBuilder navigate={navigate} activeDeck={activeDeck} />}
-                {view === 'cardsearch' && <CardSearchExplorer navigate={navigate} printQueue={printQueue} setPrintQueue={setPrintQueue} collection={collection} setCollection={setCollection} />}
+                {view === 'cardsearch' && <CardSearchExplorer navigate={navigate} printQueue={printQueue} setPrintQueue={setPrintQueue} collection={collection} setCollection={setCollection} mtgSets={mtgSets} />}
                 {view === 'mydecks' && <MyDecks navigate={navigate} />}
-                {view === 'collection' && <CollectionBinder navigate={navigate} collection={collection} setCollection={setCollection} />}
+                {view === 'collection' && <CollectionBinder navigate={navigate} collection={collection} setCollection={setCollection} mtgSets={mtgSets} />}
                 {view === 'cart' && <CartView navigate={navigate} />}
                 {view === 'trade' && <TradeEvaluator setView={setView} />}
                 {view === 'print' && <ProxyPrintArea printQueue={printQueue} setPrintQueue={setPrintQueue} setView={setView} />}
