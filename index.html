@@ -2949,9 +2949,10 @@
       const [planechase, setPlanechase] = useState({
           active: false, planes: [], currentPlane: null, showModal: false, enlargedImage: null
       });
+      const [planarDieResult, setPlanarDieResult] = useState(null); // STATO PER IL DADO PLANARE
 
       const wakeLockRef = React.useRef(null);
-      const stateRef = React.useRef({ numPlayers, archenemy, activeModal });
+      const stateRef = React.useRef({ numPlayers, archenemy, activeModal, planechase });
       useEffect(() => { stateRef.current = { numPlayers, archenemy, activeModal }; }, [numPlayers, archenemy, activeModal]);
 
       // SBLOCCO DI SICUREZZA UNIVERSALE (FAIL-SAFE)
@@ -2999,7 +3000,7 @@
 
       useEffect(() => {
           if (view === 'game_active') {
-              const isVerticalMode = archenemy.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'));
+              const isVerticalMode = archenemy.showModal || planechase.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'));
               applyScreenLock(isVerticalMode, numPlayers);
               requestWakeLock();
               
@@ -3012,9 +3013,10 @@
               document.addEventListener('visibilitychange', handleVisibilityChange);
               return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
           }
-      }, [view, numPlayers, archenemy.showModal, activeModal]);
+      }, [view, numPlayers, archenemy.showModal, planechase.showModal, activeModal]);
 
       useEffect(() => {
+          useEffect(() => {
           if (view === 'game_active') {
               const handlePopState = async (e) => {
                   e.preventDefault();
@@ -3023,7 +3025,7 @@
                   } else {
                       window.history.pushState(null, "", window.location.href);
                       const curr = stateRef.current;
-                      const isVertical = curr.archenemy.showModal || (curr.activeModal && (curr.activeModal.type === 'search' || curr.activeModal.type === 'editName'));
+                      const isVertical = curr.archenemy.showModal || curr.planechase.showModal || (curr.activeModal && (curr.activeModal.type === 'search' || curr.activeModal.type === 'editName'));
                       applyScreenLock(isVertical, curr.numPlayers);
                   }
               };
@@ -3074,11 +3076,17 @@
 
       const rollPlanarDie = () => {
           const result = Math.floor(Math.random() * 6);
-          if (result === 0) { alert("🎲 DADO PLANARE: Planeswalk! Viaggi verso un nuovo piano."); nextPlane(); } 
-          else if (result === 1) { alert("🎲 DADO PLANARE: Caos! Si innesca l'abilità CAOS del piano attuale."); } 
-          else { alert("🎲 DADO PLANARE: Vuoto. Non succede nulla."); }
+          if (result === 0) { 
+              setPlanarDieResult("🌌 PLANESWALK!\nViaggi verso un nuovo piano."); 
+              setTimeout(() => { setPlanarDieResult(null); nextPlane(); }, 2500); 
+          } else if (result === 1) { 
+              setPlanarDieResult("🌀 CAOS!\nInneschi l'abilità Caos del piano attuale."); 
+              setTimeout(() => setPlanarDieResult(null), 2500); 
+          } else { 
+              setPlanarDieResult("✖️ VUOTO.\nNon succede nulla."); 
+              setTimeout(() => setPlanarDieResult(null), 1500); 
+          }
       };
-
       const rollDice = (max) => {
          const res = Math.floor(Math.random() * max) + 1;
          setDiceResult({ max, val: res });
@@ -3112,15 +3120,14 @@
               }));
           }
           
-          const isVerticalMode = archenemy.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'));
+          const isVerticalMode = archenemy.showModal || planechase.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'));
           applyScreenLock(isVerticalMode, numPlayers);
       };
-
-      const exitGame = () => {
+     const exitGame = () => {
           if (window.confirm("Sei sicuro di voler uscire e tornare al Menu?")) { 
               setView('game'); 
           } else {
-              const isVerticalMode = archenemy.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'));
+              const isVerticalMode = archenemy.showModal || planechase.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'));
               applyScreenLock(isVerticalMode, numPlayers);
           }
       };
@@ -3442,6 +3449,15 @@
                 <div className="bg-black/95 border-4 border-purple-500 w-48 h-48 rounded-full shadow-[0_0_60px_rgba(168,85,247,0.9)] flex flex-col items-center justify-center transform scale-150 animate-bounce">
                    <span className="text-purple-400 font-black text-lg uppercase tracking-widest absolute top-6">D{diceResult.max}</span>
                    <span className="text-white font-black text-7xl">{diceResult.val}</span>
+                </div>
+             </div>
+          , document.body)}
+
+          {/* RENDER DADO PLANARE */}
+          {planarDieResult && ReactDOM.createPortal(
+             <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none animate-fade bg-black/80">
+                <div className="bg-gray-900 border-4 border-indigo-500 rounded-xl p-6 shadow-[0_0_60px_rgba(79,70,229,0.9)] flex flex-col items-center justify-center transform scale-110 animate-bounce max-w-sm text-center">
+                   <span className="text-white font-black text-xl drop-shadow-md whitespace-pre-wrap leading-relaxed">{planarDieResult}</span>
                 </div>
              </div>
           , document.body)}
