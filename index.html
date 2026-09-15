@@ -3100,7 +3100,19 @@
         let maxPoison = (startLife === 30 || (startLife === 60 && teamMode)) ? 15 : 10; 
         for(let i=1; i<=numPlayers; i++) {
           let cmdDmg = {}; for(let j=1; j<=numPlayers; j++) { if(i!==j) cmdDmg[`P${j}`] = 0; }
-          let tId = teamMode ? Math.ceil(i/2) : i; // Crea le squadre a coppie (1 con 2, 3 con 4...)
+          
+          // Logica Squadre Avanzata (Ottimizzata per la disposizione a schermo)
+          let tId = i;
+          if (teamMode) {
+              if (numPlayers === 6) {
+                  if (i === 1 || i === 2) tId = 1;      // Sinistra & Alto-Sinistra
+                  else if (i === 3 || i === 6) tId = 2; // Alto-Destra & Destra
+                  else if (i === 4 || i === 5) tId = 3; // Basso-Sinistra & Basso-Destra
+              } else {
+                  tId = Math.ceil(i/2); // Standard (1+2, 3+4)
+              }
+          }
+
           newPlayers.push({ 
              id: `P${i}`, teamId: tId, name: `Player ${i}`, life: startLife, poison: 0, maxPoison: maxPoison, cmdCasts: 0, emblems: 0, immune: false, cmdDmg: cmdDmg, bgUrl: null, mana: {W:0, U:0, B:0, R:0, G:0, C:0},
              rad: 0, energy: 0, exp: 0, ticket: 0, monarch: false, initiative: false, blessing: false, dayNight: 'none'
