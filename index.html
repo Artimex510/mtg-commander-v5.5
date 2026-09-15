@@ -2891,18 +2891,21 @@
             
             const [showSearchModal, setShowSearchModal] = useState(false);
 
-            // GESTIONE ORIENTAMENTO AUTOMATICO (Verticale per ricerca/sfondi, Orizzontale per la plancia)
+            // GESTIONE ORIENTAMENTO SICURA (Senza optional chaining)
             useEffect(() => {
                 try {
                     if (showSearchModal || showBgMenu) {
-                        window.screen?.orientation?.lock?.('portrait').catch(()=>{});
+                        if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+                            window.screen.orientation.lock('portrait').catch(function(){});
+                        }
                     } else {
                         const isSide = rotation === 90 || rotation === -90;
-                        window.screen?.orientation?.lock?.(isSide ? 'landscape' : 'portrait').catch(()=>{});
+                        if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+                            window.screen.orientation.lock(isSide ? 'landscape' : 'portrait').catch(function(){});
+                        }
                     }
                 } catch(e) {}
             }, [showSearchModal, showBgMenu, rotation]);
-
             const openSearch = () => { setShowSearchModal(true); };
             const closeSearch = () => {
                 setShowSearchModal(false);
