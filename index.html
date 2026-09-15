@@ -579,12 +579,24 @@
       // --- STATI STAMPA E COLLEZIONE ---
       const [printQueue, setPrintQueue] = useState([]);
       const [collection, setCollection] = useState([]);
+      const [mtgSets, setMtgSets] = useState([]); // NUOVO STATO PER LA TENDINA DEI SET
 
       useEffect(() => {
           const savedPrint = localStorage.getItem('mtg_printQueue');
           const savedColl = localStorage.getItem('mtg_collection');
           if (savedPrint) { try { setPrintQueue(JSON.parse(savedPrint)); } catch(e){} }
           if (savedColl) { try { setCollection(JSON.parse(savedColl)); } catch(e){} }
+          
+          // Scarica i set da Scryfall (solo espansioni, core set, masters, commander, ecc. per non avere 900 token set inutili)
+          fetch('https://api.scryfall.com/sets')
+              .then(res => res.json())
+              .then(data => {
+                  if (data && data.data) {
+                      const validSetTypes = ["core", "expansion", "masters", "masterpiece", "commander", "draft_innovation", "vanguard", "funny", "starter", "box", "promo", "arsenal"];
+                      const filteredSets = data.data.filter(s => validSetTypes.includes(s.set_type)).map(s => ({ code: s.code, name: s.name })).sort((a, b) => a.name.localeCompare(b.name));
+                      setMtgSets(filteredSets);
+                  }
+              }).catch(e => console.error("Errore caricamento set:", e));
       }, []);
 
       useEffect(() => {
@@ -1314,6 +1326,7 @@
       const [superType, setSuperType] = useState(""); const [cardType, setCardType] = useState("");
       const [cardType2, setCardType2] = useState(""); const [subType, setSubType] = useState("");
       const [rarity, setRarity] = useState(""); const [cmcOp, setCmcOp] = useState("="); const [cmcVal, setCmcVal] = useState("");
+      const [expFilter, setExpFilter] = useState(""); // Stato per la tendina Espansione
       
       const [allResults, setAllResults] = useState([]);
       const [localPage, setLocalPage] = useState(0);
@@ -3960,7 +3973,7 @@
         );
     }
     
-    const CardSearchExplorer = ({navigate, printQueue, setPrintQueue, collection, setCollection}) => {
+    const CardSearchExplorer = ({navigate, printQueue, setPrintQueue, collection, setCollection, mtgSets}) => {
       const [query, setQuery] = useState("");
       const [oracleText, setOracleText] = useState("");
       const [mana, setMana] = useState([]);
@@ -4000,10 +4013,16 @@
                      if (c.card_faces[0].image_uris && c.card_faces[0].image_uris.normal) img = c.card_faces[0].image_uris.normal;
                      if (c.card_faces.length > 1 && c.card_faces[1].image_uris && c.card_faces[1].image_uris.normal) imgBack = c.card_faces[1].image_uris.normal;
                      if (!oracle_text) oracle_text = c.card_faces.map(f=>f.oracle_text).join(' ');
-                     if (!mana_cost) mana_cost = c.card_faces[0].mana_cost;
-                 }
-                 return { id: c.id, name: c.name, image: img, imageBack: imgBack, type: c.type_line || "", cmc: c.cmc || 0, colors: c.color_identity || [], legalities: c.legalities || {}, printsUrl: c.prints_search_uri || null, oracle_text: oracle_text, mana_cost: mana_cost, prices: c.prices || {}, rarity: c.rarity || "common", setName: c.set_name || "" };
-               });
+                         if (!mana_cost) mana_cost = c.card_faces[0].mana_cost;
+                     }
+                     return { 
+                         id: c.id, name: c.name, image: img, imageBack: imgBack, type: c.type_line || "", 
+                         cmc: c.cmc || 0, colors: c.color_identity || [], legalities: c.legalities || {}, 
+                         printsUrl: c.prints_search_uri || null, oracle_text: oracle_text, mana_cost: mana_cost, 
+                         prices: c.prices || {}, rarity: c.rarity || "common", setCode: c.set || "", setName: c.set_name || "",
+                         collector_number: c.collector_number || "" 
+                     };
+                   });
                if(isNewSearch) { setAllResults(cards); setLocalPage(0); } else { setAllResults(prev => [...prev, ...cards]); }
                setNextScryfallUrl(data.has_more ? data.next_page : null);
             } else { if(isNewSearch) { setAllResults([]); alert("Nessuna carta trovata."); } }
@@ -4015,6 +4034,7 @@
         const q = forceQuery !== null ? forceQuery : query;
         let searchQuery = q ? `${q} ` : "";
         if (oracleText) searchQuery += `o:"${oracleText}" `; if (rarity) searchQuery += `r:${rarity} `;
+        if (expFilter) searchQuery += `e:${expFilter} `; // Applica il filtro del Set
         if (mana.length > 0) {
            let mStr = mana.join('');
            if (colorMatchType === 'exact') searchQuery += cardType === 'land' ? `id=${mStr} ` : `c=${mStr} `; else searchQuery += cardType === 'land' ? `id>=${mStr} ` : `c>=${mStr} `;
@@ -4101,7 +4121,7 @@
                              if (c.card_faces[0].image_uris && c.card_faces[0].image_uris.normal) iImg = c.card_faces[0].image_uris.normal;
                              if (c.card_faces.length > 1 && c.card_faces[1].image_uris && c.card_faces[1].image_uris.normal) iImgBack = c.card_faces[1].image_uris.normal;
                          }
-                         return { ...card, id: c.id, image: iImg, imageBack: iImgBack, rarity: c.rarity || "common", setName: c.set_name || "" };
+                         return { ...card, id: c.id, image: iImg, imageBack: iImgBack, rarity: c.rarity || "common", setCode: c.set || "", setName: c.set_name || "", collector_number: c.collector_number || "" };
                     });
                     setPrintsList(mapped);
                 }
@@ -4164,13 +4184,17 @@
                            const priceStr = (viewingCard.prices && viewingCard.prices.eur) ? viewingCard.prices.eur : "0";
                            const priceNum = parseFloat(priceStr) || 0;
                            const currentColl = collection || [];
-                           const existingIndex = currentColl.findIndex(c => c.name === viewingCard.name && c.setName === (viewingCard.setName || ""));
+                           
+                           // L'ID di Scryfall è univoco per art ed espansione, quindi 2 Sol Ring diversi avranno ID diversi!
+                           const existingIndex = currentColl.findIndex(c => c.scryfallId === viewingCard.id);
                            let newColl = [...currentColl];
+                           
                            if(existingIndex >= 0) { 
                                newColl[existingIndex].qty += 1; 
                            } else { 
                                newColl.push({ 
-                                   id: (viewingCard.id || 'card') + Math.random(), 
+                                   id: 'coll-' + Math.random(), 
+                                   scryfallId: viewingCard.id, // ID vero della carta per distinguere le art
                                    name: viewingCard.name, 
                                    img: displayImg, 
                                    colors: viewingCard.colors || [], 
@@ -4179,7 +4203,8 @@
                                    folder: 'Generale',
                                    type: viewingCard.type || "",
                                    rarity: viewingCard.rarity || "common",
-                                   setName: viewingCard.setName || "Set Base"
+                                   setName: viewingCard.setName || "Set Base",
+                                   setCode: viewingCard.setCode || ""
                                }); 
                            }
                            setCollection(newColl); 
@@ -4246,8 +4271,16 @@
                  </div>
 
                  <h3 className="font-bold text-gray-300 mb-2">Ricerca Manuale:</h3>
-                 <div className="flex gap-2 mb-2"><input type="text" placeholder="Nome (es. Plains)" value={query} onChange={e => setQuery(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchCard(null)} className="flex-1 bg-gray-900 border border-gray-600 rounded p-3 text-white outline-none" /></div>
-                 <div className="flex gap-2 mb-3"><input type="text" placeholder="Testo Abilità" value={oracleText} onChange={e => setOracleText(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchCard(null)} className="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none" /></div>
+                 <div className="flex gap-2 mb-2"><input type="text" placeholder="Nome (es. Plains)" value={query} onChange={e => setQuery(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchCard(null)} className="flex-1 bg-gray-900 border border-gray-600 rounded p-3 text-white outline-none focus:border-blue-500" /></div>
+                 <div className="flex gap-2 mb-3">
+                     <input type="text" placeholder="Testo Abilità" value={oracleText} onChange={e => setOracleText(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchCard(null)} className="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none focus:border-blue-500" />
+                     <select value={expFilter} onChange={e => setExpFilter(e.target.value)} className="w-1/3 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none focus:border-blue-500 truncate">
+                         <option value="">Tutte le Espansioni</option>
+                         {(mtgSets || []).map(set => (
+                             <option key={set.code} value={set.code}>{set.name}</option>
+                         ))}
+                     </select>
+                 </div>
                  
                  <div className="flex flex-col gap-2 mb-3 bg-gray-900 p-2 rounded border border-gray-700">
                     <div className="flex gap-2 overflow-x-auto pb-1 justify-center">
