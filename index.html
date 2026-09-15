@@ -2722,6 +2722,11 @@
         const [cmdResults, setCmdResults] = useState([]);
         const [isSearching, setIsSearching] = useState(false);
         const [tempName, setTempName] = useState("");
+        
+        // Stati per la Plancia Pedine
+        const [tokenQuery, setTokenQuery] = useState("");
+        const [isGeneratingToken, setIsGeneratingToken] = useState(false);
+        const [showBgMenu, setShowBgMenu] = useState(false);
 
         // Imposta il nome temporaneo quando si apre il modale EditName
         useEffect(() => {
@@ -2876,7 +2881,109 @@
                 </React.Fragment>
             );
         }
-        return null;
+       
+      if (type === 'tokens') {
+            const SfondiPedine = ['plains_sfondo.jpg', 'island_sfondo.jpg', 'swamp_sfondo.jpg', 'mountain_sfondo.jpg', 'forest_sfondo.jpg', 'kamigawa_sfondo.jpg'];
+            
+            const updateToken = (tId, field, val) => {
+                const updated = (player.tokens || []).map(t => t.id === tId ? { ...t, [field]: val } : t);
+                updatePlayerConfig(player.id, 'tokens', updated);
+            };
+            const deleteToken = (tId) => {
+                const updated = (player.tokens || []).filter(t => t.id !== tId);
+                updatePlayerConfig(player.id, 'tokens', updated);
+            };
+
+            const generateToken = async () => {
+                if(!tokenQuery.trim()) return;
+                let apiKey = localStorage.getItem('gemini_api_key');
+                if (!apiKey) {
+                    apiKey = window.prompt("Per generare pedine con l'IA serve la API Key.\nIncollala qui:");
+                    if (!apiKey) return;
+                    localStorage.setItem('gemini_api_key', apiKey);
+                }
+                setIsGeneratingToken(true);
+                try {
+                    const promptStr = `Crea una pedina per Magic The Gathering in base a: "${tokenQuery}". Rispondi SOLO ed ESCLUSIVAMENTE con un JSON valido strutturato così:\n{\n  "name": "Nome (es. Goblin)",\n  "pt": "Forza/Cost. (es. 1/1, vuoto se non creatura)",\n  "abilities": "Abilità (es. Volare, rapidità)",\n  "color": "una classe tailwind es. bg-red-800, bg-blue-800, bg-green-800, bg-gray-300 (bianco), bg-gray-800 (nero/incolore), bg-yellow-600 (oro)"\n}`;
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: promptStr }] }] })
+                    });
+                    const data = await response.json();
+                    let jsonText = data.candidates[0].content.parts[0].text;
+                    jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
+                    let tokenData = JSON.parse(jsonText);
+                    
+                    const newToken = { id: 'tok-' + Date.now(), name: (tokenData && tokenData.name) ? tokenData.name : "Pedina", pt: (tokenData && tokenData.pt) ? tokenData.pt : "", abilities: (tokenData && tokenData.abilities) ? tokenData.abilities : "", color: (tokenData && tokenData.color) ? tokenData.color : "bg-gray-800", qty: 1, tapped: false };
+                    updatePlayerConfig(player.id, 'tokens', [...(player.tokens || []), newToken]);
+                    setTokenQuery("");
+                } catch(e) { alert("Errore AI. Riprova con termini più semplici o controlla la connessione."); }
+                setIsGeneratingToken(false);
+            };
+
+            return renderModal(
+                <React.Fragment>
+                    <div className="flex justify-between items-center mb-2 border-b border-gray-700 pb-3 mt-2 shrink-0">
+                        <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">♟️ Plancia Pedine: {player.name}</h3>
+                        <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
+                    </div>
+
+                    <div className="flex-1 relative bg-black overflow-hidden rounded-xl border border-gray-600 mt-2 flex flex-col">
+                        {player.tokenBg && <img src={player.tokenBg} className="absolute inset-0 w-full h-full object-cover opacity-50 z-0" />}
+                        
+                        {/* Area di Gioco Pedine */}
+                        <div className="flex-1 overflow-y-auto p-4 flex flex-wrap gap-x-6 gap-y-8 content-start z-10 relative items-start">
+                            {(player.tokens || []).map(t => (
+                                <div key={t.id} className="relative w-28 h-40 shrink-0">
+                                    {/* Carta Rotante */}
+                                    <div onClick={() => updateToken(t.id, 'tapped', !t.tapped)} className={`w-full h-full rounded-xl border-2 border-black shadow-[0_5px_15px_rgba(0,0,0,0.8)] flex flex-col transition-all duration-300 cursor-pointer ${t.color} ${t.tapped ? 'rotate-90 scale-95 opacity-80' : ''}`}>
+                                        <div className="bg-black/60 p-1 text-center font-bold text-white text-[10px] truncate border-b border-black">{t.name}</div>
+                                        <div className="flex-1 p-2 text-[9px] text-white/90 overflow-y-auto font-medium leading-tight">{t.abilities}</div>
+                                        {t.pt && <div className="bg-black/90 text-white font-black text-center py-1 border-t border-black text-xs">{t.pt}</div>}
+                                    </div>
+                                    {/* Badge Quantità (Sempre Dritto!) */}
+                                    <div className="absolute -bottom-3 -right-3 bg-gray-900 rounded-full border-2 border-gray-500 flex items-center justify-center p-1 shadow-xl z-20" onClick={e => e.stopPropagation()}>
+                                        <button onClick={(e) => { e.stopPropagation(); t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id); }} className="w-5 h-5 bg-red-600 rounded-full text-white font-black leading-none text-xs flex items-center justify-center">-</button>
+                                        <span className="w-6 text-center text-white font-black text-sm">{t.qty}</span>
+                                        <button onClick={(e) => { e.stopPropagation(); updateToken(t.id, 'qty', t.qty + 1); }} className="w-5 h-5 bg-green-600 rounded-full text-white font-black leading-none text-xs flex items-center justify-center">+</button>
+                                    </div>
+                                </div>
+                            ))}
+                            {(player.tokens || []).length === 0 && (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700">Nessuna pedina in campo.<br/>Scrivi cosa ti serve e creala!</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Menu Sfondi */}
+                        {showBgMenu && (
+                            <div className="absolute inset-0 z-30 bg-black/95 p-4 flex flex-col gap-4 animate-fade">
+                                <h4 className="text-white font-black text-xl mb-2 border-b border-gray-700 pb-2">Sfondo Battaglia</h4>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto content-start flex-1">
+                                    <div className="h-24 bg-gray-800 rounded-xl flex items-center justify-center text-gray-400 font-bold border-2 border-dashed border-gray-600 cursor-pointer text-center p-2" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', null); setShowBgMenu(false); }}>Sfondo Vuoto</div>
+                                    {SfondiPedine.map(bg => (
+                                        <div key={bg} className="h-24 rounded-xl border-2 border-transparent hover:border-blue-500 cursor-pointer overflow-hidden relative shadow-lg" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', bg); setShowBgMenu(false); }}>
+                                            <img src={bg} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+                                            <span className="absolute bottom-0 w-full bg-black/80 text-white text-[10px] font-bold text-center py-1 truncate px-1">{bg}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button onClick={() => setShowBgMenu(false)} className="mt-auto bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold transition-colors">Chiudi Menu</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Controlli Generazione (fuori dalla plancia per restare sempre visibili) */}
+                    <div className="flex gap-2 mt-4 shrink-0 z-20">
+                        <button onClick={() => setShowBgMenu(true)} className="bg-indigo-700 hover:bg-indigo-600 px-4 rounded-xl text-white text-xl shadow-lg transition-transform active:scale-95 border border-indigo-500" title="Sfondo Battaglia">🖼️</button>
+                        <input type="text" placeholder="Es. Drago 5/5 volante..." value={tokenQuery} onChange={e=>setTokenQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!isGeneratingToken&&generateToken()} className="flex-1 bg-gray-800 border border-gray-500 text-white rounded-xl p-3 outline-none font-bold focus:border-emerald-500 shadow-inner" />
+                        <button onClick={generateToken} disabled={isGeneratingToken} className="bg-emerald-600 disabled:opacity-50 px-6 rounded-xl text-white font-black shadow-lg text-lg active:scale-95 transition-transform border border-emerald-400">{isGeneratingToken ? '⏳' : 'Crea'}</button>
+                    </div>
+                </React.Fragment>
+            );
+        }
+      return null;
     };
 
     // --- CARTELLA GIOCATORE ---
@@ -2922,10 +3029,15 @@
             </div>
           </div>
           
-          <div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%] w-full">
+          <<div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%] w-full relative">
             <button onClick={() => updateStat(player.id, 'life', -1)} className="w-1/4 h-full flex items-center justify-center text-5xl md:text-6xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
             <div className="w-2/4 text-center text-5xl md:text-6xl lg:text-7xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)] truncate">{player.life}</div>
             <button onClick={() => updateStat(player.id, 'life', 1)} className="w-1/4 h-full flex items-center justify-center text-5xl md:text-6xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
+            
+            {/* Tasto Pedine Fluttuante in Basso al Centro */}
+            <button onClick={() => onOpenModal('tokens')} className="absolute bottom-1 md:bottom-2 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-full shadow-lg text-[10px] md:text-xs font-bold bg-emerald-800/90 text-emerald-100 hover:bg-emerald-700 transition-colors border border-emerald-500 flex items-center gap-1 z-30">
+                ♟️ Pedine
+            </button>
           </div>
         </React.Fragment>
       );
@@ -3115,7 +3227,8 @@
 
           newPlayers.push({ 
              id: `P${i}`, teamId: tId, name: `Player ${i}`, life: startLife, poison: 0, maxPoison: maxPoison, cmdCasts: 0, emblems: 0, immune: false, cmdDmg: cmdDmg, bgUrl: null, mana: {W:0, U:0, B:0, R:0, G:0, C:0},
-             rad: 0, energy: 0, exp: 0, ticket: 0, monarch: false, initiative: false, blessing: false, dayNight: 'none'
+             rad: 0, energy: 0, exp: 0, ticket: 0, monarch: false, initiative: false, blessing: false, dayNight: 'none',
+             tokens: [], tokenBg: null
           });
         }
         setPlayers(newPlayers); 
@@ -3129,7 +3242,7 @@
               setPlanechase(prev => ({...prev, active: false, currentPlane: null})); // Resetta Piano
               setPlayers(prev => prev.map(p => {
                   let resetDmg = {}; prev.forEach(op => { if(op.id !== p.id) resetDmg[`${op.id}`] = 0; });
-                  return { ...p, life: startLife, poison: 0, cmdCasts: 0, emblems: 0, rad: 0, energy: 0, exp: 0, ticket: 0, cmdDmg: resetDmg, monarch: false, initiative: false, blessing: false, dayNight: 'none', immune: false, mana: {W:0, U:0, B:0, R:0, G:0, C:0} };
+                  return { ...p, life: startLife, poison: 0, cmdCasts: 0, emblems: 0, rad: 0, energy: 0, exp: 0, ticket: 0, cmdDmg: resetDmg, monarch: false, initiative: false, blessing: false, dayNight: 'none', immune: false, mana: {W:0, U:0, B:0, R:0, G:0, C:0}, tokens: [] };
               }));
           }
           
