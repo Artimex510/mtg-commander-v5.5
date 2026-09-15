@@ -2921,66 +2921,68 @@
                 setIsGeneratingToken(false);
             };
 
-            return renderModal(
-                <React.Fragment>
-                    <div className="flex justify-between items-center mb-2 border-b border-gray-700 pb-3 mt-2 shrink-0">
-                        <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">♟️ Plancia Pedine: {player.name}</h3>
-                        <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
-                    </div>
+            return (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-md overflow-hidden">
+                    <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-4 sm:p-6 pointer-events-auto" style={modalStyle}>
+                        <div className="flex justify-between items-center mb-2 border-b border-gray-700 pb-3 mt-2 shrink-0">
+                            <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">♟️ Plancia Pedine: {player.name}</h3>
+                            <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
+                        </div>
 
-                    <div className="flex-1 relative bg-black overflow-hidden rounded-xl border border-gray-600 mt-2 flex flex-col">
-                        {player.tokenBg && <img src={player.tokenBg} className="absolute inset-0 w-full h-full object-cover opacity-50 z-0" />}
-                        
-                        {/* Area di Gioco Pedine */}
-                        <div className="flex-1 overflow-y-auto p-4 flex flex-wrap gap-x-6 gap-y-8 content-start z-10 relative items-start">
-                            {(player.tokens || []).map(t => (
-                                <div key={t.id} className="relative w-28 h-40 shrink-0">
-                                    {/* Carta Rotante */}
-                                    <div onClick={() => updateToken(t.id, 'tapped', !t.tapped)} className={`w-full h-full rounded-xl border-2 border-black shadow-[0_5px_15px_rgba(0,0,0,0.8)] flex flex-col transition-all duration-300 cursor-pointer ${t.color} ${t.tapped ? 'rotate-90 scale-95 opacity-80' : ''}`}>
-                                        <div className="bg-black/60 p-1 text-center font-bold text-white text-[10px] truncate border-b border-black">{t.name}</div>
-                                        <div className="flex-1 p-2 text-[9px] text-white/90 overflow-y-auto font-medium leading-tight">{t.abilities}</div>
-                                        {t.pt && <div className="bg-black/90 text-white font-black text-center py-1 border-t border-black text-xs">{t.pt}</div>}
+                        <div className="flex-1 relative bg-black overflow-hidden rounded-xl border border-gray-600 mt-2 flex flex-col">
+                            {player.tokenBg && <img src={player.tokenBg} className="absolute inset-0 w-full h-full object-cover opacity-50 z-0" />}
+                            
+                            {/* Area di Gioco Pedine */}
+                            <div className="flex-1 overflow-y-auto p-4 flex flex-wrap gap-x-6 gap-y-8 content-start z-10 relative items-start">
+                                {(player.tokens || []).map(t => (
+                                    <div key={t.id} className="relative w-28 h-40 shrink-0">
+                                        {/* Carta Rotante */}
+                                        <div onClick={() => updateToken(t.id, 'tapped', !t.tapped)} className={`w-full h-full rounded-xl border-2 border-black shadow-[0_5px_15px_rgba(0,0,0,0.8)] flex flex-col transition-all duration-300 cursor-pointer ${t.color} ${t.tapped ? 'rotate-90 scale-95 opacity-80' : ''}`}>
+                                            <div className="bg-black/60 p-1 text-center font-bold text-white text-[10px] truncate border-b border-black">{t.name}</div>
+                                            <div className="flex-1 p-2 text-[9px] text-white/90 overflow-y-auto font-medium leading-tight">{t.abilities}</div>
+                                            {t.pt && <div className="bg-black/90 text-white font-black text-center py-1 border-t border-black text-xs">{t.pt}</div>}
+                                        </div>
+                                        {/* Badge Quantità (Sempre Dritto!) */}
+                                        <div className="absolute -bottom-3 -right-3 bg-gray-900 rounded-full border-2 border-gray-500 flex items-center justify-center p-1 shadow-xl z-20" onClick={e => e.stopPropagation()}>
+                                            <button onClick={(e) => { e.stopPropagation(); t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id); }} className="w-5 h-5 bg-red-600 rounded-full text-white font-black leading-none text-xs flex items-center justify-center">-</button>
+                                            <span className="w-6 text-center text-white font-black text-sm">{t.qty}</span>
+                                            <button onClick={(e) => { e.stopPropagation(); updateToken(t.id, 'qty', t.qty + 1); }} className="w-5 h-5 bg-green-600 rounded-full text-white font-black leading-none text-xs flex items-center justify-center">+</button>
+                                        </div>
                                     </div>
-                                    {/* Badge Quantità (Sempre Dritto!) */}
-                                    <div className="absolute -bottom-3 -right-3 bg-gray-900 rounded-full border-2 border-gray-500 flex items-center justify-center p-1 shadow-xl z-20" onClick={e => e.stopPropagation()}>
-                                        <button onClick={(e) => { e.stopPropagation(); t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id); }} className="w-5 h-5 bg-red-600 rounded-full text-white font-black leading-none text-xs flex items-center justify-center">-</button>
-                                        <span className="w-6 text-center text-white font-black text-sm">{t.qty}</span>
-                                        <button onClick={(e) => { e.stopPropagation(); updateToken(t.id, 'qty', t.qty + 1); }} className="w-5 h-5 bg-green-600 rounded-full text-white font-black leading-none text-xs flex items-center justify-center">+</button>
+                                ))}
+                                {(player.tokens || []).length === 0 && (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700">Nessuna pedina in campo.<br/>Scrivi cosa ti serve e creala!</p>
                                     </div>
-                                </div>
-                            ))}
-                            {(player.tokens || []).length === 0 && (
-                                <div className="w-full h-full flex items-center justify-center">
-                                    <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700">Nessuna pedina in campo.<br/>Scrivi cosa ti serve e creala!</p>
+                                )}
+                            </div>
+
+                            {/* Menu Sfondi */}
+                            {showBgMenu && (
+                                <div className="absolute inset-0 z-30 bg-black/95 p-4 flex flex-col gap-4 animate-fade">
+                                    <h4 className="text-white font-black text-xl mb-2 border-b border-gray-700 pb-2">Sfondo Battaglia</h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto content-start flex-1">
+                                        <div className="h-24 bg-gray-800 rounded-xl flex items-center justify-center text-gray-400 font-bold border-2 border-dashed border-gray-600 cursor-pointer text-center p-2" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', null); setShowBgMenu(false); }}>Sfondo Vuoto</div>
+                                        {SfondiPedine.map(bg => (
+                                            <div key={bg} className="h-24 rounded-xl border-2 border-transparent hover:border-blue-500 cursor-pointer overflow-hidden relative shadow-lg" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', bg); setShowBgMenu(false); }}>
+                                                <img src={bg} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+                                                <span className="absolute bottom-0 w-full bg-black/80 text-white text-[10px] font-bold text-center py-1 truncate px-1">{bg}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button onClick={() => setShowBgMenu(false)} className="mt-auto bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold transition-colors">Chiudi Menu</button>
                                 </div>
                             )}
                         </div>
 
-                        {/* Menu Sfondi */}
-                        {showBgMenu && (
-                            <div className="absolute inset-0 z-30 bg-black/95 p-4 flex flex-col gap-4 animate-fade">
-                                <h4 className="text-white font-black text-xl mb-2 border-b border-gray-700 pb-2">Sfondo Battaglia</h4>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto content-start flex-1">
-                                    <div className="h-24 bg-gray-800 rounded-xl flex items-center justify-center text-gray-400 font-bold border-2 border-dashed border-gray-600 cursor-pointer text-center p-2" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', null); setShowBgMenu(false); }}>Sfondo Vuoto</div>
-                                    {SfondiPedine.map(bg => (
-                                        <div key={bg} className="h-24 rounded-xl border-2 border-transparent hover:border-blue-500 cursor-pointer overflow-hidden relative shadow-lg" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', bg); setShowBgMenu(false); }}>
-                                            <img src={bg} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
-                                            <span className="absolute bottom-0 w-full bg-black/80 text-white text-[10px] font-bold text-center py-1 truncate px-1">{bg}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <button onClick={() => setShowBgMenu(false)} className="mt-auto bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold transition-colors">Chiudi Menu</button>
-                            </div>
-                        )}
+                        {/* Controlli Generazione (fuori dalla plancia per restare sempre visibili) */}
+                        <div className="flex gap-2 mt-4 shrink-0 z-20">
+                            <button onClick={() => setShowBgMenu(true)} className="bg-indigo-700 hover:bg-indigo-600 px-4 rounded-xl text-white text-xl shadow-lg transition-transform active:scale-95 border border-indigo-500" title="Sfondo Battaglia">🖼️</button>
+                            <input type="text" placeholder="Es. Drago 5/5 volante..." value={tokenQuery} onChange={e=>setTokenQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!isGeneratingToken&&generateToken()} className="flex-1 bg-gray-800 border border-gray-500 text-white rounded-xl p-3 outline-none font-bold focus:border-emerald-500 shadow-inner" />
+                            <button onClick={generateToken} disabled={isGeneratingToken} className="bg-emerald-600 disabled:opacity-50 px-6 rounded-xl text-white font-black shadow-lg text-lg active:scale-95 transition-transform border border-emerald-400">{isGeneratingToken ? '⏳' : 'Crea'}</button>
+                        </div>
                     </div>
-
-                    {/* Controlli Generazione (fuori dalla plancia per restare sempre visibili) */}
-                    <div className="flex gap-2 mt-4 shrink-0 z-20">
-                        <button onClick={() => setShowBgMenu(true)} className="bg-indigo-700 hover:bg-indigo-600 px-4 rounded-xl text-white text-xl shadow-lg transition-transform active:scale-95 border border-indigo-500" title="Sfondo Battaglia">🖼️</button>
-                        <input type="text" placeholder="Es. Drago 5/5 volante..." value={tokenQuery} onChange={e=>setTokenQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!isGeneratingToken&&generateToken()} className="flex-1 bg-gray-800 border border-gray-500 text-white rounded-xl p-3 outline-none font-bold focus:border-emerald-500 shadow-inner" />
-                        <button onClick={generateToken} disabled={isGeneratingToken} className="bg-emerald-600 disabled:opacity-50 px-6 rounded-xl text-white font-black shadow-lg text-lg active:scale-95 transition-transform border border-emerald-400">{isGeneratingToken ? '⏳' : 'Crea'}</button>
-                    </div>
-                </React.Fragment>
+                </div>
             );
         }
       return null;
