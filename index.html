@@ -1720,7 +1720,7 @@
                   </div>
                   <div className="flex gap-2">
                      <span className="bg-blue-600 px-2 py-1 rounded font-bold shadow">Avg CMC: {avgCMC}</span>
-                     <span className="bg-emerald-600 px-2 py-1 rounded font-black shadow drop-shadow-md">€ {deck.reduce((acc, c) => acc + (parseFloat(c.prices?.eur || 0)), 0).toFixed(2)}</span>
+                     <span className="bg-emerald-600 px-2 py-1 rounded font-black shadow drop-shadow-md">€ {deck.reduce((acc, c) => acc + (parseFloat((c.prices && c.prices.eur) ? c.prices.eur : 0) || 0), 0).toFixed(2)}</span>
                   </div>
                 </div>
                 {!rulebreaker && warnings.length > 0 && (
@@ -2022,7 +2022,7 @@
                    <h2 className="text-3xl font-black text-white drop-shadow-md truncate pr-2">{deck.name}</h2>
                    <div className="bg-emerald-900/80 px-3 py-1 rounded-lg border border-emerald-500 shadow-lg text-right shrink-0">
                        <p className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider mb-[-2px]">Valore Stimato</p>
-                       <p className="text-xl font-black text-white">€ {deck.cards.reduce((acc, c) => acc + (parseFloat(c.prices?.eur || 0)), 0).toFixed(2)}</p>
+                       <p className="text-xl font-black text-white">€ {deck.cards.reduce((acc, c) => acc + (parseFloat((c.prices && c.prices.eur) ? c.prices.eur : 0) || 0), 0).toFixed(2)}</p>
                    </div>
                 </div>
                 <p className="text-gray-300 font-bold mb-4 mt-2">Clicca su una carta per ingrandirla e tradurla!</p>
@@ -2147,7 +2147,7 @@
                      <h3 className="absolute bottom-1 left-2 text-sm font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,1)] leading-tight truncate w-11/12">{d.name}</h3>
                      <div className="absolute top-1 right-1 flex flex-col gap-1 items-end">
                          <span className="bg-blue-600 text-white text-[8px] font-bold px-1 rounded shadow uppercase">{d.format || 'Cmdr'}</span>
-                         <span className="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">€ {d.cards.reduce((acc, c) => acc + (parseFloat(c.prices?.eur || 0)), 0).toFixed(2)}</span>
+                         <span className="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">€ {d.cards.reduce((acc, c) => acc + (parseFloat((c.prices && c.prices.eur) ? c.prices.eur : 0) || 0), 0).toFixed(2)}</span>
                      </div>
                    </div>
                    <div className="p-2 bg-gray-900 flex flex-col gap-1 text-xs font-bold">
