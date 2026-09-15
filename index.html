@@ -1718,7 +1718,10 @@
                      <span className={`px-2 py-1 rounded font-bold ${((deckFormat === 'commander' && mainDeckCards.length === 100) || (deckFormat !== 'commander' && mainDeckCards.length >= 60)) ? 'bg-green-600' : 'bg-red-600'}`}>Main: {mainDeckCards.length}</span>
                      {deckFormat !== 'commander' && ( <span className={`px-2 py-1 rounded font-bold ${(sideCards.length <= 15) ? 'bg-indigo-600' : 'bg-red-600'}`}>Side: {sideCards.length}</span> )}
                   </div>
-                  <span className="bg-blue-600 px-2 py-1 rounded font-bold">Avg CMC: {avgCMC}</span>
+                  <div className="flex gap-2">
+                     <span className="bg-blue-600 px-2 py-1 rounded font-bold shadow">Avg CMC: {avgCMC}</span>
+                     <span className="bg-emerald-600 px-2 py-1 rounded font-black shadow drop-shadow-md">€ {deck.reduce((acc, c) => acc + (parseFloat(c.prices?.eur || 0)), 0).toFixed(2)}</span>
+                  </div>
                 </div>
                 {!rulebreaker && warnings.length > 0 && (
                    <div className="bg-red-900/80 border border-red-500 rounded p-3 mt-3 shadow-inner">
@@ -2015,8 +2018,14 @@
            <div className={viewingCard ? "hidden" : "space-y-4"}>
              <button onClick={() => navigate('mydecks')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-2 shadow transition-colors">⬅ Indietro ai Mazzi</button>
              <div className="bg-gray-800/90 p-6 rounded-xl border border-gray-600 shadow-xl backdrop-blur-sm">
-                <h2 className="text-3xl font-black text-white mb-1 drop-shadow-md">{deck.name}</h2>
-                <p className="text-gray-300 font-bold mb-4">Clicca su una carta per ingrandirla e tradurla!</p>
+                <div className="flex justify-between items-start mb-1">
+                   <h2 className="text-3xl font-black text-white drop-shadow-md truncate pr-2">{deck.name}</h2>
+                   <div className="bg-emerald-900/80 px-3 py-1 rounded-lg border border-emerald-500 shadow-lg text-right shrink-0">
+                       <p className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider mb-[-2px]">Valore Stimato</p>
+                       <p className="text-xl font-black text-white">€ {deck.cards.reduce((acc, c) => acc + (parseFloat(c.prices?.eur || 0)), 0).toFixed(2)}</p>
+                   </div>
+                </div>
+                <p className="text-gray-300 font-bold mb-4 mt-2">Clicca su una carta per ingrandirla e tradurla!</p>
                 <div className="space-y-4">
                   {categoriesOrder.map(cat => {
                      const cardsInCat = groupedByCategory[cat];
@@ -2136,7 +2145,10 @@
                      <img src={mainImg || "mtg-bg.jpg"} className="w-full h-full object-cover object-top opacity-60" />
                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
                      <h3 className="absolute bottom-1 left-2 text-sm font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,1)] leading-tight truncate w-11/12">{d.name}</h3>
-                     <span className="absolute top-1 right-1 bg-blue-600 text-white text-[8px] font-bold px-1 rounded shadow uppercase">{d.format || 'Cmdr'}</span>
+                     <div className="absolute top-1 right-1 flex flex-col gap-1 items-end">
+                         <span className="bg-blue-600 text-white text-[8px] font-bold px-1 rounded shadow uppercase">{d.format || 'Cmdr'}</span>
+                         <span className="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">€ {d.cards.reduce((acc, c) => acc + (parseFloat(c.prices?.eur || 0)), 0).toFixed(2)}</span>
+                     </div>
                    </div>
                    <div className="p-2 bg-gray-900 flex flex-col gap-1 text-xs font-bold">
                      <button onClick={() => navigate('viewdeck', d)} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded py-2 shadow transition-colors truncate">👁️ Vis / 🇮🇹</button>
