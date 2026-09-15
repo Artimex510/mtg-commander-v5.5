@@ -1358,25 +1358,24 @@
                              if (c.card_faces[0].image_uris && c.card_faces[0].image_uris.normal) iImg = c.card_faces[0].image_uris.normal;
                              if (c.card_faces.length > 1 && c.card_faces[1].image_uris && c.card_faces[1].image_uris.normal) iImgBack = c.card_faces[1].image_uris.normal;
                          }
-                         return { ...card, id: c.id, image: iImg, imageBack: iImgBack };
-                    });
-                    setPrintsList(mapped);
-                } else { alert("Nessun'altra stampa trovata."); }
-                setLoadingPrints(false);
-            }).catch(e => { console.error(e); setLoadingPrints(false); });
-      };
+                         return { ...card, id: c.id, image: iImg, imageBack: iImgBack, rarity: c.rarity || "common", setCode: c.set || "", setName: c.set_name || "", prices: c.prices || {} };
+                        });
+                        setPrintsList(mapped);
+                    } else { alert("Nessun'altra stampa trovata."); }
+                    setLoadingPrints(false);
+                }).catch(e => { console.error(e); setLoadingPrints(false); });
+          };
 
-      const changeArtOfExistingCard = (newImg, newImgBack) => {
-         if (!managingCard) return;
-         const cardKey = buildCardKey(managingCard);
-         setDeck(deck.map(c => {
-             if (buildCardKey(c) === cardKey) return { ...c, image: newImg, imageBack: newImgBack };
-             return c;
-         }));
-         setManagingCard({...managingCard, image: newImg, imageBack: newImgBack});
-         setPrintsList([]); setShowIta(false); alert("Immagine aggiornata con successo per tutte le copie!");
-      };
-
+          const changeArtOfExistingCard = (p) => {
+             if (!managingCard) return;
+             const cardKey = buildCardKey(managingCard);
+             setDeck(deck.map(c => {
+                 if (buildCardKey(c) === cardKey) return { ...c, id: p.id, image: p.image, imageBack: p.imageBack, rarity: p.rarity, setCode: p.setCode, setName: p.setName, prices: p.prices };
+                 return c;
+             }));
+             setManagingCard({...managingCard, id: p.id, image: p.image, imageBack: p.imageBack, rarity: p.rarity, setCode: p.setCode, setName: p.setName, prices: p.prices});
+             setPrintsList([]); setShowIta(false); alert("Stampa e Prezzo aggiornati con successo per tutte le copie!");
+          };
       const translateCard = (card) => {
         if (card.isCustom) return alert("Le carte Proxy non possono essere tradotte dal database.");
         if (itaImg) { setShowIta(!showIta); return; } 
@@ -1639,8 +1638,8 @@
                        <div className="flex overflow-x-auto gap-2 pb-2">
                           {printsList.map(p => (
                              <div key={p.id} className="flex flex-col items-center shrink-0">
-                               <img src={p.image} className="w-20 rounded cursor-pointer border-2 border-transparent hover:border-blue-500 shadow-sm" onClick={() => { setterState({...targetCard, image: p.image, imageBack: p.imageBack}); setShowIta(false); }} />
-                               {actionLabel === "Gestisci" && ( <button onClick={() => changeArtOfExistingCard(p.image, p.imageBack)} className="mt-1 text-[8px] bg-blue-600 text-white px-1 rounded hover:bg-blue-500 font-bold">APPLICA</button> )}
+                              <img src={p.image} className="w-20 rounded cursor-pointer border-2 border-transparent hover:border-blue-500 shadow-sm" onClick={() => { setterState({...targetCard, id: p.id, image: p.image, imageBack: p.imageBack, rarity: p.rarity, setCode: p.setCode, setName: p.setName, prices: p.prices}); setShowIta(false); }} />
+                               {actionLabel === "Gestisci" && ( <button onClick={() => changeArtOfExistingCard(p)} className="mt-1 text-[8px] bg-blue-600 text-white px-1 rounded hover:bg-blue-500 font-bold">APPLICA</button> )} 
                              </div>
                           ))}
                        </div>
@@ -1932,9 +1931,9 @@
                              if (c.card_faces[0].image_uris && c.card_faces[0].image_uris.normal) iImg = c.card_faces[0].image_uris.normal;
                              if (c.card_faces.length > 1 && c.card_faces[1].image_uris && c.card_faces[1].image_uris.normal) iImgBack = c.card_faces[1].image_uris.normal;
                          }
-                         return { ...card, id: c.id, image: iImg, imageBack: iImgBack };
-                    });
-                    setPrintsList(mapped);
+                         return { ...card, id: c.id, image: iImg, imageBack: iImgBack, rarity: c.rarity || "common", setCode: c.set || "", setName: c.set_name || "", prices: c.prices || {} };
+                        });
+                        setPrintsList(mapped);
                 } else { alert("Nessun'altra stampa trovata."); }
                 setLoadingPrints(false);
             }).catch(e => { console.error(e); setLoadingPrints(false); });
@@ -2004,7 +2003,7 @@
                        <div className="flex overflow-x-auto gap-2 pb-2">
                            {printsList.map(p => (
                               <img key={p.id} src={p.image} className="w-20 rounded cursor-pointer border-2 border-transparent hover:border-blue-500 shadow-sm shrink-0" 
-                                   onClick={() => { setViewingCard({...viewingCard, id: p.id, image: p.image, imageBack: p.imageBack, rarity: p.rarity, setCode: p.setCode, setName: p.setName, prices: p.prices}); setPrintsList([]); setShowIta(false); }} />
+                                 onClick={() => { setViewingCard({...viewingCard, id: p.id, image: p.image, imageBack: p.imageBack, rarity: p.rarity, setCode: p.setCode, setName: p.setName, prices: p.prices}); setPrintsList([]); setShowIta(false); }} />  
                            ))}
                         </div>
                     </div>
@@ -4127,9 +4126,9 @@
                              if (c.card_faces[0].image_uris && c.card_faces[0].image_uris.normal) iImg = c.card_faces[0].image_uris.normal;
                              if (c.card_faces.length > 1 && c.card_faces[1].image_uris && c.card_faces[1].image_uris.normal) iImgBack = c.card_faces[1].image_uris.normal;
                          }
-                         return { ...card, id: c.id, image: iImg, imageBack: iImgBack, rarity: c.rarity || "common", setCode: c.set || "", setName: c.set_name || "", collector_number: c.collector_number || "" };
-                    });
-                    setPrintsList(mapped);
+                         return { ...card, id: c.id, image: iImg, imageBack: iImgBack, rarity: c.rarity || "common", setCode: c.set || "", setName: c.set_name || "", collector_number: c.collector_number || "", prices: c.prices || {} };
+                        });
+                        setPrintsList(mapped);
                 }
                 setLoadingPrints(false);
             }).catch(e => { console.error(e); setLoadingPrints(false); });
@@ -4239,7 +4238,7 @@
                        <div className="flex overflow-x-auto gap-2 pb-2">
                           {printsList.map(p => (
                              <img key={p.id} src={p.image} className="w-20 rounded cursor-pointer border-2 border-transparent hover:border-blue-500 shadow-sm shrink-0" 
-                                  onClick={() => { setViewingCard({...viewingCard, image: p.image, imageBack: p.imageBack}); setPrintsList([]); setShowIta(false); }} />
+                                  onClick={() => { setViewingCard({...viewingCard, id: p.id, image: p.image, imageBack: p.imageBack, rarity: p.rarity, setCode: p.setCode, setName: p.setName, prices: p.prices}); setPrintsList([]); setShowIta(false); }} />
                           ))}
                        </div>
                     </div>
