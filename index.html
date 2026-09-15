@@ -2225,7 +2225,7 @@
             const promptTesto = `Sei un esperto Deckbuilder di Magic: The Gathering. Formato: ${formatName}. Comandante: ${cmdName}. Lista: ${listText}. Ignora le carte ovvie o la top 100 di EDHREC. Trovami 5 carte "tech" (sconosciute, vecchie o molto economiche) che abbiano una sinergia letale e nascosta con le meccaniche di questo mazzo. Spiega brevemente il perché per ciascuna in italiano. Usa un elenco puntato. Non usare formattazione complessa.`;
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: promptTesto }] }] })
                 });
@@ -2756,27 +2756,22 @@
                }).catch(e => { console.error(e); setIsSearching(false); });
          };
 
-        // WRAPPER INTELLIGENTE: Per EditName e Search forza sempre il telefono in verticale (rotazione 0)
+        // RENDER MODALE FISSO SENZA UNMOUNT (Previene il reset dello scorrimento fastidioso)
         const effectiveRotation = (type === 'search' || type === 'editName') ? 0 : rotation;
-        const Wrapper = ({ children }) => {
-            const isSideways = effectiveRotation === 90 || effectiveRotation === -90;
-            const modalStyle = {
-                width: isSideways ? '100vh' : '100vw',
-                height: isSideways ? '100vw' : '100vh',
-                transform: `rotate(${effectiveRotation}deg)`
-            };
-            return (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-md overflow-hidden">
-                    <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-4 sm:p-6 pointer-events-auto" style={modalStyle}>
-                        {children}
-                    </div>
+        const isSideways = effectiveRotation === 90 || effectiveRotation === -90;
+        const modalStyle = { width: isSideways ? '100vh' : '100vw', height: isSideways ? '100vw' : '100vh', transform: `rotate(${effectiveRotation}deg)` };
+        
+        const renderModal = (content) => (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-md overflow-hidden">
+                <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-4 sm:p-6 pointer-events-auto" style={modalStyle}>
+                    {content}
                 </div>
-            );
-        };
+            </div>
+        );
 
         if (type === 'editName') {
-            return (
-                <Wrapper>
+            return renderModal(
+                <React.Fragment>
                     <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2 shrink-0">
                         <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">✏️ Modifica Nome</h3>
                         <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Annulla</button>
@@ -2786,13 +2781,13 @@
                         <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveName()} className="bg-gray-800 border border-gray-500 text-white rounded-xl p-4 outline-none font-black text-2xl focus:border-blue-500 text-center shadow-inner" placeholder="Nome" />
                         <button onClick={saveName} className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-xl shadow-[0_0_15px_rgba(22,163,74,0.5)] transition-all text-xl mt-4">SALVA NOME</button>
                     </div>
-                </Wrapper>
+                </React.Fragment>
             );
         }
 
         if (type === 'stats') {
-            return (
-                <Wrapper>
+            return renderModal(
+                <React.Fragment>
                     <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2 shrink-0">
                         <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">⚙️ Statistiche: {player.name}</h3>
                         <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
@@ -2827,14 +2822,14 @@
                             <button onClick={() => toggleImmunity(player.id)} className={`w-full py-4 font-black rounded-xl shadow-lg border text-lg ${player.immune ? 'bg-cyan-600 text-white border-cyan-400' : 'bg-gray-800 text-gray-300 border-gray-600'}`}>{player.immune ? '🛡️ Immunità Attiva (Ferma Danni)' : 'Attiva Immunità'}</button>
                         </div>
                     </div>
-                </Wrapper>
+                </React.Fragment>
             );
         }
 
         if (type === 'mana') {
             const ManaColors = [ { id: 'W', color: 'bg-yellow-100 text-yellow-900', label: 'W' }, { id: 'U', color: 'bg-blue-500 text-white', label: 'U' }, { id: 'B', color: 'bg-gray-800 text-white', label: 'B' }, { id: 'R', color: 'bg-red-500 text-white', label: 'R' }, { id: 'G', color: 'bg-green-500 text-white', label: 'G' }, { id: 'C', color: 'bg-gray-400 text-gray-900', label: 'C' } ];
-            return (
-                <Wrapper>
+            return renderModal(
+                <React.Fragment>
                     <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3 mt-2 shrink-0">
                         <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">🔮 Mana Pool: {player.name}</h3>
                         <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
@@ -2852,13 +2847,13 @@
                         ))}
                     </div>
                     <button onClick={() => { ManaColors.forEach(m => updatePlayerConfig(player.id, 'mana', {W:0,U:0,B:0,R:0,G:0,C:0})) }} className="w-full mt-auto py-4 font-black shadow-[0_0_15px_rgba(220,38,38,0.4)] bg-red-700 hover:bg-red-600 text-white rounded-xl transition-all text-xl shrink-0">🔄 SVUOTA MANA POOL</button>
-                </Wrapper>
+                </React.Fragment>
             );
         }
 
         if (type === 'search') {
-            return (
-                <Wrapper>
+            return renderModal(
+                <React.Fragment>
                     <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2 shrink-0">
                         <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">🔍 Sfondo: {player.name}</h3>
                         <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
@@ -2878,7 +2873,7 @@
                         ))}
                         {cmdResults.length === 0 && !isSearching && <p className="col-span-full text-center text-gray-400 font-bold mt-10 text-xl">Cerca un Comandante per impostare lo sfondo.</p>}
                     </div>
-                </Wrapper>
+                </React.Fragment>
             );
         }
         return null;
@@ -2941,6 +2936,7 @@
       const [setup, setSetup] = useState(true);
       const [numPlayers, setNumPlayers] = useState(4);
       const [startLife, setStartLife] = useState(40);
+      const [teamMode, setTeamMode] = useState(false); // NUOVO STATO SQUADRE
       const [players, setPlayers] = useState([]);
       
       const [showDice, setShowDice] = useState(false);
@@ -3072,7 +3068,7 @@
               if (prev.planes.length === 0) return prev;
               let newPlanes = [...prev.planes];
               let next = newPlanes.pop();
-              return { ...prev, currentPlane: next };
+              return { ...prev, currentPlane: next, planes: newPlanes };
           });
       };
 
@@ -3092,11 +3088,12 @@
 
       const startGame = () => {
         let newPlayers = [];
-        let maxPoison = startLife === 30 ? 15 : 10; // Regola Two-Headed Giant!
+        let maxPoison = (startLife === 30 || (startLife === 60 && teamMode)) ? 15 : 10; 
         for(let i=1; i<=numPlayers; i++) {
           let cmdDmg = {}; for(let j=1; j<=numPlayers; j++) { if(i!==j) cmdDmg[`P${j}`] = 0; }
+          let tId = teamMode ? Math.ceil(i/2) : i; // Crea le squadre a coppie (1 con 2, 3 con 4...)
           newPlayers.push({ 
-             id: `P${i}`, name: `Player ${i}`, life: startLife, poison: 0, maxPoison: maxPoison, cmdCasts: 0, emblems: 0, immune: false, cmdDmg: cmdDmg, bgUrl: null, mana: {W:0, U:0, B:0, R:0, G:0, C:0},
+             id: `P${i}`, teamId: tId, name: `Player ${i}`, life: startLife, poison: 0, maxPoison: maxPoison, cmdCasts: 0, emblems: 0, immune: false, cmdDmg: cmdDmg, bgUrl: null, mana: {W:0, U:0, B:0, R:0, G:0, C:0},
              rad: 0, energy: 0, exp: 0, ticket: 0, monarch: false, initiative: false, blessing: false, dayNight: 'none'
           });
         }
@@ -3140,16 +3137,37 @@
       };
 
       const updateStat = (playerId, stat, amount, opponentId = null) => {
-        setPlayers(prev => prev.map(p => {
-          if (p.id !== playerId) return p;
+        setPlayers(prev => {
+          const targetPlayer = prev.find(p => p.id === playerId);
+          if(!targetPlayer) return prev;
+          
+          const sharedStats = ['life', 'poison', 'energy', 'ticket'];
+          const isShared = sharedStats.includes(stat);
+          
           if (opponentId && stat === 'cmdDmg') {
-             let newDmg = { ...p.cmdDmg };
-             let prevVal = newDmg[opponentId] || 0; newDmg[opponentId] = Math.max(0, prevVal + amount);
-             let diff = newDmg[opponentId] - prevVal;
-             return { ...p, cmdDmg: newDmg, life: Math.max(0, p.life - diff) };
+             let prevVal = targetPlayer.cmdDmg[opponentId] || 0;
+             let newVal = Math.max(0, prevVal + amount);
+             let diff = newVal - prevVal;
+             return prev.map(p => {
+                if (p.id === playerId) {
+                   return { ...p, cmdDmg: { ...p.cmdDmg, [opponentId]: newVal }, life: Math.max(0, p.life - diff) };
+                }
+                if (p.teamId === targetPlayer.teamId && p.teamId !== p.id) {
+                   return { ...p, life: Math.max(0, p.life - diff) }; // Il danno com. inflitto a te, cala la vita anche al compagno!
+                }
+                return p;
+             });
           }
-          return { ...p, [stat]: Math.max(0, p[stat] + amount) };
-        }));
+
+          return prev.map(p => {
+             if (isShared && p.teamId === targetPlayer.teamId) {
+                return { ...p, [stat]: Math.max(0, p[stat] + amount) }; // Applica a tutti i membri del team
+             } else if (!isShared && p.id === playerId) {
+                return { ...p, [stat]: Math.max(0, p[stat] + amount) }; // Applica solo a te
+             }
+             return p;
+          });
+        });
       };
 
       const updateMana = (playerId, color, amount) => {
@@ -3174,13 +3192,20 @@
             <label className="block text-gray-300 font-bold mb-2">Numero Giocatori (1-6)</label>
             <input type="number" min="1" max="6" value={numPlayers} onChange={e => setNumPlayers(parseInt(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white text-center text-xl font-bold outline-none" />
           </div>
-          <div className="mb-6">
+          <div className="mb-4">
             <label className="block text-gray-300 font-bold mb-2">Punti Vita Iniziali</label>
             <select value={startLife} onChange={e => setStartLife(parseInt(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white text-center text-xl font-bold outline-none">
-              <option value={40}>40 (Commander)</option>
-              <option value={30}>30 (Two-Headed Giant)</option>
-              <option value={20}>20 (Standard)</option>
+              <option value={60}>60 (Commander Two-Headed Giant)</option>
+              <option value={40}>40 (Commander Base)</option>
+              <option value={30}>30 (Standard Two-Headed Giant)</option>
+              <option value={20}>20 (Standard Base)</option>
             </select>
+          </div>
+          <div className="mb-6">
+             <label className="flex items-center gap-3 text-white font-bold bg-blue-900/40 p-3 rounded-lg border border-blue-500 cursor-pointer shadow-inner">
+               <input type="checkbox" checked={teamMode} onChange={e=>setTeamMode(e.target.checked)} className="w-6 h-6 accent-blue-500" />
+               <span className="text-sm">Abilita Squadre (2HG) <br/><span className="text-[10px] text-blue-300 font-normal">Sincronizza Vita, Veleno, Energia e Ticket a coppie.</span></span>
+             </label>
           </div>
           <button onClick={startGame} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl text-xl shadow-[0_0_15px_rgba(220,38,38,0.5)] transition-all">INIZIA PARTITA</button>
         </div>
