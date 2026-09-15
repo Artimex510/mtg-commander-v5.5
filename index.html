@@ -3172,8 +3172,9 @@
                 if (p.id === playerId) {
                    return { ...p, cmdDmg: { ...p.cmdDmg, [opponentId]: newVal }, life: Math.max(0, p.life - diff) };
                 }
-                if (p.teamId === targetPlayer.teamId && p.teamId !== p.id) {
-                   return { ...p, life: Math.max(0, p.life - diff) }; // Il danno com. inflitto a te, cala la vita anche al compagno!
+                // Sincronizza VITA E DANNO COMANDANTE per il compagno di squadra
+                if (p.teamId === targetPlayer.teamId && p.id !== playerId) { 
+                   return { ...p, cmdDmg: { ...p.cmdDmg, [opponentId]: newVal }, life: Math.max(0, p.life - diff) }; 
                 }
                 return p;
              });
