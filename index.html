@@ -792,7 +792,7 @@
 
               <main className={`${(view !== 'game_active' && view !== 'playtester_active') ? 'pt-20 px-2 pb-10' : ''} flex-1 relative z-10`}>
                 {view === 'home' && <HomeView navigate={navigate} />}
-                {view === 'deckbuilder' && <DeckBuilder navigate={navigate} activeDeck={activeDeck} />}
+                {view === 'deckbuilder' && <DeckBuilder navigate={navigate} activeDeck={activeDeck} mtgSets={mtgSets} />}
                 {view === 'cardsearch' && <CardSearchExplorer navigate={navigate} printQueue={printQueue} setPrintQueue={setPrintQueue} collection={collection} setCollection={setCollection} mtgSets={mtgSets} />}
                 {view === 'mydecks' && <MyDecks navigate={navigate} />}
                 {view === 'collection' && <CollectionBinder navigate={navigate} collection={collection} setCollection={setCollection} mtgSets={mtgSets} />}
@@ -1305,7 +1305,7 @@
     };
 
     // --- DECKBUILDER ---
-    const DeckBuilder = ({navigate, activeDeck}) => {
+    const DeckBuilder = ({navigate, activeDeck, mtgSets}) => {
       const [deckName, setDeckName] = useState(activeDeck ? activeDeck.name : "");
       const [deckFormat, setDeckFormat] = useState(activeDeck ? (activeDeck.format || 'commander') : 'commander');
       const [deck, setDeck] = useState(activeDeck ? activeDeck.cards.map(c => ({...c, oracle_text: c.oracle_text || "", mana_cost: c.mana_cost || "", isCompanion: c.isCompanion || false})) : []);
@@ -1743,8 +1743,16 @@
                     )}
                  </h3>
                  <p className="text-[10px] text-gray-400 mb-3 text-center uppercase tracking-wider font-bold">🇺🇸 Cerca in Inglese (es. "Plains", "Angel")</p>
-                 <div className="flex gap-2 mb-2"><input type="text" placeholder="Nome della carta..." value={query} onChange={e => setQuery(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchCard()} className="flex-1 bg-gray-900 border border-gray-600 rounded p-3 text-white outline-none" /></div>
-                 <div className="flex gap-2 mb-3"><input type="text" placeholder="Testo Abilità (es. Landfall, Deathtouch)" value={oracleText} onChange={e => setOracleText(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchCard()} className="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none" /></div>
+                 <div className="flex gap-2 mb-2"><input type="text" placeholder="Nome della carta..." value={query} onChange={e => setQuery(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchCard()} className="flex-1 bg-gray-900 border border-gray-600 rounded p-3 text-white outline-none focus:border-blue-500" /></div>
+                 <div className="flex gap-2 mb-3">
+                     <input type="text" placeholder="Testo Abilità" value={oracleText} onChange={e => setOracleText(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchCard()} className="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none focus:border-blue-500" />
+                     <select value={expFilter} onChange={e => setExpFilter(e.target.value)} className="w-1/3 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none focus:border-blue-500 truncate">
+                         <option value="">Espansione...</option>
+                         {Array.isArray(mtgSets) && mtgSets.map((set, i) => (
+                             <option key={set.code || i} value={set.code || ""}>{set.name || ""}</option>
+                         ))}
+                     </select>
+                 </div>
                  
                  <div className="flex flex-col gap-2 mb-3 bg-gray-900 p-2 rounded border border-gray-700">
                     <div className="flex gap-2 overflow-x-auto pb-1 justify-center">
@@ -4271,9 +4279,9 @@
                  <div className="flex gap-2 mb-3">
                      <input type="text" placeholder="Testo Abilità" value={oracleText} onChange={e => setOracleText(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchCard(null)} className="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none focus:border-blue-500" />
                      <select value={expFilter} onChange={e => setExpFilter(e.target.value)} className="w-1/3 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none focus:border-blue-500 truncate">
-                         <option value="">Tutte le Espansioni</option>
-                         {(mtgSets || []).map(set => (
-                             <option key={set.code} value={set.code}>{set.name}</option>
+                         <option value="">Espansione...</option>
+                         {Array.isArray(mtgSets) && mtgSets.map((set, i) => (
+                             <option key={set.code || i} value={set.code || ""}>{set.name || ""}</option>
                          ))}
                      </select>
                  </div>
