@@ -2896,6 +2896,36 @@
                 updatePlayerConfig(player.id, 'tokens', updated);
             };
 
+            // 1. RICERCA PEDINE UFFICIALI SU SCRYFALL
+            const searchOfficialToken = () => {
+                if(!tokenQuery.trim()) return;
+                setIsSearching(true);
+                setCmdResults([]);
+                fetch(`https://api.scryfall.com/cards/search?q=t:token+${encodeURIComponent(tokenQuery.trim())}&unique=art`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.data) {
+                            const results = data.data.map(c => {
+                                let imgUrl = "";
+                                if (c.image_uris && c.image_uris.normal) imgUrl = c.image_uris.normal;
+                                else if (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris) imgUrl = c.card_faces[0].image_uris.normal;
+                                return { id: c.id, name: c.name, img: imgUrl, pt: c.power ? `${c.power}/${c.toughness}` : "" };
+                            }).filter(c => c.img);
+                            setCmdResults(results);
+                            if(results.length === 0) alert("Nessuna pedina ufficiale trovata.");
+                        } else { alert("Nessuna pedina ufficiale trovata."); }
+                        setIsSearching(false);
+                    }).catch(e => { console.error(e); setIsSearching(false); });
+            };
+
+            const addOfficialToken = (tok) => {
+                const newToken = { id: 'tok-' + Date.now(), name: tok.name, pt: tok.pt, abilities: "", color: "bg-gray-800", img: tok.img, qty: 1, tapped: false };
+                updatePlayerConfig(player.id, 'tokens', [...(player.tokens || []), newToken]);
+                setCmdResults([]); // Chiude il menu dei risultati
+                setTokenQuery("");
+            };
+
+            // 2. GENERAZIONE PEDINA CUSTOM (GEMINI 3.6 FLASH)
             const generateToken = async () => {
                 if(!tokenQuery.trim()) return;
                 let apiKey = localStorage.getItem('gemini_api_key');
@@ -2908,7 +2938,6 @@
                 try {
                     const promptStr = `Crea una pedina per Magic The Gathering in base a: "${tokenQuery}". Rispondi SOLO ed ESCLUSIVAMENTE con un JSON valido strutturato così:\n{\n  "name": "Nome (es. Goblin)",\n  "pt": "Forza/Cost. (es. 1/1, vuoto se non creatura)",\n  "abilities": "Abilità (es. Volare, rapidità)",\n  "color": "una classe tailwind es. bg-red-800, bg-blue-800, bg-green-800, bg-gray-300 (bianco), bg-gray-800 (nero/incolore), bg-yellow-600 (oro)"\n}`;
                     
-                    // USIAMO GEMINI 2.5 FLASH (La versione stabile senza problemi di High Demand)
                     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ contents: [{ parts: [{ text: promptStr }] }] })
@@ -2923,7 +2952,7 @@
                     
                     let tokenData = JSON.parse(jsonMatch[0]);
                     
-                    const newToken = { id: 'tok-' + Date.now(), name: (tokenData && tokenData.name) ? tokenData.name : "Pedina", pt: (tokenData && tokenData.pt) ? tokenData.pt : "", abilities: (tokenData && tokenData.abilities) ? tokenData.abilities : "", color: (tokenData && tokenData.color) ? tokenData.color : "bg-gray-800", qty: 1, tapped: false };
+                    const newToken = { id: 'tok-' + Date.now(), name: (tokenData && tokenData.name) ? tokenData.name : "Pedina", pt: (tokenData && tokenData.pt) ? tokenData.pt : "", abilities: (tokenData && tokenData.abilities) ? tokenData.abilities : "", color: (tokenData && tokenData.color) ? tokenData.color : "bg-gray-800", img: null, qty: 1, tapped: false };
                     updatePlayerConfig(player.id, 'tokens', [...(player.tokens || []), newToken]);
                     setTokenQuery("");
                 } catch(e) { 
@@ -2931,38 +2960,60 @@
                 }
                 setIsGeneratingToken(false);
             };
+
             return (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-md overflow-hidden">
-                    <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-4 sm:p-6 pointer-events-auto" style={modalStyle}>
+                    <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-4 sm:p-6 pointer-events-auto relative" style={modalStyle}>
                         <div className="flex justify-between items-center mb-2 border-b border-gray-700 pb-3 mt-2 shrink-0">
                             <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">♟️ Plancia Pedine: {player.name}</h3>
                             <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
                         </div>
 
+                        {/* RISULTATI RICERCA SCRYFALL IN SOVRIMPRESSIONE */}
+                        {cmdResults.length > 0 && (
+                            <div className="absolute top-20 left-4 right-4 z-50 bg-gray-800 border-2 border-emerald-500 shadow-2xl p-4 rounded-xl animate-fade">
+                                <div className="flex justify-between items-center mb-2 border-b border-gray-600 pb-2">
+                                    <p className="text-emerald-400 font-bold text-sm">Tocca una pedina per aggiungerla:</p>
+                                    <button onClick={() => setCmdResults([])} className="text-white bg-red-600 hover:bg-red-500 px-3 py-1 rounded shadow font-bold text-xs">Annulla</button>
+                                </div>
+                                <div className="flex gap-3 overflow-x-auto pb-2">
+                                    {cmdResults.map(res => (
+                                        <img key={res.id} src={res.img} onClick={() => addOfficialToken(res)} className="w-28 rounded-lg cursor-pointer border-2 border-transparent hover:border-emerald-500 shadow-lg shrink-0 active:scale-95 transition-transform" />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex-1 relative bg-black overflow-hidden rounded-xl border border-gray-600 mt-2 flex flex-col">
-                            {player.tokenBg && <img src={player.tokenBg} className="absolute inset-0 w-full h-full object-cover opacity-50 z-0" />}
+                            {player.tokenBg && <img src={player.tokenBg} className="absolute inset-0 w-full h-full object-cover opacity-50 z-0 pointer-events-none" />}
                             
                             {/* Area di Gioco Pedine */}
                             <div className="flex-1 overflow-y-auto p-4 flex flex-wrap gap-x-6 gap-y-8 content-start z-10 relative items-start">
                                 {(player.tokens || []).map(t => (
                                     <div key={t.id} className="relative w-28 h-40 shrink-0">
-                                        {/* Carta Rotante */}
-                                        <div onClick={() => updateToken(t.id, 'tapped', !t.tapped)} className={`w-full h-full rounded-xl border-2 border-black shadow-[0_5px_15px_rgba(0,0,0,0.8)] flex flex-col transition-all duration-300 cursor-pointer ${t.color} ${t.tapped ? 'rotate-90 scale-95 opacity-80' : ''}`}>
-                                            <div className="bg-black/60 p-1 text-center font-bold text-white text-[10px] truncate border-b border-black">{t.name}</div>
-                                            <div className="flex-1 p-2 text-[9px] text-white/90 overflow-y-auto font-medium leading-tight">{t.abilities}</div>
-                                            {t.pt && <div className="bg-black/90 text-white font-black text-center py-1 border-t border-black text-xs">{t.pt}</div>}
+                                        {/* Carta Rotante (Supporta sia Immagini Scryfall che Testo IA) */}
+                                        <div onClick={() => updateToken(t.id, 'tapped', !t.tapped)} className={`w-full h-full rounded-xl border border-gray-600 shadow-[0_5px_15px_rgba(0,0,0,0.8)] flex flex-col transition-all duration-300 cursor-pointer overflow-hidden ${t.color || 'bg-gray-800'} ${t.tapped ? 'rotate-90 scale-95 opacity-80' : 'rotate-0'}`}>
+                                            {t.img ? (
+                                                <img src={t.img} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <React.Fragment>
+                                                    <div className="bg-black/60 p-1 text-center font-bold text-white text-[10px] truncate border-b border-black">{t.name}</div>
+                                                    <div className="flex-1 p-2 text-[9px] text-white/90 overflow-y-auto font-medium leading-tight">{t.abilities}</div>
+                                                    {t.pt && <div className="bg-black/90 text-white font-black text-center py-1 border-t border-black text-xs">{t.pt}</div>}
+                                                </React.Fragment>
+                                            )}
                                         </div>
                                         {/* Badge Quantità (Sempre Dritto!) */}
                                         <div className="absolute -bottom-3 -right-3 bg-gray-900 rounded-full border-2 border-gray-500 flex items-center justify-center p-1 shadow-xl z-20" onClick={e => e.stopPropagation()}>
-                                            <button onClick={(e) => { e.stopPropagation(); t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id); }} className="w-5 h-5 bg-red-600 rounded-full text-white font-black leading-none text-xs flex items-center justify-center">-</button>
+                                            <button onClick={(e) => { e.stopPropagation(); t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id); }} className="w-5 h-5 bg-red-600 rounded-full text-white font-black leading-none text-xs flex items-center justify-center active:scale-90">-</button>
                                             <span className="w-6 text-center text-white font-black text-sm">{t.qty}</span>
-                                            <button onClick={(e) => { e.stopPropagation(); updateToken(t.id, 'qty', t.qty + 1); }} className="w-5 h-5 bg-green-600 rounded-full text-white font-black leading-none text-xs flex items-center justify-center">+</button>
+                                            <button onClick={(e) => { e.stopPropagation(); updateToken(t.id, 'qty', t.qty + 1); }} className="w-5 h-5 bg-green-600 rounded-full text-white font-black leading-none text-xs flex items-center justify-center active:scale-90">+</button>
                                         </div>
                                     </div>
                                 ))}
                                 {(player.tokens || []).length === 0 && (
                                     <div className="w-full h-full flex items-center justify-center">
-                                        <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700">Nessuna pedina in campo.<br/>Scrivi cosa ti serve e creala!</p>
+                                        <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700">La plancia è vuota.<br/>Cerca o crea la tua prima pedina!</p>
                                     </div>
                                 )}
                             </div>
@@ -2985,11 +3036,12 @@
                             )}
                         </div>
 
-                        {/* Controlli Generazione */}
+                        {/* CONTROLLI IBRIDI: SCRYFALL E IA */}
                         <div className="flex gap-2 mt-4 shrink-0 z-20">
-                            <button onClick={() => setShowBgMenu(true)} className="bg-indigo-700 hover:bg-indigo-600 px-4 rounded-xl text-white text-xl shadow-lg transition-transform active:scale-95 border border-indigo-500" title="Sfondo Battaglia">🖼️</button>
-                            <input type="text" placeholder="Es. Drago 5/5 volante..." value={tokenQuery} onChange={e=>setTokenQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!isGeneratingToken&&generateToken()} className="flex-1 bg-gray-800 border border-gray-500 text-white rounded-xl p-3 outline-none font-bold focus:border-emerald-500 shadow-inner" />
-                            <button onClick={generateToken} disabled={isGeneratingToken} className="bg-emerald-600 disabled:opacity-50 px-6 rounded-xl text-white font-black shadow-lg text-lg active:scale-95 transition-transform border border-emerald-400">{isGeneratingToken ? '⏳' : 'Crea'}</button>
+                            <button onClick={() => setShowBgMenu(true)} className="bg-gray-700 hover:bg-gray-600 px-4 rounded-xl text-white text-xl shadow-lg transition-transform active:scale-95 border border-gray-500" title="Sfondo Battaglia">🖼️</button>
+                            <input type="text" placeholder="es. Goblin haste..." value={tokenQuery} onChange={e=>setTokenQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!isSearching&&searchOfficialToken()} className="flex-1 bg-gray-800 border border-gray-500 text-white rounded-xl p-3 outline-none font-bold focus:border-emerald-500 shadow-inner" />
+                            <button onClick={searchOfficialToken} disabled={isSearching} className="bg-emerald-600 disabled:opacity-50 px-4 rounded-xl text-white font-black shadow-lg text-xs md:text-sm active:scale-95 transition-transform border border-emerald-400 whitespace-nowrap">{isSearching ? '⏳' : 'CERCA UFFICIALE'}</button>
+                            <button onClick={generateToken} disabled={isGeneratingToken} className="bg-purple-600 disabled:opacity-50 px-4 rounded-xl text-white font-black shadow-lg text-xs md:text-sm active:scale-95 transition-transform border border-purple-400 whitespace-nowrap" title="Crea Token Personalizzato">{isGeneratingToken ? '⏳' : 'CREA CUSTOM (IA)'}</button>
                         </div>
                     </div>
                 </div>
