@@ -1341,7 +1341,9 @@
       const [printsList, setPrintsList] = useState([]); const [loadingPrints, setLoadingPrints] = useState(false);
 
       const openSubView = (setter, data, qtySetter = null, qtyVal = 1) => {
-         setSavedScroll(window.scrollY); setter(data); if(qtySetter) qtySetter(qtyVal);
+         setSavedScroll(window.scrollY); 
+         setter({...data, originalKey: buildCardKey(data)}); 
+         if(qtySetter) qtySetter(qtyVal);
          setItaImg(null); setItaImgBack(null); setShowIta(false); setShowBack(false); setPrintsList([]); window.scrollTo(0, 0);
       };
       const closeSubView = (setter) => { setter(null); setTimeout(() => window.scrollTo(0, savedScroll), 10); };
@@ -1368,13 +1370,13 @@
 
           const changeArtOfExistingCard = (p) => {
              if (!managingCard) return;
-             const cardKey = buildCardKey(managingCard);
+             const oldKey = managingCard.originalKey || buildCardKey(managingCard);
              setDeck(deck.map(c => {
-                 if (buildCardKey(c) === cardKey) return { ...c, id: p.id, image: p.image, imageBack: p.imageBack, rarity: p.rarity, setCode: p.setCode, setName: p.setName, prices: p.prices };
+                 if (buildCardKey(c) === oldKey) return { ...c, id: p.id, image: p.image, imageBack: p.imageBack, rarity: p.rarity, setCode: p.setCode, setName: p.setName, prices: p.prices };
                  return c;
              }));
-             setManagingCard({...managingCard, id: p.id, image: p.image, imageBack: p.imageBack, rarity: p.rarity, setCode: p.setCode, setName: p.setName, prices: p.prices});
-             setPrintsList([]); setShowIta(false); alert("Stampa e Prezzo aggiornati con successo per tutte le copie!");
+             alert("Stampa e Prezzo aggiornati con successo per tutte le copie!");
+             closeSubView(setManagingCard); // Chiude in automatico!
           };
       const translateCard = (card) => {
         if (card.isCustom) return alert("Le carte Proxy non possono essere tradotte dal database.");
@@ -1507,7 +1509,8 @@
       Object.keys(groupedByCategory).forEach(k => { groupedByCategory[k].sort((a,b) => a.name.localeCompare(b.name)); });
 
       const applyManageQty = () => {
-         const cardKey = buildCardKey(managingCard); let newDeck = deck.filter(c => buildCardKey(c) !== cardKey);
+         const oldKey = managingCard.originalKey || buildCardKey(managingCard);
+         let newDeck = deck.filter(c => buildCardKey(c) !== oldKey);
          for(let i=0; i<manageQty; i++) { newDeck.push({...managingCard, deckId: 'card-' + Date.now() + '-' + i + '-' + Math.random(), isCommander: managingCard.isCommander || managingCard.isCmdrFlag || false, isCompanion: managingCard.isCompanion || managingCard.isCompFlag || false}); }
          setDeck(newDeck); closeSubView(setManagingCard);
       };
