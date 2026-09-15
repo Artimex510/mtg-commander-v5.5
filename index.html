@@ -2215,7 +2215,7 @@
         const askGeminiSynergy = async () => {
             let apiKey = localStorage.getItem('gemini_api_key');
             if (!apiKey) {
-                apiKey = window.prompt("Per usare l'IA integrata serve la tua API Key di Google AI Studio.\nIncollala qui:");
+                apiKey = window.prompt("Per usare l'IA integrata serve una API Key gratuita.\n\nPuoi ottenerla in 1 minuto su: https://aistudio.google.com/\n\nIncolla qui la tua API Key (verrà salvata in modo sicuro solo su questo dispositivo):");
                 if (!apiKey) return;
                 localStorage.setItem('gemini_api_key', apiKey);
             }
