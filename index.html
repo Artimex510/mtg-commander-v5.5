@@ -3016,7 +3016,6 @@
       }, [view, numPlayers, archenemy.showModal, planechase.showModal, activeModal]);
 
       useEffect(() => {
-          useEffect(() => {
           if (view === 'game_active') {
               const handlePopState = async (e) => {
                   e.preventDefault();
@@ -3025,7 +3024,9 @@
                   } else {
                       window.history.pushState(null, "", window.location.href);
                       const curr = stateRef.current;
-                      const isVertical = curr.archenemy.showModal || curr.planechase.showModal || (curr.activeModal && (curr.activeModal.type === 'search' || curr.activeModal.type === 'editName'));
+                      // Protezione di sicurezza senza usare ?. per il vecchio Babel
+                      const isPlanechaseOpen = curr.planechase ? curr.planechase.showModal : false;
+                      const isVertical = curr.archenemy.showModal || isPlanechaseOpen || (curr.activeModal && (curr.activeModal.type === 'search' || curr.activeModal.type === 'editName'));
                       applyScreenLock(isVertical, curr.numPlayers);
                   }
               };
