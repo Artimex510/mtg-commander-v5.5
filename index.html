@@ -2889,19 +2889,46 @@
         if (type === 'tokens') {
             const SfondiPedine = ['plains_sfondo.jpg', 'island_sfondo.jpg', 'swamp_sfondo.jpg', 'mountain_sfondo.jpg', 'forest_sfondo.jpg', 'kamigawa_sfondo.jpg'];
             
+            const [showSearchModal, setShowSearchModal] = useState(false);
+
+            // Gestisce l'orientamento: Verticale quando cerchi, Orizzontale (standard) quando sei sulla plancia
+            const openSearch = () => {
+                setShowSearchModal(true);
+                applyScreenLock(true, 4); // Forza verticale per la ricerca
+            };
+            const closeSearch = () => {
+                setShowSearchModal(false);
+                setCmdResults([]);
+                setTokenQuery(""); setTokenOracle(""); setTokenPT("");
+                // Ripristina l'orientamento della plancia di gioco
+                const isVerticalMode = archenemy.showModal || planechase.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'));
+                applyScreenLock(isVerticalMode, opponents.length + 1);
+            };
+
             const updateToken = (tId, field, val) => {
-                const updated = (player.tokens || []).map(t => t.id === tId ? { ...t, [field]: val } : t);
+                const updated = (player.tokens || []).map(t => {
+                    if (t.id === tId) {
+                        let newObj = { ...t, [field]: val };
+                        // Se modifichi la quantità totale, assicurati che i tappati non superino il totale
+                        if (field === 'qty' && newObj.tappedQty > val) {
+                            newObj.tappedQty = val;
+                        }
+                        return newObj;
+                    }
+                    return t;
+                });
                 updatePlayerConfig(player.id, 'tokens', updated);
             };
+
             const deleteToken = (tId) => {
                 const updated = (player.tokens || []).filter(t => t.id !== tId);
                 updatePlayerConfig(player.id, 'tokens', updated);
             };
 
-            // 1. RICERCA PEDINE UFFICIALI SU SCRYFALL (CON I NUOVI FILTRI!)
+            // 1. RICERCA PEDINE UFFICIALI SCRYFALL
             const searchOfficialToken = () => {
                 if(!tokenQuery.trim() && !tokenOracle.trim() && !tokenPT.trim()) {
-                    alert("Inserisci almeno un parametro di ricerca (Nome, Abilità o F/C).");
+                    alert("Inserisci almeno un parametro di ricerca.");
                     return;
                 }
                 setIsSearching(true);
@@ -2912,11 +2939,8 @@
                 if (tokenOracle.trim()) q += ` o:"${tokenOracle.trim()}"`;
                 if (tokenPT.trim()) {
                     const pt = tokenPT.trim().split('/');
-                    if (pt.length === 2) {
-                        q += ` pow:${pt[0]} tou:${pt[1]}`;
-                    } else {
-                        q += ` pow:${pt[0]}`; 
-                    }
+                    if (pt.length === 2) q += ` pow:${pt[0]} tou:${pt[1]}`;
+                    else q += ` pow:${pt[0]}`; 
                 }
 
                 fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(q)}&unique=art`)
@@ -2930,28 +2954,27 @@
                                 return { id: c.id, name: c.name, img: imgUrl, pt: c.power ? `${c.power}/${c.toughness}` : "" };
                             }).filter(c => c.img);
                             setCmdResults(results);
-                            if(results.length === 0) alert("Nessuna pedina ufficiale trovata con questi parametri.");
-                        } else { alert("Nessuna pedina ufficiale trovata con questi parametri."); }
+                            if(results.length === 0) alert("Nessuna pedina trovata.");
+                        } else { alert("Nessuna pedina trovata."); }
                         setIsSearching(false);
                     }).catch(e => { console.error(e); setIsSearching(false); });
             };
 
             const addOfficialToken = (tok) => {
-                const newToken = { id: 'tok-' + Date.now(), name: tok.name, pt: tok.pt, abilities: "", color: "bg-gray-800", img: tok.img, qty: 1, tapped: false };
+                const newToken = { id: 'tok-' + Date.now(), name: tok.name, pt: tok.pt, abilities: "", color: "bg-gray-800", img: tok.img, qty: 1, tappedQty: 0 };
                 updatePlayerConfig(player.id, 'tokens', [...(player.tokens || []), newToken]);
-                setCmdResults([]); 
-                setTokenQuery(""); setTokenOracle(""); setTokenPT("");
+                closeSearch();
             };
 
-            // 2. GENERAZIONE PEDINA CUSTOM (GEMINI 3.6 FLASH) ALLINEATA AI FILTRI
+            // 2. GENERAZIONE CUSTOM (AI)
             const generateToken = async () => {
                 if(!tokenQuery.trim() && !tokenOracle.trim() && !tokenPT.trim()) {
-                    alert("Inserisci almeno un parametro per generare la pedina con IA.");
+                    alert("Inserisci almeno un parametro per l'IA.");
                     return;
                 }
                 let apiKey = localStorage.getItem('gemini_api_key');
                 if (!apiKey) {
-                    apiKey = window.prompt("Per generare pedine con l'IA serve la API Key.\nIncollala qui:");
+                    apiKey = window.prompt("Per generare pedine con l'IA serve la API Key:\nIncollala qui:");
                     if (!apiKey) return;
                     localStorage.setItem('gemini_api_key', apiKey);
                 }
@@ -2969,13 +2992,13 @@
                     
                     let jsonText = data.candidates[0].content.parts[0].text;
                     const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-                    if (!jsonMatch) throw new Error("Gemini non ha restituito un JSON valido. Ha detto: " + jsonText);
+                    if (!jsonMatch) throw new Error("Formato risposto non valido.");
                     
                     let tokenData = JSON.parse(jsonMatch[0]);
                     
-                    const newToken = { id: 'tok-' + Date.now(), name: (tokenData && tokenData.name) ? tokenData.name : "Pedina", pt: (tokenData && tokenData.pt) ? tokenData.pt : "", abilities: (tokenData && tokenData.abilities) ? tokenData.abilities : "", color: (tokenData && tokenData.color) ? tokenData.color : "bg-gray-800", img: null, qty: 1, tapped: false };
+                    const newToken = { id: 'tok-' + Date.now(), name: (tokenData && tokenData.name) ? tokenData.name : "Pedina", pt: (tokenData && tokenData.pt) ? tokenData.pt : "", abilities: (tokenData && tokenData.abilities) ? tokenData.abilities : "", color: (tokenData && tokenData.color) ? tokenData.color : "bg-gray-800", img: null, qty: 1, tappedQty: 0 };
                     updatePlayerConfig(player.id, 'tokens', [...(player.tokens || []), newToken]);
-                    setTokenQuery(""); setTokenOracle(""); setTokenPT("");
+                    closeSearch();
                 } catch(e) { 
                     alert("⚠️ ERRORE AI:\n" + e.message); 
                 }
@@ -2985,56 +3008,76 @@
             return (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-md overflow-hidden">
                     <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-4 sm:p-6 pointer-events-auto relative" style={modalStyle}>
+                        
+                        {/* INTESTAZIONE PLANCIA PULITA */}
                         <div className="flex justify-between items-center mb-2 border-b border-gray-700 pb-3 mt-2 shrink-0">
                             <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">♟️ Plancia Pedine: {player.name}</h3>
                             <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
                         </div>
 
-                        {/* RISULTATI RICERCA SCRYFALL IN SOVRIMPRESSIONE */}
-                        {cmdResults.length > 0 && (
-                            <div className="absolute top-20 left-4 right-4 z-50 bg-gray-800 border-2 border-emerald-500 shadow-2xl p-4 rounded-xl animate-fade">
-                                <div className="flex justify-between items-center mb-2 border-b border-gray-600 pb-2">
-                                    <p className="text-emerald-400 font-bold text-sm">Tocca una pedina per aggiungerla:</p>
-                                    <button onClick={() => setCmdResults([])} className="text-white bg-red-600 hover:bg-red-500 px-3 py-1 rounded shadow font-bold text-xs">Annulla</button>
-                                </div>
-                                <div className="flex gap-3 overflow-x-auto pb-2">
-                                    {cmdResults.map(res => (
-                                        <img key={res.id} src={res.img} onClick={() => addOfficialToken(res)} className="w-28 rounded-lg cursor-pointer border-2 border-transparent hover:border-emerald-500 shadow-lg shrink-0 active:scale-95 transition-transform" />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
+                        {/* CAMPO DI BATTAGGIA PULITO (MAZZETTI SOVRAPPOSTI) */}
                         <div className="flex-1 relative bg-black overflow-hidden rounded-xl border border-gray-600 mt-2 flex flex-col">
                             {player.tokenBg && <img src={player.tokenBg} className="absolute inset-0 w-full h-full object-cover opacity-50 z-0 pointer-events-none" />}
                             
-                            {/* Area di Gioco Pedine */}
-                            <div className="flex-1 overflow-y-auto p-4 flex flex-wrap gap-x-6 gap-y-8 content-start z-10 relative items-start">
-                                {(player.tokens || []).map(t => (
-                                    <div key={t.id} className="relative w-28 h-40 shrink-0">
-                                        {/* Carta Rotante (Supporta Immagini Scryfall o Testo IA) */}
-                                        <div onClick={() => updateToken(t.id, 'tapped', !t.tapped)} className={`w-full h-full rounded-xl border border-gray-600 shadow-[0_5px_15px_rgba(0,0,0,0.8)] flex flex-col transition-all duration-300 cursor-pointer overflow-hidden ${t.color || 'bg-gray-800'} ${t.tapped ? 'rotate-90 scale-95 opacity-80' : 'rotate-0'}`}>
-                                            {t.img ? (
-                                                <img src={t.img} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <React.Fragment>
-                                                    <div className="bg-black/60 p-1 text-center font-bold text-white text-[10px] truncate border-b border-black">{t.name}</div>
-                                                    <div className="flex-1 p-2 text-[9px] text-white/90 overflow-y-auto font-medium leading-tight">{t.abilities}</div>
-                                                    {t.pt && <div className="bg-black/90 text-white font-black text-center py-1 border-t border-black text-xs">{t.pt}</div>}
-                                                </React.Fragment>
-                                            )}
+                            <div className="flex-1 overflow-y-auto p-4 flex flex-wrap gap-x-8 gap-y-10 content-start z-10 relative items-start">
+                                {(player.tokens || []).map(t => {
+                                    const untapped = t.qty - (t.tappedQty || 0);
+                                    const tapped = t.tappedQty || 0;
+
+                                    return (
+                                        <div key={t.id} className="flex flex-col items-center bg-gray-800/90 p-3 rounded-xl border border-gray-700 shadow-xl w-36 shrink-0">
+                                            
+                                            {/* MAZZETTO SOVRAPPOSTO (EFFETTO SOLITARIO) */}
+                                            <div className="relative w-28 h-36 cursor-pointer mb-2" onClick={() => updateToken(t.id, 'tappedQty', untapped > 0 ? tapped + 1 : 0)}>
+                                                {/* Scheda sotto se ci sono più pezzi */}
+                                                {untapped > 1 && (
+                                                    <div className="absolute inset-0 rounded-xl bg-gray-700 border border-gray-600 transform translate-x-1.5 translate-y-1.5 pointer-events-none"></div>
+                                                )}
+                                                
+                                                {/* Carta Principale (Fronte o Tappata) */}
+                                                <div className={`absolute inset-0 rounded-xl border-2 border-black shadow-lg flex flex-col overflow-hidden ${t.color || 'bg-gray-800'} ${tapped > 0 && untapped === 0 ? 'rotate-90 scale-95 opacity-90' : 'rotate-0'}`}>
+                                                    {t.img ? (
+                                                        <img src={t.img} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <React.Fragment>
+                                                            <div className="bg-black/60 p-1 text-center font-bold text-white text-[9px] truncate border-b border-black">{t.name}</div>
+                                                            <div className="flex-1 p-2 text-[8px] text-white/90 overflow-y-auto font-medium leading-tight">{t.abilities}</div>
+                                                            {t.pt && <div className="bg-black/90 text-white font-black text-center py-1 border-t border-black text-[10px]">{t.pt}</div>}
+                                                        </React.Fragment>
+                                                    )}
+                                                </div>
+
+                                                {/* Badge di Stato (Stato / Tappate) */}
+                                                <div className="absolute -top-2 -right-2 bg-black/90 text-white text-[10px] font-black px-2 py-0.5 rounded-full border border-gray-500 shadow z-20">
+                                                    {tapped > 0 ? `${untapped} st / ${tapped} tap` : `${t.qty} tot`}
+                                                </div>
+                                            </div>
+
+                                            {/* CONTROLLI RAPIDI SOTTO AL MAZZETTO */}
+                                            <div className="w-full space-y-1">
+                                                <div className="flex items-center justify-between gap-1">
+                                                    <button onClick={() => t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id)} className="w-7 h-7 bg-red-600 rounded-lg text-white font-black text-sm flex items-center justify-center active:scale-90">-</button>
+                                                    <input 
+                                                        type="number" 
+                                                        inputMode="numeric"
+                                                        value={t.qty} 
+                                                        onChange={e => updateToken(t.id, 'qty', Math.max(1, parseInt(e.target.value) || 1))} 
+                                                        className="w-12 bg-gray-900 border border-gray-600 text-white rounded text-center font-black text-xs py-1 outline-none" 
+                                                    />
+                                                    <button onClick={() => updateToken(t.id, 'qty', t.qty + 1)} className="w-7 h-7 bg-green-600 rounded-lg text-white font-black text-sm flex items-center justify-center active:scale-90">+</button>
+                                                </div>
+                                                <button onClick={() => updateToken(t.id, 'tappedQty', untapped > 0 ? tapped + 1 : 0)} className="w-full bg-indigo-700 hover:bg-indigo-600 text-white text-[10px] font-bold py-1 rounded shadow transition-colors">
+                                                    {untapped > 0 ? `Tappa 1 (${untapped} libere)` : 'Stappa Tutto'}
+                                                </button>
+                                            </div>
+
                                         </div>
-                                        {/* Badge Quantità */}
-                                        <div className="absolute -bottom-3 -right-3 bg-gray-900 rounded-full border-2 border-gray-500 flex items-center justify-center p-1 shadow-xl z-20" onClick={e => e.stopPropagation()}>
-                                            <button onClick={(e) => { e.stopPropagation(); t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id); }} className="w-5 h-5 bg-red-600 rounded-full text-white font-black leading-none text-xs flex items-center justify-center active:scale-90">-</button>
-                                            <span className="w-6 text-center text-white font-black text-sm">{t.qty}</span>
-                                            <button onClick={(e) => { e.stopPropagation(); updateToken(t.id, 'qty', t.qty + 1); }} className="w-5 h-5 bg-green-600 rounded-full text-white font-black leading-none text-xs flex items-center justify-center active:scale-90">+</button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
+
                                 {(player.tokens || []).length === 0 && (
                                     <div className="w-full h-full flex items-center justify-center">
-                                        <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700">La plancia è vuota.<br/>Cerca o crea la tua prima pedina!</p>
+                                        <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700">La plancia è vuota.<br/>Tocca il tasto 🔍 in basso per aggiungere pedine!</p>
                                     </div>
                                 )}
                             </div>
@@ -3057,22 +3100,67 @@
                             )}
                         </div>
 
-                        {/* CONTROLLI IBRIDI E SUPER FILTRI SCRYFALL */}
-                        <div className="flex flex-col gap-2 mt-4 shrink-0 z-20 bg-gray-900/50 p-2 rounded-xl border border-gray-700">
-                            <div className="flex gap-2">
-                                <button onClick={() => setShowBgMenu(true)} className="bg-gray-700 hover:bg-gray-600 px-3 rounded-lg text-white text-xl shadow border border-gray-500" title="Sfondo Battaglia">🖼️</button>
-                                <input type="text" placeholder="Nome (es. Goblin)" value={tokenQuery} onChange={e=>setTokenQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!isSearching&&searchOfficialToken()} className="flex-1 bg-gray-800 border border-gray-500 text-white rounded-lg p-2 outline-none font-bold focus:border-emerald-500 shadow-inner text-sm" />
-                                <input type="text" placeholder="Abilità (es. haste)" value={tokenOracle} onChange={e=>setTokenOracle(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!isSearching&&searchOfficialToken()} className="flex-1 bg-gray-800 border border-gray-500 text-white rounded-lg p-2 outline-none font-bold focus:border-emerald-500 shadow-inner text-sm hidden sm:block" />
-                                <input type="text" placeholder="F/C (es. 1/1)" value={tokenPT} onChange={e=>setTokenPT(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!isSearching&&searchOfficialToken()} className="w-16 sm:w-20 bg-gray-800 border border-gray-500 text-white rounded-lg p-2 outline-none font-bold focus:border-emerald-500 shadow-inner text-center text-sm" />
-                            </div>
-                            <div className="flex gap-2 sm:hidden">
-                                <input type="text" placeholder="Abilità (es. haste, flying)" value={tokenOracle} onChange={e=>setTokenOracle(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!isSearching&&searchOfficialToken()} className="flex-1 bg-gray-800 border border-gray-500 text-white rounded-lg p-2 outline-none font-bold focus:border-emerald-500 shadow-inner text-sm" />
-                            </div>
-                            <div className="flex gap-2 mt-1">
-                                <button onClick={searchOfficialToken} disabled={isSearching} className="flex-1 bg-emerald-600 disabled:opacity-50 py-3 rounded-lg text-white font-black shadow-lg text-xs md:text-sm active:scale-95 transition-transform border border-emerald-400">{isSearching ? '⏳ RICERCA...' : '🔍 CERCA UFFICIALE'}</button>
-                                <button onClick={generateToken} disabled={isGeneratingToken} className="flex-1 bg-purple-600 disabled:opacity-50 py-3 rounded-lg text-white font-black shadow-lg text-xs md:text-sm active:scale-95 transition-transform border border-purple-400" title="Crea Token Personalizzato">{isGeneratingToken ? '⏳ CREAZIONE...' : '✨ CREA CUSTOM (IA)'}</button>
-                            </div>
+                        {/* BARRA INFERIORE PULITA */}
+                        <div className="flex gap-2 mt-3 shrink-0 z-20 items-center justify-between">
+                            <button onClick={() => setShowBgMenu(true)} className="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-xl text-white text-xl shadow border border-gray-500" title="Sfondo Battaglia">🖼️</button>
+                            <button onClick={openSearch} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3 px-6 rounded-xl text-white font-black shadow-lg text-sm sm:text-base active:scale-95 transition-transform border border-emerald-400 flex items-center justify-center gap-2">
+                                🔍 CERCA / AGGIUNGI PEDINA
+                            </button>
                         </div>
+
+                        {/* SUB-MODALE VERTICALE DI RICERCA (FORZATO IN PORTRAIT) */}
+                        {showSearchModal && (
+                            <div className="absolute inset-0 z-50 bg-gray-900/98 backdrop-blur-md p-4 flex flex-col animate-fade overflow-y-auto">
+                                <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
+                                    <h4 className="text-emerald-400 font-black text-lg">🔍 Aggiungi Pedina al Campo</h4>
+                                    <button onClick={closeSearch} className="bg-red-600 text-white px-3 py-1 rounded font-bold text-xs">Chiudi</button>
+                                </div>
+
+                                <div className="space-y-3 mb-4">
+                                    <div>
+                                        <label className="text-gray-400 text-xs font-bold block mb-1">Nome della Pedina:</label>
+                                        <input type="text" placeholder="es. Goblin, Treasure, Zombie..." value={tokenQuery} onChange={e=>setTokenQuery(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-gray-400 text-xs font-bold block mb-1">Testo Abilità:</label>
+                                            <input type="text" placeholder="es. haste, flying" value={tokenOracle} onChange={e=>setTokenOracle(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
+                                        </div>
+                                        <div>
+                                            <label className="text-gray-400 text-xs font-bold block mb-1">Forza / Costituzione:</label>
+                                            <input type="text" placeholder="es. 1/1, 2/2" value={tokenPT} onChange={e=>setTokenPT(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm text-center focus:border-emerald-500 shadow-inner" />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2 pt-2">
+                                        <button onClick={searchOfficialToken} disabled={isSearching} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 py-3 rounded-lg text-white font-black shadow text-xs active:scale-95 transition-transform border border-emerald-400">
+                                            {isSearching ? '⏳ CERCO...' : '🔎 CERCA UFFICIALE'}
+                                        </button>
+                                        <button onClick={generateToken} disabled={isGeneratingToken} className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 py-3 rounded-lg text-white font-black shadow text-xs active:scale-95 transition-transform border border-purple-400" title="Crea Token Personalizzato con IA">
+                                            {isGeneratingToken ? '⏳ CREO...' : '✨ CREA CUSTOM (IA)'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* RISULTATI DELLA RICERCA */}
+                                {cmdResults.length > 0 && (
+                                    <div className="flex-1 bg-black/60 p-3 rounded-xl border border-gray-700 overflow-y-auto">
+                                        <p className="text-gray-300 text-xs font-bold mb-2">Risultati Trovati (Tocca per posizionare):</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                            {cmdResults.map(res => (
+                                                <div key={res.id} onClick={() => addOfficialToken(res)} className="cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-emerald-500 shadow-lg active:scale-95 transition-transform bg-gray-800">
+                                                    <img src={res.img} className="w-full h-36 object-cover" />
+                                                    <div className="p-1 bg-black/80 text-center">
+                                                        <span className="text-[10px] text-white font-bold truncate block">{res.name}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                     </div>
                 </div>
             );
