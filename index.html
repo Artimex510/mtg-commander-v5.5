@@ -2207,6 +2207,35 @@
         const [showUpgradeModal, setShowUpgradeModal] = useState(false);
         const [showHyperModal, setShowHyperModal] = useState(false);
         const [hyperTarget, setHyperTarget] = useState(10); 
+        
+        // --- STATI E LOGICA AI IN-APP ---
+        const [isAiLoading, setIsAiLoading] = useState(false);
+        const [aiResponse, setAiResponse] = useState(null);
+
+        const askGeminiSynergy = async () => {
+            let apiKey = localStorage.getItem('gemini_api_key');
+            if (!apiKey) {
+                apiKey = window.prompt("Per usare l'IA integrata serve la tua API Key di Google AI Studio.\nIncollala qui:");
+                if (!apiKey) return;
+                localStorage.setItem('gemini_api_key', apiKey);
+            }
+
+            setIsAiLoading(true); setAiResponse(null);
+
+            const promptTesto = `Sei un esperto Deckbuilder di Magic: The Gathering. Formato: ${formatName}. Comandante: ${cmdName}. Lista: ${listText}. Ignora le carte ovvie o la top 100 di EDHREC. Trovami 5 carte "tech" (sconosciute, vecchie o molto economiche) che abbiano una sinergia letale e nascosta con le meccaniche di questo mazzo. Spiega brevemente il perché per ciascuna in italiano. Usa un elenco puntato. Non usare formattazione complessa.`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: promptTesto }] }] })
+                });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+                setAiResponse(data.candidates[0].content.parts[0].text);
+            } catch (err) {
+                alert("Errore AI. Controlla la connessione o la API Key.");
+            } finally { setIsAiLoading(false); }
+        }; 
         const [hyperDraws, setHyperDraws] = useState(7);    
         const [hyperMin, setHyperMin] = useState(1);        
 
@@ -2549,14 +2578,26 @@
                          <button onClick={() => copyPrompt('general')} className="bg-blue-900 hover:bg-blue-800 border border-blue-500 text-white text-xs font-black py-3 rounded-lg shadow transition-colors col-span-1 sm:col-span-2">🤖 COPIA PROMPT ANALISI GENERICA</button>
                          <button onClick={handleComboSpellbook} className="bg-purple-700 hover:bg-purple-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">♾️ CERCA COMBO INFINITE</button>
                          <button onClick={() => copyPrompt('rule0')} className="bg-pink-700 hover:bg-pink-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">⚖️ GENERATORE "RULE 0"</button>
-                         <button onClick={() => copyPrompt('synergy')} className="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">🧩 SINERGIE NASCOSTE</button>
+                         <button onClick={askGeminiSynergy} disabled={isAiLoading} className="bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">
+                             {isAiLoading ? "🧠 ELABORAZIONE..." : "🧩 SINERGIE NASCOSTE (IN-APP)"}
+                         </button>
                          <button onClick={() => copyPrompt('curve')} className="bg-blue-700 hover:bg-blue-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">📉 SNELLISCI CURVA</button>
                          <button onClick={() => copyPrompt('bling')} className="bg-yellow-700 hover:bg-yellow-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">✨ TROVA RISTAMPE</button>
                          <button onClick={() => copyPrompt('top5')} className="bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">💸 ALTERNATIVE TOP 5</button>
                          <button onClick={() => setShowBudgetModal(true)} className="bg-indigo-900 border border-indigo-500 hover:bg-indigo-800 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2 col-span-1 sm:col-span-2">💸 BUDGETIZZA INTERO MAZZO</button>
                      </div>
                  </div>
-
+                 {aiResponse && ReactDOM.createPortal(
+                     <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[9999] p-4 animate-fade">
+                         <div className="bg-gray-800 border-2 border-emerald-500 rounded-xl p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] flex flex-col">
+                             <button onClick={() => setAiResponse(null)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
+                             <h3 className="text-xl font-black text-emerald-400 mb-4 flex items-center gap-2">🧩 Sinergie Nascoste (AI)</h3>
+                             <div className="overflow-y-auto pr-2 flex-1 text-sm text-gray-200 whitespace-pre-wrap leading-relaxed">
+                                 {aiResponse.replace(/\*/g, '')}
+                             </div>
+                         </div>
+                     </div>
+                 , document.body)}
                  {showHyperModal && ReactDOM.createPortal(
                      <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[9999] p-4 animate-fade overflow-y-auto">
                          <div className="bg-gray-800 border-2 border-teal-500 rounded-xl p-6 w-full max-w-md shadow-2xl relative">
@@ -2847,7 +2888,7 @@
     const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig, isArchenemy }) => {
       let isDead = false;
       if (!player.immune) {
-         if (player.life <= 0) isDead = true; if (player.poison >= 10) isDead = true;
+         if (player.life <= 0) isDead = true; if (player.poison >= (player.maxPoison || 10)) isDead = true;
          if (player.cmdDmg) { Object.keys(player.cmdDmg).forEach(key => { if (player.cmdDmg[key] >= 21) isDead = true; }); }
       }
 
@@ -2908,6 +2949,9 @@
       
       const [archenemy, setArchenemy] = useState({
           active: false, playerId: null, schemes: [], ongoing: [], currentScheme: null, showModal: false, enlargedImage: null
+      });
+      const [planechase, setPlanechase] = useState({
+          active: false, planes: [], currentPlane: null, showModal: false, enlargedImage: null
       });
 
       const wakeLockRef = React.useRef(null);
@@ -2994,6 +3038,7 @@
       }, [view, setView]);
 
       useEffect(() => {
+          // Scarica Schemi Archenemy
           fetch('https://api.scryfall.com/cards/search?q=t:scheme').then(res => res.json()).then(data => {
                   if (data && data.data) {
                       let fetched = data.data.map(c => {
@@ -3006,7 +3051,37 @@
                       setArchenemy(prev => ({ ...prev, schemes: fetched.sort(() => Math.random() - 0.5) }));
                   }
               }).catch(e => console.log("Errore Archenemy"));
+              
+          // Scarica Piani Planechase
+          fetch('https://api.scryfall.com/cards/search?q=t:plane+OR+t:phenomenon').then(res => res.json()).then(data => {
+                  if (data && data.data) {
+                      let fetchedPlanes = data.data.map(c => {
+                          let imageUrl = "";
+                          if (c.image_uris && c.image_uris.normal) imageUrl = c.image_uris.normal;
+                          else if (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris && c.card_faces[0].image_uris.normal) imageUrl = c.card_faces[0].image_uris.normal;
+                          return { id: c.id, name: c.name, img: imageUrl };
+                      }).filter(c => c.img !== "");
+                      setPlanechase(prev => ({ ...prev, planes: fetchedPlanes.sort(() => Math.random() - 0.5) }));
+                  }
+              }).catch(e => console.log("Errore Planechase"));
       }, []);
+
+      // Funzioni Logica Dado Planare
+      const nextPlane = () => {
+          setPlanechase(prev => {
+              if (prev.planes.length === 0) return prev;
+              let newPlanes = [...prev.planes];
+              let next = newPlanes.pop();
+              return { ...prev, currentPlane: next };
+          });
+      };
+
+      const rollPlanarDie = () => {
+          const result = Math.floor(Math.random() * 6);
+          if (result === 0) { alert("🎲 DADO PLANARE: Planeswalk! Viaggi verso un nuovo piano."); nextPlane(); } 
+          else if (result === 1) { alert("🎲 DADO PLANARE: Caos! Si innesca l'abilità CAOS del piano attuale."); } 
+          else { alert("🎲 DADO PLANARE: Vuoto. Non succede nulla."); }
+      };
 
       const rollDice = (max) => {
          const res = Math.floor(Math.random() * max) + 1;
@@ -3017,10 +3092,11 @@
 
       const startGame = () => {
         let newPlayers = [];
+        let maxPoison = startLife === 30 ? 15 : 10; // Regola Two-Headed Giant!
         for(let i=1; i<=numPlayers; i++) {
           let cmdDmg = {}; for(let j=1; j<=numPlayers; j++) { if(i!==j) cmdDmg[`P${j}`] = 0; }
           newPlayers.push({ 
-             id: `P${i}`, name: `Player ${i}`, life: startLife, poison: 0, cmdCasts: 0, emblems: 0, immune: false, cmdDmg: cmdDmg, bgUrl: null, mana: {W:0, U:0, B:0, R:0, G:0, C:0},
+             id: `P${i}`, name: `Player ${i}`, life: startLife, poison: 0, maxPoison: maxPoison, cmdCasts: 0, emblems: 0, immune: false, cmdDmg: cmdDmg, bgUrl: null, mana: {W:0, U:0, B:0, R:0, G:0, C:0},
              rad: 0, energy: 0, exp: 0, ticket: 0, monarch: false, initiative: false, blessing: false, dayNight: 'none'
           });
         }
@@ -3032,6 +3108,7 @@
           const isConfirmed = window.confirm("Vuoi davvero resettare la partita? Punti vita e segnalini torneranno ai valori iniziali (gli Sfondi verranno mantenuti).");
           if (isConfirmed) {
               setArchenemy(prev => ({...prev, active: false, playerId: null, ongoing: [], currentScheme: null}));
+              setPlanechase(prev => ({...prev, active: false, currentPlane: null})); // Resetta Piano
               setPlayers(prev => prev.map(p => {
                   let resetDmg = {}; prev.forEach(op => { if(op.id !== p.id) resetDmg[`${op.id}`] = 0; });
                   return { ...p, life: startLife, poison: 0, cmdCasts: 0, emblems: 0, rad: 0, energy: 0, exp: 0, ticket: 0, cmdDmg: resetDmg, monarch: false, initiative: false, blessing: false, dayNight: 'none', immune: false, mana: {W:0, U:0, B:0, R:0, G:0, C:0} };
@@ -3100,7 +3177,9 @@
           <div className="mb-6">
             <label className="block text-gray-300 font-bold mb-2">Punti Vita Iniziali</label>
             <select value={startLife} onChange={e => setStartLife(parseInt(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white text-center text-xl font-bold outline-none">
-              <option value={40}>40 (Commander)</option><option value={20}>20 (Standard)</option>
+              <option value={40}>40 (Commander)</option>
+              <option value={30}>30 (Two-Headed Giant)</option>
+              <option value={20}>20 (Standard)</option>
             </select>
           </div>
           <button onClick={startGame} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl text-xl shadow-[0_0_15px_rgba(220,38,38,0.5)] transition-all">INIZIA PARTITA</button>
@@ -3185,6 +3264,9 @@
                 <button onClick={() => setArchenemy(prev => ({...prev, showModal: true}))} className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-lg border transform transition-transform active:scale-90 ${archenemy.active ? 'bg-red-800 border-red-500 animate-pulse' : 'bg-gray-800 border-gray-600 hover:bg-gray-700'}`} title="Archenemy">
                     <span className="text-2xl drop-shadow-md">👿</span>
                 </button>
+                <button onClick={() => setPlanechase(prev => ({...prev, showModal: true}))} className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-lg border transform transition-transform active:scale-90 ${planechase.active ? 'bg-indigo-800 border-indigo-500 animate-pulse' : 'bg-gray-800 border-gray-600 hover:bg-gray-700'}`} title="Planechase">
+                    <span className="text-2xl drop-shadow-md">🌌</span>
+                </button>
                 <div className={players.length <= 2 ? "w-px h-6 bg-gray-700" : "w-6 h-px bg-gray-700"}></div>
                 <button onClick={resetGame} className="flex flex-col items-center gap-1 text-gray-400 font-bold hover:text-white transition-colors" title="Azzera e Ricomincia">
                     <span className="text-xl">🔄</span> <span className="text-[10px] uppercase">Reset</span>
@@ -3268,6 +3350,54 @@
              </div>
           , document.body)}
 
+          {/* MODALE PLANECHASE */}
+          {planechase.showModal && ReactDOM.createPortal(
+             <div className="fixed inset-0 bg-gray-900 z-[9999] flex flex-col p-4 animate-fade overflow-hidden">
+                <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2 shrink-0">
+                   <h3 className="text-white font-black text-2xl truncate pr-2 flex items-center gap-2">🌌 Planechase</h3>
+                   <button onClick={() => setPlanechase(prev => ({...prev, showModal: false}))} className="bg-gray-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg">Chiudi</button>
+                </div>
+                
+                <div className="flex items-center justify-between bg-gray-800 p-4 rounded-xl border border-gray-600 shadow mb-4 shrink-0">
+                   <span className="text-gray-300 font-bold">Stato Planechase:</span>
+                   <button onClick={() => { setPlanechase(prev => ({...prev, active: !prev.active})); if(!planechase.currentPlane) nextPlane(); }} className={`px-6 py-2 font-black rounded-lg transition-colors ${planechase.active ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-400'}`}>
+                      {planechase.active ? 'ACCESO (ON)' : 'SPENTO (OFF)'}
+                   </button>
+                </div>
+
+                {planechase.active && (
+                   <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
+                         <div className="flex-1 flex flex-col items-center justify-center mb-4 min-h-0">
+                            {planechase.currentPlane ? (
+                               <div className="relative group cursor-pointer h-full w-full flex items-center justify-center" onClick={() => setPlanechase(prev => ({...prev, enlargedImage: planechase.currentPlane.img}))}>
+                                  <img src={planechase.currentPlane.img} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl border-4 border-indigo-700" />
+                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity rounded-xl pointer-events-none"><span className="text-4xl">🔍</span></div>
+                               </div>
+                            ) : (
+                               <p className="text-gray-500 font-bold">Nessun piano attivo. Tira il dado per iniziare il viaggio!</p>
+                            )}
+                         </div>
+
+                         <div className="flex gap-2 shrink-0 mb-2">
+                             <button onClick={rollPlanarDie} className="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white font-black py-4 rounded-xl text-lg shadow-[0_0_15px_rgba(202,138,4,0.5)] transition-all flex flex-col items-center">
+                                 <span className="text-2xl">🎲</span> DADO PLANARE
+                             </button>
+                             <button onClick={nextPlane} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-xl text-lg shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-all flex flex-col items-center">
+                                 <span className="text-2xl">🌌</span> FORZA VIAGGIO
+                             </button>
+                         </div>
+                   </div>
+                )}
+             </div>
+          , document.body)}
+
+          {planechase.enlargedImage && ReactDOM.createPortal(
+             <div className="fixed inset-0 bg-black/95 z-[10000] flex items-center justify-center p-4 animate-fade" onClick={() => setPlanechase(prev => ({...prev, enlargedImage: null}))}>
+                <img src={planechase.enlargedImage} className="max-w-[95vw] max-h-[95vh] object-contain rounded-xl shadow-2xl border border-gray-600" />
+                <p className="absolute bottom-6 text-gray-400 font-bold text-sm bg-black/50 px-3 py-1 rounded-full">Tocca per chiudere</p>
+             </div>
+          , document.body)}
+          
           {showDice && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 animate-fade" onClick={() => setShowDice(false)}>
                 <div className="bg-gray-900 border border-purple-500 rounded-2xl p-6 shadow-2xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
