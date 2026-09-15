@@ -3988,6 +3988,7 @@
       const [superType, setSuperType] = useState(""); const [cardType, setCardType] = useState("");
       const [cardType2, setCardType2] = useState(""); const [subType, setSubType] = useState("");
       const [rarity, setRarity] = useState(""); const [cmcOp, setCmcOp] = useState("="); const [cmcVal, setCmcVal] = useState("");
+      const [expFilter, setExpFilter] = useState(""); // <--- ECCO LA SALVEZZA DELLO SCHERMO NERO!
       
       const [allResults, setAllResults] = useState([]);
       const [localPage, setLocalPage] = useState(0);
@@ -4052,9 +4053,9 @@
 
       // --- NUOVO SCANNER IA (GEMINI 3.6 FLASH) ---
       const handleGeminiScan = (e) => {
-          const file = e.target.files[0];
+          const fileInput = e.target; // Salviamo la memoria in modo sicuro
+          const file = fileInput.files[0];
           if (!file) return;
-
           let apiKey = localStorage.getItem('gemini_api_key');
           if (!apiKey) {
               apiKey = window.prompt("Per usare lo Scanner IA serve una API Key gratuita.\n\nPuoi ottenerla in 1 minuto su: https://aistudio.google.com/\n\nIncolla qui la tua API Key (verrà salvata in modo sicuro solo su questo dispositivo):");
@@ -4098,7 +4099,7 @@
               } finally {
                   setIsScanning(false);
                   setScanProgress("");
-                  e.target.value = ''; 
+                  fileInput.value = ''; 
               }
           };
           reader.readAsDataURL(file);
