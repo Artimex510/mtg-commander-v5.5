@@ -1424,6 +1424,7 @@
       const searchCard = () => {
         let searchQuery = query ? `${query} ` : "";
         if (oracleText) searchQuery += `o:"${oracleText}" `; if (rarity) searchQuery += `r:${rarity} `;
+        if (expFilter) searchQuery += `e:${expFilter} `; 
         if (mana.length > 0) {
            let mStr = mana.join('');
            if (colorMatchType === 'exact') searchQuery += cardType === 'land' ? `id=${mStr} ` : `c=${mStr} `; else searchQuery += cardType === 'land' ? `id>=${mStr} ` : `c>=${mStr} `;
@@ -2001,11 +2002,11 @@
                     <div className="w-full max-w-sm mb-4 bg-gray-800 p-2 rounded-xl border border-gray-600 shadow-md animate-fade">
                        <p className="text-xs text-gray-300 font-bold mb-2">Questa è la modalità lettura. La stampa non verrà salvata nel mazzo.</p>
                        <div className="flex overflow-x-auto gap-2 pb-2">
-                          {printsList.map(p => (
-                             <img key={p.id} src={p.image} className="w-20 rounded cursor-pointer border-2 border-transparent hover:border-blue-500 shadow-sm shrink-0" 
-                                  onClick={() => { setViewingCard({...viewingCard, image: p.image, imageBack: p.imageBack}); setPrintsList([]); setShowIta(false); }} />
-                          ))}
-                       </div>
+                           {printsList.map(p => (
+                              <img key={p.id} src={p.image} className="w-20 rounded cursor-pointer border-2 border-transparent hover:border-blue-500 shadow-sm shrink-0" 
+                                   onClick={() => { setViewingCard({...viewingCard, id: p.id, image: p.image, imageBack: p.imageBack, rarity: p.rarity, setCode: p.setCode, setName: p.setName, prices: p.prices}); setPrintsList([]); setShowIta(false); }} />
+                           ))}
+                        </div>
                     </div>
                  )}
                </div>
@@ -4039,7 +4040,7 @@
         const q = forceQuery !== null ? forceQuery : query;
         let searchQuery = q ? `${q} ` : "";
         if (oracleText) searchQuery += `o:"${oracleText}" `; if (rarity) searchQuery += `r:${rarity} `;
-        if (expFilter) searchQuery += `e:${expFilter} `; // Applica il filtro del Set
+        if (expFilter) searchQuery += `e:${expFilter} `; 
         if (mana.length > 0) {
            let mStr = mana.join('');
            if (colorMatchType === 'exact') searchQuery += cardType === 'land' ? `id=${mStr} ` : `c=${mStr} `; else searchQuery += cardType === 'land' ? `id>=${mStr} ` : `c>=${mStr} `;
