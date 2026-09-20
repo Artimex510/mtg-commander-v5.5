@@ -622,59 +622,97 @@
     const CardDetailsTabs = ({ card }) => {
         const [activeTab, setActiveTab] = useState('legalita');
         const [rulings, setRulings] = useState([]);
+        const [legalities, setLegalities] = useState(null);
+        const [realId, setRealId] = useState(null);
         const [loading, setLoading] = useState(false);
 
         const formatsToShow = ['standard', 'pioneer', 'modern', 'legacy', 'vintage', 'commander', 'pauper', 'historic', 'brawl', 'penny'];
 
+        // 1. Recupero Dati Freschi (Legalità e ID Reale) al caricamento della carta
         useEffect(() => {
-            if (activeTab === 'regolamento' && rulings.length === 0 && card && card.id) {
+            if (card && !card.isCustom) {
+                setRulings([]); // Reset
+                
+                // Controlla se la carta ha già legalities piene E un ID di Scryfall valido
+                const hasValidLegalities = card.legalities && Object.keys(card.legalities).length > 0;
+                const hasValidId = card.id && !card.id.toString().startsWith('coll-') && !card.id.toString().startsWith('card-') && !card.id.toString().startsWith('import-');
+                
+                if (hasValidLegalities && hasValidId) {
+                    setLegalities(card.legalities);
+                    setRealId(card.id);
+                } else {
+                    // Se mancano dati (es. vecchi mazzi), fetch forzato da Scryfall usando il NOME
+                    setLoading(true);
+                    fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(card.name)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data && data.id) {
+                                setLegalities(data.legalities);
+                                setRealId(data.id);
+                            } else {
+                                setLegalities({});
+                            }
+                        })
+                        .catch(() => setLegalities({}))
+                        .finally(() => setLoading(false));
+                }
+            }
+        }, [card]);
+
+        // 2. Recupero Regole (Solo se serve e se abbiamo l'ID reale)
+        useEffect(() => {
+            if (activeTab === 'regolamento' && rulings.length === 0 && realId && !card.isCustom) {
                 setLoading(true);
-                fetch(`https://api.scryfall.com/cards/${card.id}/rulings`)
+                fetch(`https://api.scryfall.com/cards/${realId}/rulings`)
                     .then(res => res.json())
                     .then(data => setRulings(data.data || []))
                     .catch(() => setRulings([]))
                     .finally(() => setLoading(false));
             }
-        }, [activeTab, card]);
+        }, [activeTab, realId, card]);
 
-        if (!card) return null;
+        if (!card || card.isCustom) return null;
 
         return (
-            <div className="w-full max-w-sm mt-4 bg-gray-900 rounded-xl border border-gray-700 overflow-hidden shadow-inner">
+            <div className="w-full max-w-sm mt-4 bg-gray-900 rounded-xl border border-gray-700 overflow-hidden shadow-inner shrink-0">
                 <div className="flex bg-gray-950 p-1 rounded-t-xl">
-                    <button onClick={() => setActiveTab('legalita')} className={`flex-1 py-2 text-sm font-black rounded-lg transition-all ${activeTab === 'legalita' ? 'bg-orange-500 text-black shadow-md' : 'text-gray-400 hover:text-white'}`}>Versioni / Legalità</button>
-                    <button onClick={() => setActiveTab('regolamento')} className={`flex-1 py-2 text-sm font-black rounded-lg transition-all ${activeTab === 'regolamento' ? 'bg-orange-500 text-black shadow-md' : 'text-gray-400 hover:text-white'}`}>Regolamento</button>
+                    <button onClick={() => setActiveTab('legalita')} className={`flex-1 py-2 text-sm font-black rounded-lg transition-all ${activeTab === 'legalita' ? 'bg-orange-500 text-black shadow-md' : 'text-gray-400 hover:text-white'}`}>Legalità</button>
+                    <button onClick={() => setActiveTab('regolamento')} className={`flex-1 py-2 text-sm font-black rounded-lg transition-all ${activeTab === 'regolamento' ? 'bg-orange-500 text-black shadow-md' : 'text-gray-400 hover:text-white'}`}>FAQ & Regole</button>
                 </div>
                 
                 {activeTab === 'legalita' && (
                     <div className="p-4 grid grid-cols-2 gap-3 max-h-[35vh] overflow-y-auto">
-                        {formatsToShow.map(fmt => {
-                            const status = card.legalities ? card.legalities[fmt] : 'not_legal';
-                            const isLegal = status === 'legal' || status === 'restricted';
-                            return (
-                                <div key={fmt} className="flex items-center gap-2 text-xs sm:text-sm">
-                                    {isLegal ? (
-                                        <span className="bg-green-500 text-black rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-black shrink-0">✓</span>
-                                    ) : (
-                                        <span className="text-gray-500 font-black w-4 text-center shrink-0">-</span>
-                                    )}
-                                    <span className="text-gray-300 capitalize truncate">{fmt}</span>
-                                </div>
-                            );
-                        })}
+                        {loading && !legalities ? (
+                             <p className="text-center text-yellow-500 font-bold col-span-2 py-4">Sincronizzazione dati da Scryfall...</p>
+                        ) : (
+                            formatsToShow.map(fmt => {
+                                const status = legalities ? legalities[fmt] : 'not_legal';
+                                const isLegal = status === 'legal' || status === 'restricted';
+                                return (
+                                    <div key={fmt} className="flex items-center gap-2 text-xs sm:text-sm">
+                                        {isLegal ? (
+                                            <span className="bg-green-500 text-black rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-black shrink-0">✓</span>
+                                        ) : (
+                                            <span className="text-gray-500 font-black w-4 text-center shrink-0">-</span>
+                                        )}
+                                        <span className="text-gray-300 capitalize truncate">{fmt}</span>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 )}
 
                 {activeTab === 'regolamento' && (
                     <div className="p-4 max-h-[35vh] overflow-y-auto space-y-4">
-                        {loading ? ( <p className="text-center text-yellow-500 font-bold py-4">Ricerca regole su Scryfall...</p> ) : rulings.length > 0 ? (
+                        {loading ? ( <p className="text-center text-yellow-500 font-bold py-4">Ricerca regole ufficiali in corso...</p> ) : rulings.length > 0 ? (
                             rulings.map((r, i) => (
                                 <div key={i} className="text-xs sm:text-sm border-b border-gray-800 pb-2">
                                     <p className="text-gray-200 mb-1 leading-relaxed">{r.comment}</p>
-                                    <p className="text-gray-500 text-[10px] font-bold">{r.published_at}</p>
+                                    <p className="text-gray-500 text-[10px] font-bold mt-1">{r.published_at}</p>
                                 </div>
                             ))
-                        ) : ( <p className="text-center text-gray-500 font-bold py-4">Nessuna regola speciale per questa carta.</p> )}
+                        ) : ( <p className="text-center text-gray-500 font-bold py-4">Nessuna FAQ o regola speciale per questa carta.</p> )}
                     </div>
                 )}
             </div>
@@ -1864,9 +1902,13 @@
                         }}
                         onClick={actionFunc} 
                         className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black text-lg py-4 rounded-xl shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all">
-                       {actionLabel === "Aggiungi" ? "+ AGGIUNGI AL MAZZO" : "CONFERMA MODIFICHE"}
+                        {actionLabel === "Aggiungi" ? "+ AGGIUNGI AL MAZZO" : "CONFERMA MODIFICHE"}
                      </button>
                  </div>
+                 
+                 {/* ECCO LA MAGIA: TAB REGOLE NEL DECKBUILDER */}
+                 <CardDetailsTabs card={targetCard} />
+                 
               </div>
             </div>
          );
