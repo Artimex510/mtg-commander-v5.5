@@ -5544,17 +5544,31 @@
                  <h2 className="text-3xl font-black text-center text-indigo-400 drop-shadow-md mb-2">Database & Scan</h2>
                  <p className="text-xs text-center text-gray-300 font-bold mb-4 bg-gray-900 p-2 rounded border border-gray-700">Scannerizza una carta reale con l'IA o cerca nel database globale di MTG.</p>
                  
-                 {/* BOTTONE SCANNER IA */}
+                 {/* BOTTONI SCANNER IA (FOTOCAMERA E GALLERIA) */}
                  <div className="mb-6 relative">
                      {isScanning && (
-                         <div className="absolute inset-0 bg-black/80 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm border border-emerald-500">
-                             <p className="text-emerald-400 font-black animate-pulse">{scanProgress}</p>
+                         <div className="absolute inset-0 bg-black/80 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm border border-indigo-500">
+                             <p className="text-indigo-400 font-black animate-pulse">{scanProgress}</p>
                          </div>
                      )}
-                     <label className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.5)] transition-all cursor-pointer flex justify-center items-center gap-2 text-lg active:scale-95">
-                         📸 SCANNERIZZA CARTA (IA)
-                         <input type="file" accept="image/*" capture="environment" onChange={handleGeminiScan} className="hidden" />
-                     </label>
+                     <div className="flex gap-3">
+                        <label className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-xl cursor-pointer shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-all flex flex-col items-center justify-center active:scale-95">
+                           <span className="text-2xl mb-1">📸</span>
+                           <span className="text-xs">FOTOCAMERA</span>
+                           <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleGeminiScan} />
+                        </label>
+                        
+                        <label className="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-black py-3 rounded-xl cursor-pointer shadow-[0_0_15px_rgba(147,51,234,0.5)] transition-all flex flex-col items-center justify-center active:scale-95">
+                           <span className="text-2xl mb-1">🖼️</span>
+                           <span className="text-xs">GALLERIA</span>
+                           <input type="file" accept="image/*" className="hidden" onChange={handleGeminiScan} />
+                        </label>
+                     </div>
+                     <div className="text-right mt-3 border-t border-indigo-700/50 pt-2">
+                         <p className="text-[10px] text-indigo-300 font-bold">
+                             * Lo Scan IA richiede una <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline">API Key gratuita su Google AI Studio</a>.
+                         </p>
+                     </div>
                  </div>
 
                  <p className="text-[10px] text-gray-400 mb-2 text-center uppercase tracking-wider font-bold">🇺🇸 Oppure cerca manualmente in Inglese</p>
