@@ -5279,7 +5279,7 @@
       const [superType, setSuperType] = useState(""); const [cardType, setCardType] = useState("");
       const [cardType2, setCardType2] = useState(""); const [subType, setSubType] = useState("");
       const [rarity, setRarity] = useState(""); const [cmcOp, setCmcOp] = useState("="); const [cmcVal, setCmcVal] = useState("");
-      const [expFilter, setExpFilter] = useState(""); // <--- ECCO LA SALVEZZA DELLO SCHERMO NERO!
+      const [expFilter, setExpFilter] = useState(""); 
       
       const [allResults, setAllResults] = useState([]);
       const [localPage, setLocalPage] = useState(0);
@@ -5295,6 +5295,8 @@
       const [translating, setTranslating] = useState(false);
       const [printsList, setPrintsList] = useState([]); const [loadingPrints, setLoadingPrints] = useState(false);
       const [savedScroll, setSavedScroll] = useState(0);
+
+      const ManaColors = [ { id: 'W', color: 'bg-yellow-100 text-yellow-900', label: 'W' }, { id: 'U', color: 'bg-blue-500 text-white', label: 'U' }, { id: 'B', color: 'bg-gray-800 text-white', label: 'B' }, { id: 'R', color: 'bg-red-500 text-white', label: 'R' }, { id: 'G', color: 'bg-green-500 text-white', label: 'G' }, { id: 'C', color: 'bg-gray-400 text-gray-900', label: 'C' } ];
 
       const toggleMana = (m) => setMana(mana.includes(m) ? mana.filter(x => x !== m) : [...mana, m]);
 
@@ -5342,9 +5344,8 @@
         eseguiRicerca(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(searchQuery.trim())}`, true);
       };
 
-      // --- NUOVO SCANNER IA (GEMINI 3.6 FLASH) ---
       const handleGeminiScan = (e) => {
-          const fileInput = e.target; // Salviamo la memoria in modo sicuro
+          const fileInput = e.target; 
           const file = fileInput.files[0];
           if (!file) return;
           let apiKey = localStorage.getItem('gemini_api_key');
@@ -5360,9 +5361,8 @@
           
           reader.onloadend = async () => {
               const base64data = reader.result.split(',')[1];
-              
               try {
-                  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+                  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
@@ -5379,8 +5379,6 @@
                   if (data.error) throw new Error(data.error.message);
                   
                   const cardName = data.candidates[0].content.parts[0].text.trim();
-                  
-                  // Inserisce il nome nella barra di ricerca ed esegue la ricerca automatica
                   setQuery(cardName);
                   searchCard(cardName);
                   
@@ -5395,7 +5393,6 @@
           };
           reader.readAsDataURL(file);
       };
-      // --- FINE SCANNER ---
       
       const maxLocalPages = allResults.length > 0 ? Math.ceil(allResults.length / 15) : 0;
       const currentResults = allResults.length > 0 ? allResults.slice(localPage * 15, (localPage + 1) * 15) : [];
@@ -5458,6 +5455,7 @@
       return (
         <div className="max-w-2xl mx-auto relative z-10 w-full space-y-4">
           
+          {/* MODALE DI VISUALIZZAZIONE CARTA (Con Legalità aggiunta) */}
           {viewingCard && (
              <div className="w-full flex flex-col animate-fade pb-10">
                <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700 sticky top-0 z-50 shadow-md mb-6">
@@ -5481,7 +5479,6 @@
                            const priceNum = parseFloat(priceStr) || 0;
                            const currentColl = collection || [];
                            
-                           // L'ID di Scryfall è univoco per art ed espansione, quindi 2 Sol Ring diversi avranno ID diversi!
                            const existingIndex = currentColl.findIndex(c => c.scryfallId === viewingCard.id);
                            let newColl = [...currentColl];
                            
@@ -5519,12 +5516,12 @@
                     </button>
                  </div>
                  
-                 <button onClick={() => openEdhrec(viewingCard)} className="w-full max-w-sm bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center gap-2 mt-2">
+                 <button onClick={() => openEdhrec(viewingCard)} className="w-full max-w-sm bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center gap-2 mt-2 mb-4">
                     🛡️ VEDI SINERGIE SU EDHREC
                  </button>
 
                  {printsList.length > 0 && (
-                    <div className="w-full max-w-sm mt-4 bg-gray-800 p-2 rounded-xl border border-gray-600 shadow-md animate-fade">
+                    <div className="w-full max-w-sm mb-4 bg-gray-800 p-2 rounded-xl border border-gray-600 shadow-md animate-fade">
                        <p className="text-xs text-gray-300 font-bold mb-2">Tocca un'art per vederla in grande:</p>
                        <div className="flex overflow-x-auto gap-2 pb-2">
                           {printsList.map(p => (
@@ -5534,43 +5531,38 @@
                        </div>
                     </div>
                  )}
+
+                 {/* ECCO LA TAB REGOLE E LEGALITA' AGGIUNTA */}
+                 <CardDetailsTabs card={viewingCard} />
+
                </div>
              </div>
           )}
 
           <div className={viewingCard ? "hidden" : "space-y-4"}>
-             <div className="bg-gray-800/90 p-4 rounded-xl border border-gray-600 shadow-xl backdrop-blur-sm mt-4">
-                 <h2 className="text-2xl font-black text-indigo-400 mb-2 border-b border-gray-700 pb-2">Database & Scan</h2>
+              <div className="bg-gray-800/90 p-4 rounded-xl border border-gray-600 shadow-md backdrop-blur-sm mt-4">
+                 <h2 className="text-3xl font-black text-center text-indigo-400 drop-shadow-md mb-2">Database & Scan</h2>
+                 <p className="text-xs text-center text-gray-300 font-bold mb-4 bg-gray-900 p-2 rounded border border-gray-700">Scannerizza una carta reale con l'IA o cerca nel database globale di MTG.</p>
                  
-                 <div className="bg-indigo-900/30 border border-indigo-500 p-4 rounded-xl mb-6 shadow-inner text-center">
-                    <p className="text-indigo-200 text-xs font-bold mb-3">Scegli come inquadrare la carta per fargliela riconoscere all'Intelligenza Artificiale!</p>
-                    <div className="flex gap-3">
-                       <label className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-xl cursor-pointer shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-all flex flex-col items-center justify-center">
-                          <span className="text-2xl mb-1">📸</span>
-                          <span className="text-xs">FOTOCAMERA</span>
-                          <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleGeminiScan} />
-                       </label>
-                       
-                       <label className="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-black py-3 rounded-xl cursor-pointer shadow-[0_0_15px_rgba(147,51,234,0.5)] transition-all flex flex-col items-center justify-center">
-                          <span className="text-2xl mb-1">🖼️</span>
-                          <span className="text-xs">GALLERIA</span>
-                          <input type="file" accept="image/*" className="hidden" onChange={handleGeminiScan} />
-                       </label>
-                    </div>
-                    {isScanning && <p className="text-yellow-400 font-black text-sm mt-3 animate-pulse">{scanProgress}</p>}
-                    
-                    <div className="text-right mt-3 border-t border-indigo-700/50 pt-2">
-                        <p className="text-[10px] text-indigo-300 font-bold">
-                            * Lo Scan IA richiede una <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline">API Key gratuita su Google AI Studio</a>.
-                        </p>
-                    </div>
+                 {/* BOTTONE SCANNER IA */}
+                 <div className="mb-6 relative">
+                     {isScanning && (
+                         <div className="absolute inset-0 bg-black/80 z-10 flex items-center justify-center rounded-xl backdrop-blur-sm border border-emerald-500">
+                             <p className="text-emerald-400 font-black animate-pulse">{scanProgress}</p>
+                         </div>
+                     )}
+                     <label className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.5)] transition-all cursor-pointer flex justify-center items-center gap-2 text-lg active:scale-95">
+                         📸 SCANNERIZZA CARTA (IA)
+                         <input type="file" accept="image/*" capture="environment" onChange={handleGeminiScan} className="hidden" />
+                     </label>
                  </div>
 
-                 <h3 className="font-bold text-gray-300 mb-2">Ricerca Manuale:</h3>
-                 <div className="flex gap-2 mb-2"><input type="text" placeholder="Nome (es. Plains)" value={query} onChange={e => setQuery(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchCard(null)} className="flex-1 bg-gray-900 border border-gray-600 rounded p-3 text-white outline-none focus:border-blue-500" /></div>
+                 <p className="text-[10px] text-gray-400 mb-2 text-center uppercase tracking-wider font-bold">🇺🇸 Oppure cerca manualmente in Inglese</p>
+                 <div className="flex gap-2 mb-2"><input type="text" placeholder="Nome della carta..." value={query} onChange={e => setQuery(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchCard(null)} className="flex-1 bg-gray-900 border border-gray-600 rounded p-3 text-white outline-none focus:border-indigo-500" /></div>
+                 
                  <div className="flex gap-2 mb-3">
-                     <input type="text" placeholder="Testo Abilità" value={oracleText} onChange={e => setOracleText(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchCard(null)} className="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none focus:border-blue-500" />
-                     <select value={expFilter} onChange={e => setExpFilter(e.target.value)} className="w-1/3 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none focus:border-blue-500 truncate">
+                     <input type="text" placeholder="Testo Abilità" value={oracleText} onChange={e => setOracleText(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchCard(null)} className="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none focus:border-indigo-500" />
+                     <select value={expFilter} onChange={e => setExpFilter(e.target.value)} className="w-1/3 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none focus:border-indigo-500 truncate">
                          <option value="">Espansione...</option>
                          {Array.isArray(mtgSets) && mtgSets.map((set, i) => (
                              <option key={set.code || i} value={set.code || ""}>{set.name || ""}</option>
@@ -5584,10 +5576,10 @@
                     </div>
                     <div className="flex items-center justify-center gap-2">
                        <select value={colorMatchType} onChange={e => setColorMatchType(e.target.value)} className="bg-gray-800 border border-gray-600 rounded p-1 text-white text-xs outline-none">
-                          <option value="include">Contiene</option><option value="exact">Esatti</option>
+                          <option value="include">Contiene questi colori</option><option value="exact">Esattamente questi colori</option>
                        </select>
                        <label className="flex items-center gap-1 text-xs text-purple-300 font-bold bg-purple-900/30 px-2 py-1 rounded border border-purple-700 cursor-pointer">
-                          <input type="checkbox" checked={isMulticolorOnly} onChange={e=>setIsMulticolorOnly(e.target.checked)} className="accent-purple-500" /> Multi
+                          <input type="checkbox" checked={isMulticolorOnly} onChange={e=>setIsMulticolorOnly(e.target.checked)} className="accent-purple-500" /> Solo Multi
                        </label>
                     </div>
                  </div>
@@ -5597,6 +5589,7 @@
                    <select value={rarity} onChange={e => setRarity(e.target.value)} className="bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none"><option value="">Rarità...</option><option value="c">Comune</option><option value="u">Non Comune</option><option value="r">Rara</option><option value="m">Mitica</option></select>
                    <select value={cardType} onChange={e => setCardType(e.target.value)} className="bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none"><option value="">Tipo 1...</option><option value="creature">Creatura</option><option value="artifact">Artefatto</option><option value="enchantment">Incantesimo</option><option value="instant">Istantaneo</option><option value="sorcery">Stregoneria</option><option value="land">Terra</option><option value="planeswalker">Planeswalker</option></select>
                    <select value={cardType2} onChange={e => setCardType2(e.target.value)} className="bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none"><option value="">Tipo 2...</option><option value="creature">Creatura</option><option value="artifact">Artefatto</option><option value="enchantment">Incantesimo</option><option value="land">Terra</option></select>
+                   <input type="text" placeholder="Sottotipo (es. Goblin)" value={subType} onChange={e => setSubType(e.target.value)} className="col-span-2 bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm outline-none" />
                  </div>
                  
                  <div className="flex gap-2 mb-4 items-center">
@@ -5606,30 +5599,33 @@
                    <label className="ml-auto flex items-center gap-1 text-xs text-yellow-500 font-bold bg-yellow-900/30 px-2 py-2 rounded border border-yellow-700 cursor-pointer"><input type="checkbox" checked={isCommanderOnly} onChange={e=>setIsCommanderOnly(e.target.checked)} className="accent-yellow-500" /> ⭐ Solo Cmdr</label>
                  </div>
 
-                 <button onClick={() => searchCard(null)} className="w-full bg-blue-600 hover:bg-blue-700 font-bold py-3 rounded-lg text-white shadow-lg transition-colors">
-                     {loading ? "Ricerca in corso..." : "🔍 Avvia Ricerca Manuale"}
+                 <button onClick={() => searchCard(null)} disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 font-black py-4 rounded-xl text-white shadow-lg transition-colors active:scale-95 text-lg">
+                   {loading ? "Cerco nel DB..." : "CERCA CARTE"}
                  </button>
-             </div>
+              </div>
 
-             {allResults.length > 0 && (
-                <div className="bg-gray-800/90 p-4 rounded-xl border border-gray-600 backdrop-blur-sm animate-fade">
+              {allResults.length > 0 && (
+                <div className="bg-gray-800/90 p-4 rounded-xl border border-gray-600 backdrop-blur-sm animate-fade pb-20">
                   <div className="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
                      <h3 className="text-gray-300 text-sm font-bold">Risultati Database:</h3>
                      <div className="flex items-center gap-2 bg-gray-900 p-1 rounded-lg border border-gray-700">
-                        <button onClick={goToPrevPage} disabled={localPage === 0} className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center ${localPage === 0 ? 'bg-gray-700 text-gray-500' : 'bg-blue-600 text-white shadow transition-colors'}`}>⬅</button>
+                        <button onClick={goToPrevPage} disabled={localPage === 0} className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center ${localPage === 0 ? 'bg-gray-700 text-gray-500' : 'bg-indigo-600 text-white shadow transition-colors'}`}>⬅</button>
                         <span className="text-xs font-bold text-white px-2">Pag {localPage + 1} di {maxLocalPages||1}</span>
-                        <button onClick={goToNextPage} disabled={localPage + 1 >= maxLocalPages && !nextScryfallUrl} className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center ${(localPage + 1 >= maxLocalPages && !nextScryfallUrl) ? 'bg-gray-700 text-gray-500' : 'bg-blue-600 text-white shadow transition-colors'}`}>➡</button>
+                        <button onClick={goToNextPage} disabled={localPage + 1 >= maxLocalPages && !nextScryfallUrl} className={`w-8 h-8 rounded font-bold text-lg flex items-center justify-center ${(localPage + 1 >= maxLocalPages && !nextScryfallUrl) ? 'bg-gray-700 text-gray-500' : 'bg-indigo-600 text-white shadow transition-colors'}`}>➡</button>
                      </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {currentResults.map((card, i) => (
-                      <div key={i} className="relative cursor-pointer hover:ring-2 ring-indigo-500 rounded shadow-md" onClick={() => openViewer(card)}>
+                      <div key={i} className="relative cursor-pointer hover:ring-2 ring-indigo-500 rounded shadow-md group" onClick={() => openViewer(card)}>
                         <img src={card.image || "mtg-bg.jpg"} alt={card.name} className="w-full rounded" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
+                            <span className="text-white font-bold text-sm bg-indigo-600/90 px-3 py-1 rounded-full shadow-lg">Vedi</span>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
-             )}
+              )}
           </div>
         </div>
       );
