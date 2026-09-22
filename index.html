@@ -4607,8 +4607,16 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                     {/* BLOCCO VITTORIA E RESET OTTIMIZZATO */}
                     <div className={players.length <= 2 ? "flex flex-row items-center gap-3" : "flex flex-col items-center gap-3"}>
                         <button onClick={() => {
-                            const winnerName = window.prompt("Chi ha vinto? Inserisci il nome del giocatore:");
-                            if(winnerName) declareWinner({ id: 'manual', name: winnerName });
+                            const winnerName = window.prompt("Chi ha vinto? Inserisci il NOME ESATTO del giocatore (es. Player 1):");
+                            if(winnerName) {
+                                // Cerca la plancia esatta del giocatore per rubargli il nome del comandante!
+                                const foundPlayer = players.find(p => p.name.toLowerCase() === winnerName.trim().toLowerCase());
+                                if (foundPlayer) {
+                                    declareWinner(foundPlayer);
+                                } else {
+                                    declareWinner({ id: 'manual', name: winnerName }); // Fallback di sicurezza
+                                }
+                            }
                         }} className="flex flex-col items-center gap-1 text-yellow-500 font-bold hover:text-yellow-400 transition-colors" title="Dichiara Vincitore">
                             <span className="text-lg leading-none">🏆</span> <span className="text-[8px] uppercase leading-none">Vittoria</span>
                         </button>
