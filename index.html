@@ -4221,26 +4221,31 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           }
       };
 
-      // FUNZIONE SALVATAGGIO VITTORIA
+      // FUNZIONE SALVATAGGIO VITTORIA (AGGIORNATA CON NOME COMANDANTE REALE)
       const declareWinner = async (winnerPlayer) => {
           if (!window.confirm(`Dichiarare ${winnerPlayer.name} VINCITORE della partita e salvare le statistiche?`)) return;
           try {
               let winnerCommander = "Sconosciuto";
-              if (winnerPlayer.tokens && winnerPlayer.tokens.length > 0) {
-                  // Cerca un comandante tra i token/sfondi se presente, o lascia sconosciuto
-                  winnerCommander = winnerPlayer.name; 
+              
+              // Se il giocatore ha impostato la sua carta Comandante dal tasto 👑, prendiamo il VERO nome!
+              if (winnerPlayer.cmdrCard && winnerPlayer.cmdrCard.name) {
+                  winnerCommander = winnerPlayer.cmdrCard.name; 
               }
+
               await db.collection('match_history').add({
                   date: new Date().toISOString(),
                   playerCount: players.length,
                   winnerId: winnerPlayer.id,
                   winnerName: winnerPlayer.name,
                   winnerCommander: winnerCommander,
-                  teamMode: teamMode
+                  teamMode: teamMode,
+                  savedBy: auth.currentUser ? auth.currentUser.uid : 'locale'
               });
               alert("🏆 Vittoria registrata nelle statistiche!");
               resetGame();
-          } catch (err) { alert("Errore nel salvataggio: " + err.message); }
+          } catch (err) { 
+              alert("⚠️ Errore Firebase: " + err.message + "\n\nPer risolverlo, devi sbloccare le regole dal sito di Firebase (Firestore -> Regole)."); 
+          }
       };
  
       const startGame = () => {
