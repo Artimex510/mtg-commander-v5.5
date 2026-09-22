@@ -1553,13 +1553,14 @@
       const [managingCard, setManagingCard] = useState(null); const [manageQty, setManageQty] = useState(0);
       const [editingProxyCard, setEditingProxyCard] = useState(null);
       const [importText, setImportText] = useState(""); const [showImport, setShowImport] = useState(false);
-      // === NUOVI STATI "THE FORGE" ===
+      // === NUOVI STATI "THE FORGE" (Aggiornati ai Bracket) ===
       const [showAiForge, setShowAiForge] = useState(false);
       const [forgeCmdr, setForgeCmdr] = useState("");
-      const [forgePower, setForgePower] = useState("Ottimizzato (Livello 7-8)");
+      const [forgeBracket, setForgeBracket] = useState("3"); // Default Bracket 3
       const [forgeBudget, setForgeBudget] = useState("Nessun Limite");
       const [forgeTheme, setForgeTheme] = useState("");
       const [forgeExtra, setForgeExtra] = useState("");
+      const [forgeForgotten, setForgeForgotten] = useState(false); // Carte Dimenticate
       const [forgeLoading, setForgeLoading] = useState(false);
       // ===============================
       
@@ -1725,7 +1726,7 @@
         });
       };
 
-      // === NUOVE FUNZIONI "THE FORGE" ===
+      // === NUOVE FUNZIONI "THE FORGE" (Bracket & Gamechangers) ===
       const handleForgeImport = async (textToImport) => {
         if(!textToImport.trim()) return; 
         setForgeLoading(true); 
@@ -1733,7 +1734,7 @@
         const cardRequests = [];
         
         lines.forEach(line => {
-            let cleanLine = line.replace(/^\*+/, '').replace(/\*+$/, '').replace(/^-+/, '').trim(); // Elimina markdown
+            let cleanLine = line.replace(/^\*+/, '').replace(/\*+$/, '').replace(/^-+/, '').trim(); 
             if(!cleanLine) return;
             const match = cleanLine.match(/^(\d+)?\s*[xX]?\s*(.*)$/); 
             let qty = match[1] ? parseInt(match[1]) : 1; 
@@ -1743,17 +1744,12 @@
 
         let allFetchedCards = [];
         const chunks = [];
-        // Scryfall Collection API (Massimo 75 carte per richiesta per non bloccarsi)
-        for (let i = 0; i < cardRequests.length; i += 75) {
-            chunks.push(cardRequests.slice(i, i + 75));
-        }
+        for (let i = 0; i < cardRequests.length; i += 75) { chunks.push(cardRequests.slice(i, i + 75)); }
 
         for (let idx = 0; idx < chunks.length; idx++) {
             try {
                 const res = await fetch('https://api.scryfall.com/cards/collection', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ identifiers: chunks[idx] })
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ identifiers: chunks[idx] })
                 });
                 const data = await res.json();
                 if (data.data) {
@@ -1767,10 +1763,8 @@
                              if (!mana_cost) mana_cost = c.card_faces[0].mana_cost;
                          }
                          allFetchedCards.push({ 
-                             id: c.id || Math.random().toString(), 
-                             deckId: 'forge-' + Date.now() + '-' + Math.random() + '-' + index, 
-                             name: c.name || "Sconosciuta", 
-                             image: img, imageBack: imgBack, type: c.type_line || "", 
+                             id: c.id || Math.random().toString(), deckId: 'forge-' + Date.now() + '-' + Math.random() + '-' + index, 
+                             name: c.name || "Sconosciuta", image: img, imageBack: imgBack, type: c.type_line || "", 
                              cmc: c.cmc || 0, colors: c.color_identity || [], legalities: c.legalities || {}, 
                              printsUrl: c.prints_search_uri || null, isCommander: false, isSideboard: addToSideboard, 
                              isCompanion: false, oracle_text: oracle_text, mana_cost: mana_cost, prices: c.prices || {} 
@@ -1787,22 +1781,32 @@
       };
 
       const buildForgePrompt = () => {
-          return `Sei "The Forge", un deckbuilder esperto di Magic: The Gathering. Crea un mazzo competitivo e legale nel formato ${deckFormat.toUpperCase()} da esattamente ${deckFormat === 'commander' ? 100 : 60} carte totali.
-${deckFormat === 'commander' ? `Comandante principale: ${forgeCmdr || 'Scegline uno tu in base al tema'}` : ''}
-Power Level Richiesto: ${forgePower}
+          // La lista ufficiale dei Gamechangers iniettata nel prompt
+          const GC_LIST = "Enlightened Tutor, Humility, Serra's Sanctum, Smothering Tithe, Teferi's Protection, Trouble in Pairs, Consecrated Sphinx, Cyclonic Rift, Expropriate, Force of Will, Fierce Guardianship, Gifts Ungiven, Intuition, Jin-Gitaxias Core Augur, Mystical Tutor, Narset Parter of Veils, Rhystic Study, Sway of the Stars, Thassa's Oracle, Urza Lord High Artificer, Bolas's Citadel, Braids Cabal Minion, Demonic Tutor, Imperial Seal, Necropotence, Opposition Agent, Orcish Bowmasters, Tergrid God of Fright, Vampiric Tutor, Ad Nauseam, Deflecting Swat, Gamble, Jeska's Will, Underworld Breach, Dockside Extortionist, Biorhythm, Crop Rotation, Food Chain, Gaea's Cradle, Natural Order, Seedborn Muse, Survival of the Fittest, Vorinclex Voice of Hunger, Worldly Tutor, Aura Shards, Coalition Victory, Grand Arbiter Augustin IV, Kinnan Bonder Prodigy, Yuriko the Tiger's Shadow, Notion Thief, Winota Joiner of Forces, Ancient Tomb, Chrome Mox, Field of the Dead, Glacial Chasm, Grim Monolith, Lion's Eye Diamond, Mana Vault, Mishra's Workshop, Mox Diamond, Panoptic Mirror, The One Ring, The Tabernacle at Pendrell Vale, Trinisphere, Mana Crypt, Jeweled Lotus";
+
+          let bracketRules = "";
+          if (forgeBracket === "1") bracketRules = "BRACKET 1 (Jank/For Fun Estremo): Potere bassissimo. Concentrati ESCLUSIVAMENTE sul tema visivo/strano richiesto. VIETATE assolutamente tutte le carte Gamechanger e tutte le carte dal valore monetario elevato. VIETATE le combo infinite.";
+          if (forgeBracket === "2") bracketRules = `BRACKET 2 (Casual/Precon): Livello di un mazzo prefabbricato. REGOLE ASSOLUTE: 1) E' SEVERAMENTE VIETATO INSERIRE ANCHE SOLO UNA DI QUESTE CARTE (0 Gamechangers): ${GC_LIST}. 2) NESSUNA combo infinita. 3) NESSUN turno extra.`;
+          if (forgeBracket === "3") bracketRules = `BRACKET 3 (Ottimizzato): Mazzo forte ma corretto. REGOLE ASSOLUTE: 1) Puoi inserire AL MASSIMO 3 carte scegliendole da questa lista: ${GC_LIST} (non metterne più di 3). 2) SONO PERMESSE combo infinite. 3) SONO VIETATE combo che generano turni infiniti extra.`;
+          if (forgeBracket === "4") bracketRules = `BRACKET 4 (High Power): Mazzo competitivo. REGOLE ASSOLUTE: 1) DEVI inserire 4 O PIU' carte prese da questa lista: ${GC_LIST}. 2) Sono permesse TUTTE le combo infinite, inclusi i turni infiniti extra e stax pesanti. Fast mana permesso.`;
+          if (forgeBracket === "5") bracketRules = `BRACKET 5 (cEDH / Meta Torneo): Mazzo da torneo cEDH senza pietà. Se il comandante indicato dall'utente non è Tier 1 nel meta cEDH, IGNORALO e scegli TU il comandante migliore per questi colori/tema. Costruisci la lista per vincere entro il turno 3. Fast mana (Mana Crypt, ecc) obbligatorio.`;
+
+          let forgottenRule = forgeForgotten ? "REGOLA 'CARTE DIMENTICATE' ATTIVA: Evita assolutamente le solite Top 100 carte di EDHREC. Vai a scavare in espansioni vecchissime e trova carte oscure, sconosciute, ma con una sinergia letale con il comandante. Sostituisci i classici staple con queste perle nascoste." : "";
+
+          return `Sei "The Forge", deckbuilder esperto di Magic: The Gathering. Crea un mazzo legale nel formato ${deckFormat.toUpperCase()} da esattamente ${deckFormat === 'commander' ? 100 : 60} carte totali.
+${deckFormat === 'commander' ? `Comandante/Focus richiesto: ${forgeCmdr || 'Scegline uno tu in base al tema'}` : ''}
 Budget: ${forgeBudget}
-Tema/Strategia Principale: ${forgeTheme}
+Tema/Strategia: ${forgeTheme}
 Restrizioni dell'utente (Rule 0): ${forgeExtra || 'Nessuna.'}
 
-REGOLE DI CREAZIONE (SEGUILE ALLA LETTERA):
-1. Identità di colore: Inserisci SOLO carte legali e compatibili con i colori del mazzo/comandante.
-2. Struttura del mazzo: Bilancia inserendo il giusto numero di terre (35-38 per Commander, 20-24 per 60 carte), ramp, peschini e rimozioni proporzionate.
-3. FORMATO DI RISPOSTA OBBLIGATORIO:
-Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in INGLESE, senza NESSUNA formattazione Markdown, senza titoli, senza suddivisioni (no "Terre", no "Creature"). Scrivi solo quantità e nome esatto in ogni riga.
-Esempio:
-1 Sol Ring
-1 Command Tower
-1 Cultivate`;
+REGOLA LEGALE ASSOLUTA: È SEVERAMENTE VIETATO inserire carte presenti nella Banlist Ufficiale del formato ${deckFormat.toUpperCase()}.
+
+${bracketRules}
+
+${forgottenRule}
+
+FORMATO DI RISPOSTA OBBLIGATORIO:
+Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in INGLESE, senza NESSUNA formattazione Markdown, senza titoli, senza suddivisioni. Scrivi solo "1 Nome Carta" per riga.`;
       };
 
       const copyForgePrompt = () => {
@@ -2094,7 +2098,7 @@ Esempio:
                       <div className="bg-gray-800 border-2 border-purple-500 rounded-xl p-6 w-full max-w-md mx-auto shadow-2xl relative my-auto">
                           <button onClick={() => setShowAiForge(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
                           <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400 mb-2 flex items-center gap-2">✨ The Forge</h3>
-                          <p className="text-gray-300 text-xs font-bold mb-6">L'Intelligenza Artificiale compilerà una lista completa e sinergica basata sulle regole di deckbuilding dei giocatori professionisti.</p>
+                          <p className="text-gray-300 text-xs font-bold mb-4">L'Intelligenza Artificiale compilerà una lista rispettando minuziosamente il Bracket selezionato e la banlist ufficiale.</p>
                           
                           <div className="space-y-4">
                               <div>
@@ -2102,16 +2106,18 @@ Esempio:
                                   <input type="text" value={forgeCmdr} onChange={e=>setForgeCmdr(e.target.value)} placeholder="Nome in inglese o lascia vuoto..." className="w-full bg-gray-900 border border-gray-600 text-white rounded p-3 outline-none focus:border-purple-500 font-bold text-sm" />
                               </div>
                               
+                              <div>
+                                  <label className="text-gray-400 text-xs font-bold block mb-1">Commander Bracket (Livello di Potenza)</label>
+                                  <select value={forgeBracket} onChange={e=>setForgeBracket(e.target.value)} className="w-full bg-gray-900 border border-purple-500 text-white rounded p-3 outline-none focus:ring-2 ring-purple-500 font-black text-sm shadow-inner">
+                                      <option value="1">Bracket 1: For Fun/Tema (Nessuna combo/gamechanger)</option>
+                                      <option value="2">Bracket 2: Casual/Precon (ZERO Gamechanger, no combo)</option>
+                                      <option value="3">Bracket 3: Ottimizzato (Max 3 Gamechanger, no turni infiniti)</option>
+                                      <option value="4">Bracket 4: High Power (4+ Gamechanger, tutto permesso)</option>
+                                      <option value="5">Bracket 5: cEDH / Torneo (Il meta assoluto più forte)</option>
+                                  </select>
+                              </div>
+
                               <div className="grid grid-cols-2 gap-3">
-                                  <div>
-                                      <label className="text-gray-400 text-xs font-bold block mb-1">Livello di Potere</label>
-                                      <select value={forgePower} onChange={e=>setForgePower(e.target.value)} className="w-full bg-gray-900 border border-gray-600 text-white rounded p-3 outline-none focus:border-purple-500 font-bold text-sm">
-                                          <option value="Precon Modificato (Livello 5-6)">Casual / Precon (5-6)</option>
-                                          <option value="Ottimizzato (Livello 7-8)">Ottimizzato (7-8)</option>
-                                          <option value="High Power (Livello 9)">High Power (9)</option>
-                                          <option value="cEDH Competitivo Max Power (Livello 10)">cEDH (10)</option>
-                                      </select>
-                                  </div>
                                   <div>
                                       <label className="text-gray-400 text-xs font-bold block mb-1">Budget Globale</label>
                                       <select value={forgeBudget} onChange={e=>setForgeBudget(e.target.value)} className="w-full bg-gray-900 border border-gray-600 text-white rounded p-3 outline-none focus:border-purple-500 font-bold text-sm">
@@ -2121,16 +2127,23 @@ Esempio:
                                           <option value="Nessun Limite">Nessun Limite</option>
                                       </select>
                                   </div>
+                                  <div>
+                                      <label className="text-gray-400 text-xs font-bold block mb-1">Archetipo / Tema Specifico</label>
+                                      <input type="text" value={forgeTheme} onChange={e=>setForgeTheme(e.target.value)} placeholder="es. Aristocrats, Control..." className="w-full bg-gray-900 border border-gray-600 text-white rounded p-3 outline-none focus:border-purple-500 font-bold text-sm" />
+                                  </div>
                               </div>
 
-                              <div>
-                                  <label className="text-gray-400 text-xs font-bold block mb-1">Archetipo / Tema Specifico</label>
-                                  <input type="text" value={forgeTheme} onChange={e=>setForgeTheme(e.target.value)} placeholder="es. Aristocrats, Control, Typal Dragon..." className="w-full bg-gray-900 border border-gray-600 text-white rounded p-3 outline-none focus:border-purple-500 font-bold text-sm" />
-                              </div>
+                              <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${forgeForgotten ? 'bg-amber-900/40 border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-gray-900 border-gray-600'}`}>
+                                  <input type="checkbox" checked={forgeForgotten} onChange={e=>setForgeForgotten(e.target.checked)} className="mt-1 w-5 h-5 accent-amber-500 shrink-0" />
+                                  <div>
+                                      <span className="text-amber-500 font-black text-sm block leading-none mb-1">📜 Cerca "Carte Dimenticate"</span>
+                                      <span className="text-gray-400 text-[10px] leading-tight block">L'IA ignorerà gli staple noiosi di EDHREC per cercare carte vecchie, poco giocate ma estremamente sinergiche.</span>
+                                  </div>
+                              </label>
 
                               <div>
                                   <label className="text-gray-400 text-xs font-bold block mb-1">Rule 0 / Restrizioni Speciali</label>
-                                  <textarea value={forgeExtra} onChange={e=>setForgeExtra(e.target.value)} placeholder="Es: Niente combo infinite, includi assolutamente Sol Ring, ecc." className="w-full bg-gray-900 border border-gray-600 text-white rounded p-3 outline-none focus:border-purple-500 text-sm h-20 resize-none shadow-inner"></textarea>
+                                  <textarea value={forgeExtra} onChange={e=>setForgeExtra(e.target.value)} placeholder="Es: Voglio che sia un mazzo tribale senza umani, includi Doubling Season..." className="w-full bg-gray-900 border border-gray-600 text-white rounded p-3 outline-none focus:border-purple-500 text-sm h-16 resize-none shadow-inner"></textarea>
                               </div>
                           </div>
 
@@ -2139,14 +2152,13 @@ Esempio:
                                   {forgeLoading ? "🧠 FORGIATURA IN CORSO (Attendi)..." : "🔨 CREA MAZZO (API IN-APP)"}
                               </button>
                               <button onClick={copyForgePrompt} disabled={forgeLoading} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl transition-all text-sm shadow">
-                                  Copia Prompt e vai su App Esterna (es. ChatGPT)
+                                  Oppure Copia Prompt e vai su Gemini Web
                               </button>
                           </div>
                       </div>
                   </div>
               , document.body)}
               {/* ==================================== */}
-            
               <div className="bg-gray-800/90 p-4 rounded-xl border border-gray-600 shadow-md backdrop-blur-sm">
                  <h3 className="font-bold text-blue-400 mb-2 border-b border-gray-700 pb-1 flex justify-between">
                     Ricerca Carte
@@ -5546,7 +5558,7 @@ Esempio:
           reader.onloadend = async () => {
               const base64data = reader.result.split(',')[1];
               try {
-                  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
