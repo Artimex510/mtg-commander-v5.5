@@ -4235,6 +4235,8 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
 
           try {
               let winnerCommander = "Sconosciuto";
+              
+              // Se il giocatore ha impostato la sua carta Comandante dal tasto 👑, prendiamo il VERO nome!
               if (winnerPlayer.cmdrCard && winnerPlayer.cmdrCard.name) {
                   winnerCommander = winnerPlayer.cmdrCard.name; 
               }
@@ -4635,7 +4637,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                         <button onClick={resetGame} className="flex flex-col items-center gap-1 text-gray-400 font-bold hover:text-white transition-colors" title="Azzera e Ricomincia">
                             <span className="text-lg leading-none">🔄</span> <span className="text-[8px] uppercase leading-none">Reset</span>
                         </button>
-                    </div>
                     </div>
                  </div>
                </div>
