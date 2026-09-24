@@ -3851,7 +3851,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
     const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig, isArchenemy, opponents, isCloud }) => {
       const [showOpponents, setShowOpponents] = useState(false);
       
-      // Gestione per i punti vita fluttuanti
+      // Gestione Punti Vita Fluttuanti
       const [lifeDiff, setLifeDiff] = useState(0);
       const diffTimer = useRef(null);
 
@@ -3876,52 +3876,49 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
 
       return (
         <React.Fragment>
-          {/* Sfondo Comandante valorizzato al massimo, allineato in alto per non tagliare volti */}
-          {player.bgUrl && <img src={player.bgUrl} className="absolute inset-0 w-full h-full object-cover object-top opacity-90 pointer-events-none" />}
-          {isDead && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-60 pointer-events-none z-10 bg-black/40">💀</div>}
+          {/* Sfondo Comandante Fullscreen, no filtri pesanti, allineato in alto */}
+          {player.bgUrl && <img src={player.bgUrl} className="absolute inset-0 w-full h-full object-cover object-top opacity-80 pointer-events-none" />}
+          {isDead && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-50 pointer-events-none z-10">💀</div>}
           {player.immune && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-30 pointer-events-none text-blue-500 drop-shadow-lg z-10">🛡️</div>}
           
-          {/* BARRA SUPERIORE: Sfumatura super leggera, nome centrale e tasti comando ai lati */}
-          <div className="absolute top-0 inset-x-0 flex justify-between items-start bg-gradient-to-b from-black/60 via-black/20 to-transparent p-2 z-30 min-h-[60px] w-full px-2 md:px-4 shrink-0 pointer-events-none">
+          {/* BARRA SUPERIORE SFUMATA */}
+          <div className="absolute top-0 inset-x-0 flex justify-between items-start bg-gradient-to-b from-black/90 via-black/30 to-transparent p-2 z-30 min-h-[60px] w-full px-2 md:px-4 shrink-0 pointer-events-none">
             
-            {/* Tasto Cambio Sfondo (Sinistra) */}
-            <div className="flex z-30 shrink-0 items-center justify-start pointer-events-auto">
-                <button onClick={() => onOpenModal('search')} className="text-gray-200 hover:text-white transition-transform active:scale-90 bg-black/30 rounded-full p-1.5 border border-gray-500/50 shadow-md" title="Imposta Sfondo"><span className="text-lg leading-none block">🖼️</span></button>
+            <div className={`flex ${isCloud ? 'flex-row gap-3' : 'flex-col gap-1'} z-30 shrink-0 items-center justify-start pointer-events-auto mt-1`}>
+                <button onClick={() => onOpenModal('search')} className="text-gray-300 hover:text-white transition-transform active:scale-90 bg-black/40 rounded-full p-1.5 border border-gray-600 shadow-md" title="Imposta Sfondo"><span className="text-lg leading-none block">🖼️</span></button>
             </div>
             
-            {/* Nome e indicatori (Centro) */}
-            <div className="flex flex-col items-center justify-start overflow-hidden z-20 flex-1 px-1 pointer-events-auto">
-               <span onClick={() => onOpenModal('editName')} className="font-black text-white text-sm md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,1)] truncate cursor-pointer text-center w-full mt-1">
+            <div className="flex flex-col items-center justify-start overflow-hidden z-20 flex-1 px-1 pointer-events-auto mt-1">
+               <span onClick={() => onOpenModal('editName')} className="font-black text-white text-sm md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,1)] truncate cursor-pointer text-center w-full">
                    {isArchenemy && <span className="mr-1 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]" title="Archenemy">👿</span>}
                    {player.name} ✎
                </span>
                <button onClick={() => setShowOpponents(!showOpponents)} className="mt-1 bg-indigo-700/80 hover:bg-indigo-600 text-white font-bold px-2 py-0.5 rounded text-[10px] shadow border border-indigo-400 flex items-center justify-center gap-1 active:scale-95 transition-transform shrink-0">
                     👁️ Avv
                </button>
-               {/* Mini indicatori permanenti sotto il nome */}
+               {/* Indicatori minimi testuali */}
                <div className="flex gap-1 mt-1 justify-center flex-wrap pointer-events-none">
-                  {player.poison > 0 && <span className="text-green-400 text-[10px] md:text-xs font-black drop-shadow-md bg-black/40 px-1 rounded">💧{player.poison}</span>}
-                  {player.cmdCasts > 0 && <span className="text-gray-300 text-[10px] md:text-xs font-black drop-shadow-md bg-black/40 px-1 rounded">⚔️{player.cmdCasts}</span>}
-                  {player.emblems > 0 && <span className="text-purple-400 text-[10px] md:text-xs font-black drop-shadow-md bg-black/40 px-1 rounded">🛡️{player.emblems}</span>}
-                  {player.rad > 0 && <span className="text-lime-400 text-[10px] md:text-xs font-black drop-shadow-md bg-black/40 px-1 rounded">☢️{player.rad}</span>}
-                  {player.energy > 0 && <span className="text-blue-400 text-[10px] md:text-xs font-black drop-shadow-md bg-black/40 px-1 rounded">⚡{player.energy}</span>}
-                  {player.exp > 0 && <span className="text-yellow-400 text-[10px] md:text-xs font-black drop-shadow-md bg-black/40 px-1 rounded">✨{player.exp}</span>}
-                  {player.ticket > 0 && <span className="text-orange-400 text-[10px] md:text-xs font-black drop-shadow-md bg-black/40 px-1 rounded">🎫{player.ticket}</span>}
-                  {player.monarch && <span className="text-yellow-500 text-[10px] md:text-xs font-black drop-shadow-md bg-black/40 px-1 rounded">👑</span>}
-                  {player.initiative && <span className="text-red-400 text-[10px] md:text-xs font-black drop-shadow-md bg-black/40 px-1 rounded">🗡️</span>}
-                  {player.blessing && <span className="text-yellow-100 text-[10px] md:text-xs font-black drop-shadow-md bg-black/40 px-1 rounded">🏛️</span>}
+                  {player.poison > 0 && <span className="text-green-400 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">💧{player.poison}</span>}
+                  {player.cmdCasts > 0 && <span className="text-gray-300 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">⚔️{player.cmdCasts}</span>}
+                  {player.emblems > 0 && <span className="text-purple-400 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">🛡️{player.emblems}</span>}
+                  {player.rad > 0 && <span className="text-lime-400 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">☢️{player.rad}</span>}
+                  {player.energy > 0 && <span className="text-blue-400 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">⚡{player.energy}</span>}
+                  {player.exp > 0 && <span className="text-yellow-400 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">✨{player.exp}</span>}
+                  {player.ticket > 0 && <span className="text-orange-400 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">🎫{player.ticket}</span>}
+                  {player.monarch && <span className="text-yellow-500 text-[10px] md:text-xs font-black drop-shadow-md">👑</span>}
+                  {player.initiative && <span className="text-red-400 text-[10px] md:text-xs font-black drop-shadow-md">🗡️</span>}
+                  {player.blessing && <span className="text-yellow-100 text-[10px] md:text-xs font-black drop-shadow-md">🏛️</span>}
                </div>
             </div>
             
-            {/* Tasto Lancio Comandante (Destra) */}
-            <div className="flex z-30 shrink-0 items-center justify-start pointer-events-auto">
-                <button onClick={() => onOpenModal('cmdrSelect')} className="text-yellow-400 hover:text-yellow-300 transition-transform active:scale-90 drop-shadow-[0_0_5px_rgba(234,179,8,0.8)] bg-black/30 rounded-full p-1.5 border border-yellow-600/50 shadow-md" title="Centro di Comando"><span className="text-lg leading-none block">👑</span></button>
+            <div className={`flex ${isCloud ? 'flex-row gap-3' : 'flex-col gap-1'} z-30 shrink-0 items-center justify-start pointer-events-auto mt-1`}>
+                <button onClick={() => onOpenModal('cmdrSelect')} className="text-yellow-400 hover:text-yellow-300 transition-transform active:scale-90 drop-shadow-[0_0_5px_rgba(234,179,8,0.8)] bg-black/40 rounded-full p-1.5 border border-yellow-600/50 shadow-md" title="Centro di Comando"><span className="text-lg leading-none block">👑</span></button>
             </div>
           </div>
 
-          {/* MINI TABELLA AVVERSARI IN DIRETTA (SCOMPARSA) */}
+          {/* TABELLA AVVERSARI VELOCE (SCOMPARSA) */}
           {showOpponents && (
-            <div className="absolute top-16 left-2 right-2 bg-gray-900/98 border-2 border-indigo-500 rounded-xl p-3 z-[100] shadow-2xl animate-fade backdrop-blur-md pointer-events-auto">
+            <div className="absolute top-14 left-2 right-2 bg-gray-900/98 border-2 border-indigo-500 rounded-xl p-3 z-[100] shadow-2xl animate-fade backdrop-blur-md">
                 <div className="flex justify-between items-center mb-2 border-b border-gray-700 pb-2">
                     <h3 className="text-white font-black text-xs sm:text-sm">👁️ Stato Avversari</h3>
                     <button onClick={() => setShowOpponents(false)} className="bg-red-600 text-white px-3 py-1 rounded font-bold text-xs shadow active:scale-95">Chiudi</button>
@@ -3943,44 +3940,40 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             </div>
           )}
 
-          {/* AREA CENTRALE: PUNTI VITA (Tappabili ai lati) */}
+          {/* AREA CENTRALE PUNTI VITA (TAP LATERALE LIFETAP STYLE) */}
           <div className="absolute inset-0 z-20 flex items-center justify-between pointer-events-none">
-            {/* Zona Tap Sinistra (-) */}
-            <button onClick={() => handleLifeChange(-1)} className="w-1/3 h-full pointer-events-auto bg-transparent hover:bg-red-500/10 active:bg-red-500/30 transition-colors outline-none border-none flex items-center justify-start pl-4 text-3xl md:text-5xl text-white/0 hover:text-white/40 font-black" style={{WebkitTapHighlightColor: 'transparent'}}>-</button>
+            <button onClick={() => handleLifeChange(-1)} className="w-1/3 h-full pointer-events-auto bg-transparent hover:bg-red-500/10 active:bg-red-500/20 transition-colors outline-none border-none flex items-center justify-start pl-2 md:pl-6 text-3xl text-white/0 hover:text-white/30 font-black">-</button>
             
-            {/* Testo Punti Vita Centrale */}
             <div className="w-1/3 h-full flex flex-col items-center justify-center relative pointer-events-none">
-                <span className="text-[6rem] md:text-[8rem] lg:text-[10rem] font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)] truncate transition-transform transform leading-none">
+                <span className="text-[6rem] sm:text-8xl md:text-[9rem] font-black text-white drop-shadow-[0_5px_15px_rgba(0,0,0,1)] truncate transition-transform transform">
                     {player.life}
                 </span>
-                {/* Danno Fluttuante */}
+                {/* Danno Fluttuante (Compare solo per un secondo) */}
                 {lifeDiff !== 0 && (
-                    <div className={`absolute top-[20%] text-4xl md:text-6xl font-black drop-shadow-[0_2px_5px_rgba(0,0,0,1)] z-40 animate-fade transition-opacity ${lifeDiff > 0 ? 'text-green-400' : 'text-red-500'}`}>
+                    <div className={`absolute -top-8 sm:-top-12 text-3xl sm:text-5xl font-black drop-shadow-[0_2px_5px_rgba(0,0,0,1)] z-40 animate-fade transition-opacity ${lifeDiff > 0 ? 'text-green-400' : 'text-red-500'}`}>
                         {lifeDiff > 0 ? `+${lifeDiff}` : lifeDiff}
                     </div>
                 )}
             </div>
 
-            {/* Zona Tap Destra (+) */}
-            <button onClick={() => handleLifeChange(1)} className="w-1/3 h-full pointer-events-auto bg-transparent hover:bg-green-500/10 active:bg-green-500/30 transition-colors outline-none border-none flex items-center justify-end pr-4 text-3xl md:text-5xl text-white/0 hover:text-white/40 font-black" style={{WebkitTapHighlightColor: 'transparent'}}>+</button>
+            <button onClick={() => handleLifeChange(1)} className="w-1/3 h-full pointer-events-auto bg-transparent hover:bg-green-500/10 active:bg-green-500/20 transition-colors outline-none border-none flex items-center justify-end pr-2 md:pr-6 text-3xl text-white/0 hover:text-white/30 font-black">+</button>
           </div>
 
-          {/* TASTO CRUSCOTTO (DASHBOARD UNIFICATA) IN BASSO */}
-          <button onClick={() => onOpenModal('stats')} className="absolute bottom-3 md:bottom-6 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-2xl shadow-[0_5px_15px_rgba(0,0,0,0.8)] text-[10px] md:text-xs font-bold bg-gray-900/90 text-white border border-gray-600 flex items-center justify-center gap-3 md:gap-5 z-30 backdrop-blur-md active:scale-95 transition-transform outline-none pointer-events-auto">
-              <div className="flex flex-col items-center leading-tight hover:text-gray-300"><span className="text-xl md:text-2xl drop-shadow-md">⚙️</span><span className="opacity-80 mt-0.5">Stats</span></div>
-              <div className="w-px h-8 bg-gray-600"></div>
-              <div className="flex flex-col items-center leading-tight hover:text-gray-300"><span className="text-xl md:text-2xl drop-shadow-md">🔮</span><span className="opacity-80 mt-0.5">Mana</span></div>
-              <div className="w-px h-8 bg-gray-600"></div>
-              <div className="flex flex-col items-center leading-tight hover:text-gray-300"><span className="text-xl md:text-2xl drop-shadow-md">♟️</span><span className="opacity-80 mt-0.5">Pedine</span></div>
+          {/* TASTO CRUSCOTTO (UNIFICATO) */}
+          <button onClick={() => onOpenModal('stats')} className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 sm:py-3 rounded-2xl shadow-[0_5px_15px_rgba(0,0,0,0.9)] text-[10px] sm:text-xs font-bold bg-gray-900/95 text-white border border-gray-600 flex items-center justify-center gap-3 sm:gap-6 z-30 backdrop-blur-md active:scale-95 transition-transform outline-none pointer-events-auto">
+              <div className="flex flex-col items-center leading-tight"><span className="text-xl sm:text-2xl">⚙️</span><span className="opacity-70 mt-0.5">Stats</span></div>
+              <div className="w-px h-6 sm:h-8 bg-gray-600"></div>
+              <div className="flex flex-col items-center leading-tight"><span className="text-xl sm:text-2xl">🔮</span><span className="opacity-70 mt-0.5">Mana</span></div>
+              <div className="w-px h-6 sm:h-8 bg-gray-600"></div>
+              <div className="flex flex-col items-center leading-tight"><span className="text-xl sm:text-2xl">♟️</span><span className="opacity-70 mt-0.5">Pedine</span></div>
           </button>
-
         </React.Fragment>
       );
     };
 
-    // --- COMPONENTE MODALI A TUTTO SCHERMO (RUOTATI VERSO IL GIOCATORE, NO TAGLI) ---
+    // --- COMPONENTE MODALI A TUTTO SCHERMO ---
     const PlayerModals = ({ type, player, opponents, onClose, updateStat, updateMana, toggleImmunity, updatePlayerConfig, rotation }) => {
-        // Il nuovo stato che gestisce i tab interni unificati (Stats, Mana, Tokens)
+        // Tab Unificati (Il click sul cruscotto setta 'stats', ma puoi navigare tra gli altri)
         const [currentTab, setCurrentTab] = useState(type);
         useEffect(() => { setCurrentTab(type); }, [type]);
 
@@ -3999,23 +3992,13 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
         const [splittingTokenId, setSplittingTokenId] = useState(null);
         const [splitQty, setSplitQty] = useState(1);
 
-        useEffect(() => {
-            if (type === 'editName' && player) {
-                setTempName(player.name);
-            }
-        }, [type, player]);
-
-        const saveName = () => {
-            if (tempName.trim() !== "") updatePlayerConfig(player.id, 'name', tempName.trim());
-            onClose();
-        };
+        useEffect(() => { if (type === 'editName' && player) setTempName(player.name); }, [type, player]);
+        const saveName = () => { if (tempName.trim() !== "") updatePlayerConfig(player.id, 'name', tempName.trim()); onClose(); };
 
         const eseguiRicercaCmd = () => {
             if(!cmdQuery.trim()) return;
             setIsSearching(true);
-            fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(cmdQuery.trim() + " (is:commander OR t:legendary)")}&unique=art`)
-               .then(res => res.json())
-               .then(data => {
+            fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(cmdQuery.trim() + " (is:commander OR t:legendary)")}&unique=art`).then(res => res.json()).then(data => {
                  if(data.data) {
                     const results = data.data.map(c => {
                         let imgUrl = ""; let mCost = c.mana_cost || "";
@@ -4037,13 +4020,10 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
         const numPlay = opponents.length + 1;
 
         if (type === 'search' || type === 'editName' || type === 'cmdrSelect') {
-            effectiveRotation = 0; // SEMPRE DRITTI A 0 GRADI (VERTICALE)
+            effectiveRotation = 0; 
         } else if (isUnifiedTab) {
-            if (numPlay <= 2) {
-                effectiveRotation = 0; // CSS DRITTO A 0. L'hardware ruoterà fisicamente in landscape a tutto schermo!
-            } else {
-                effectiveRotation = (rotation === 90 || rotation === -90) ? 0 : rotation; // LOGICA BASE 3-6
-            }
+            if (numPlay <= 2) effectiveRotation = 0; 
+            else effectiveRotation = (rotation === 90 || rotation === -90) ? 0 : rotation; 
         }
         
         const isSideways = effectiveRotation === 90 || effectiveRotation === -90;
@@ -4057,7 +4037,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             </div>
         );
 
-        // --- METODI PER PEDINE ---
         useEffect(() => {
             try {
                 if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
@@ -4067,16 +4046,9 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             } catch(e) {}
         }, [showSearchModal]);
 
-        const openSearch = () => { setShowSearchModal(true); };
-        const closeSearch = () => { setShowSearchModal(false); setCmdResults([]); setTokenQuery(""); setTokenOracle(""); setTokenPT(""); };
-
         const updateToken = (tId, field, val) => {
             const updated = (player.tokens || []).map(t => {
-                if (t.id === tId) {
-                    let newObj = { ...t, [field]: val };
-                    if (field === 'qty' && newObj.tappedQty > val) newObj.tappedQty = val;
-                    return newObj;
-                }
+                if (t.id === tId) { let newObj = { ...t, [field]: val }; if (field === 'qty' && newObj.tappedQty > val) newObj.tappedQty = val; return newObj; }
                 return t;
             });
             updatePlayerConfig(player.id, 'tokens', updated);
@@ -4101,68 +4073,43 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             if(!tokenQuery.trim() && !tokenOracle.trim() && !tokenPT.trim()) { alert("Inserisci almeno un parametro di ricerca."); return; }
             setIsSearching(true); setCmdResults([]);
             let q = "t:token";
-            if (tokenQuery.trim()) q += ` ${tokenQuery.trim()}`;
-            if (tokenOracle.trim()) q += ` o:"${tokenOracle.trim()}"`;
-            if (tokenPT.trim()) {
-                const pt = tokenPT.trim().split('/');
-                if (pt.length === 2) q += ` pow:${pt[0]} tou:${pt[1]}`; else q += ` pow:${pt[0]}`; 
-            }
-            fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(q)}&unique=art`)
-                .then(res => res.json())
-                .then(data => {
+            if (tokenQuery.trim()) q += ` ${tokenQuery.trim()}`; if (tokenOracle.trim()) q += ` o:"${tokenOracle.trim()}"`;
+            if (tokenPT.trim()) { const pt = tokenPT.trim().split('/'); if (pt.length === 2) q += ` pow:${pt[0]} tou:${pt[1]}`; else q += ` pow:${pt[0]}`; }
+            fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(q)}&unique=art`).then(res => res.json()).then(data => {
                     if (data.data) {
-                        const results = data.data.map(c => {
-                            let imgUrl = "";
-                            if (c.image_uris && c.image_uris.normal) imgUrl = c.image_uris.normal;
-                            else if (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris) imgUrl = c.card_faces[0].image_uris.normal;
-                            return { id: c.id, name: c.name, img: imgUrl, pt: c.power ? `${c.power}/${c.toughness}` : "" };
-                        }).filter(c => c.img);
-                        setCmdResults(results);
-                        if(results.length === 0) alert("Nessuna pedina trovata.");
+                        const results = data.data.map(c => { let imgUrl = ""; if (c.image_uris && c.image_uris.normal) imgUrl = c.image_uris.normal; else if (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris) imgUrl = c.card_faces[0].image_uris.normal; return { id: c.id, name: c.name, img: imgUrl, pt: c.power ? `${c.power}/${c.toughness}` : "" }; }).filter(c => c.img);
+                        setCmdResults(results); if(results.length === 0) alert("Nessuna pedina trovata.");
                     } else { alert("Nessuna pedina trovata."); }
                     setIsSearching(false);
-                }).catch(e => { console.error(e); setIsSearching(false); });
+                }).catch(e => { setIsSearching(false); });
         };
 
         const addOfficialToken = (tok) => {
             const newToken = { id: 'tok-' + Date.now(), name: tok.name, pt: tok.pt, abilities: "", color: "bg-gray-800", img: tok.img, qty: 1, tappedQty: 0, counters: 0 };
             updatePlayerConfig(player.id, 'tokens', [...(player.tokens || []), newToken]);
-            closeSearch();
+            setShowSearchModal(false); setCmdResults([]); setTokenQuery(""); setTokenOracle(""); setTokenPT("");
         };
 
         const generateToken = async () => {
             if(!tokenQuery.trim() && !tokenOracle.trim() && !tokenPT.trim()) { alert("Inserisci almeno un parametro per l'IA."); return; }
             let apiKey = localStorage.getItem('gemini_api_key');
-            if (!apiKey) {
-                apiKey = window.prompt("Per generare pedine con l'IA serve la API Key:\nIncollala qui:");
-                if (!apiKey) return;
-                localStorage.setItem('gemini_api_key', apiKey);
-            }
+            if (!apiKey) { apiKey = window.prompt("API Key Gemini:"); if (!apiKey) return; localStorage.setItem('gemini_api_key', apiKey); }
             setIsGeneratingToken(true);
             try {
                 const promptStr = `Crea una pedina per Magic The Gathering. Nome: "${tokenQuery || 'Sconosciuto'}". Testo abilità: "${tokenOracle}". Forza/Costituzione: "${tokenPT}". Rispondi SOLO ed ESCLUSIVAMENTE con un JSON valido strutturato così:\n{\n  "name": "Nome (es. Goblin)",\n  "pt": "Forza/Cost. (es. 1/1, vuoto se non creatura)",\n  "abilities": "Abilità (es. Volare, rapidità)",\n  "color": "una classe tailwind es. bg-red-800, bg-blue-800, bg-green-800, bg-gray-300 (bianco), bg-gray-800 (nero/incolore), bg-yellow-600 (oro)"\n}`;
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: promptStr }] }] })
-                });
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: promptStr }] }] }) });
                 const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
-                
-                let jsonText = data.candidates[0].content.parts[0].text;
-                const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-                if (!jsonMatch) throw new Error("Formato risposto non valido.");
-                
+                let jsonText = data.candidates[0].content.parts[0].text; const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
                 let tokenData = JSON.parse(jsonMatch[0]);
                 const newToken = { id: 'tok-' + Date.now(), name: (tokenData && tokenData.name) ? tokenData.name : "Pedina", pt: (tokenData && tokenData.pt) ? tokenData.pt : "", abilities: (tokenData && tokenData.abilities) ? tokenData.abilities : "", color: (tokenData && tokenData.color) ? tokenData.color : "bg-gray-800", img: null, qty: 1, tappedQty: 0, counters: 0 };
                 updatePlayerConfig(player.id, 'tokens', [...(player.tokens || []), newToken]);
-                closeSearch();
+                setShowSearchModal(false); setCmdResults([]); setTokenQuery(""); setTokenOracle(""); setTokenPT("");
             } catch(e) { alert("⚠️ ERRORE AI:\n" + e.message); }
             setIsGeneratingToken(false);
         };
         const SfondiPedine = ['plains_sfondo.jpg', 'island_sfondo.jpg', 'swamp_sfondo.jpg', 'mountain_sfondo.jpg', 'forest_sfondo.jpg', 'eldrazi_sfondo.jpg', 'yokai_sfondo.jpg', 'yokai2_sfondo.jpg', 'yokai3_sfondo.jpg'];
         const ManaColors = [ { id: 'W', color: 'bg-yellow-100 text-yellow-900', label: 'W' }, { id: 'U', color: 'bg-blue-500 text-white', label: 'U' }, { id: 'B', color: 'bg-gray-800 text-white', label: 'B' }, { id: 'R', color: 'bg-red-500 text-white', label: 'R' }, { id: 'G', color: 'bg-green-500 text-white', label: 'G' }, { id: 'C', color: 'bg-gray-400 text-gray-900', label: 'C' } ];
 
-        // RENDER DELLA CRUSCOTTO UNIFICATA (STATS, MANA, PEDINE)
         if (isUnifiedTab) {
             return renderModal(
                 <React.Fragment>
@@ -4173,23 +4120,21 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                             <button onClick={() => setCurrentTab('mana')} className={`flex-1 py-2 md:py-3 text-xs md:text-sm font-black rounded-lg transition-all ${currentTab === 'mana' ? 'bg-gray-700 text-white shadow-md border border-gray-500' : 'text-gray-400 hover:text-white'}`}>🔮 Mana</button>
                             <button onClick={() => setCurrentTab('tokens')} className={`flex-1 py-2 md:py-3 text-xs md:text-sm font-black rounded-lg transition-all ${currentTab === 'tokens' ? 'bg-gray-700 text-white shadow-md border border-gray-500' : 'text-gray-400 hover:text-white'}`}>♟️ Pedine</button>
                         </div>
-                        <button onClick={onClose} className="ml-2 bg-red-600 hover:bg-red-500 active:bg-red-700 px-4 py-2 md:py-3 rounded-lg text-white font-black shadow-lg text-xs md:text-sm transition-colors">✖ CHIUDI</button>
+                        <button onClick={onClose} className="ml-2 bg-red-600 active:bg-red-500 px-4 py-2 md:py-3 rounded-lg text-white font-black shadow-lg text-xs md:text-sm transition-colors">✖ CHIUDI</button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto relative min-h-0 flex flex-col">
                         
-                        {/* ------------------ VIEW: STATS (LIFETAP STYLE) ------------------ */}
                         {currentTab === 'stats' && (
                             <div className="space-y-4 px-1 pb-4 animate-fade">
-                                {/* Danni Comandante */}
                                 <h4 className="text-white font-black text-xs md:text-sm uppercase text-center opacity-50 bg-gray-800 rounded-full py-1 mb-2">⚔️ Danni Comandante Subiti</h4>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
                                     {opponents.map(opp => (
                                         <div key={opp.id} className="relative bg-gray-800 rounded-xl overflow-hidden border border-gray-600 h-24 md:h-32 flex items-center justify-center cursor-pointer active:scale-95 transition-transform shadow-lg" onClick={() => updateStat(player.id, 'cmdDmg', 1, opp.id)}>
-                                            {opp.bgUrl && <img src={opp.bgUrl} className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none" />}
+                                            {opp.bgUrl && <img src={opp.bgUrl} className="absolute inset-0 w-full h-full object-cover object-top opacity-30 pointer-events-none" />}
                                             <div className="relative z-10 flex flex-col items-center pointer-events-none p-1 w-full h-full justify-center">
                                                 <span className="text-white font-bold text-[10px] md:text-xs truncate max-w-[90%] bg-black/50 px-2 py-0.5 rounded-full mb-1">{opp.name}</span>
-                                                <span className="text-4xl md:text-5xl font-black text-red-400 drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">{player.cmdDmg[opp.id] || 0}</span>
+                                                <span className="text-4xl md:text-5xl font-black text-red-400 drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">{(player.cmdDmg && player.cmdDmg[opp.id]) || 0}</span>
                                             </div>
                                             <button onClick={(e) => { e.stopPropagation(); updateStat(player.id, 'cmdDmg', -1, opp.id); }} className="absolute bottom-1 right-1 w-8 h-8 md:w-10 md:h-10 bg-black/70 rounded-lg text-white font-black text-xl md:text-2xl flex items-center justify-center border border-gray-500 z-20 active:bg-red-600 hover:bg-gray-700 shadow-md">-</button>
                                         </div>
@@ -4197,7 +4142,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                     {opponents.length === 0 && <p className="col-span-full text-center text-gray-500 text-xs font-bold">Nessun avversario per calcolare i danni.</p>}
                                 </div>
 
-                                {/* Contatori Extra */}
                                 <h4 className="text-white font-black text-xs md:text-sm uppercase text-center opacity-50 bg-gray-800 rounded-full py-1 mt-6 mb-2">🔢 Contatori Personali</h4>
                                 <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
                                     {[
@@ -4217,7 +4161,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                     ))}
                                 </div>
 
-                                {/* Designatori di Stato */}
                                 <h4 className="text-white font-black text-xs md:text-sm uppercase text-center opacity-50 bg-gray-800 rounded-full py-1 mt-6 mb-2">🔰 Stati Speciali</h4>
                                 <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
                                     <button onClick={() => updatePlayerConfig(player.id, 'monarch', !player.monarch)} className={`p-3 md:p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.monarch ? 'bg-yellow-600 border-yellow-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-400'}`}><span className="text-2xl md:text-3xl">👑</span><span className="text-[10px] md:text-xs">Monarca</span></button>
@@ -4226,11 +4169,10 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                     <button onClick={() => { let next = 'day'; if(player.dayNight === 'day') next = 'night'; else if(player.dayNight === 'night') next = 'none'; updatePlayerConfig(player.id, 'dayNight', next); }} className={`p-3 md:p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all col-span-3 lg:col-span-1 ${player.dayNight === 'day' ? 'bg-yellow-400 border-yellow-200 text-black' : (player.dayNight === 'night' ? 'bg-blue-900 border-blue-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-400')}`}><span className="text-2xl md:text-3xl">{player.dayNight === 'day' ? '☀️' : (player.dayNight === 'night' ? '🌙' : '🌤️')}</span><span className="text-[10px] md:text-xs">{player.dayNight === 'day' ? 'Giorno' : (player.dayNight === 'night' ? 'Notte' : 'Ciclo G/N')}</span></button>
                                 </div>
                                 
-                                <button onClick={() => toggleImmunity(player.id)} className={`w-full py-4 mt-6 font-black rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.5)] border text-sm md:text-base transition-colors ${player.immune ? 'bg-cyan-600 text-white border-cyan-400' : 'bg-gray-900 text-gray-400 border-gray-700 hover:bg-gray-800'}`}>{player.immune ? '🛡️ Immunità Attiva (Ferma Danni)' : 'Attiva Immunità (The One Ring, Teferi)'}</button>
+                                <button onClick={() => toggleImmunity(player.id)} className={`w-full py-4 mt-6 font-black rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.5)] border text-sm md:text-base transition-colors ${player.immune ? 'bg-cyan-600 text-white border-cyan-400' : 'bg-gray-900 text-gray-400 border-gray-700 hover:bg-gray-800'}`}>{player.immune ? '🛡️ Immunità Attiva' : 'Attiva Immunità (The One Ring)'}</button>
                             </div>
                         )}
 
-                        {/* ------------------ VIEW: MANA ------------------ */}
                         {currentTab === 'mana' && (
                             <div className="flex-1 flex flex-col animate-fade h-full">
                                 <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto content-start pb-4">
@@ -4249,7 +4191,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                             </div>
                         )}
 
-                        {/* ------------------ VIEW: PEDINE ------------------ */}
                         {currentTab === 'tokens' && (
                             <div className="flex-1 flex flex-col animate-fade overflow-hidden border border-gray-700 rounded-xl bg-black relative h-full">
                                 {player.tokenBg && <img src={player.tokenBg} className="absolute inset-0 w-full h-full object-cover opacity-75 z-0 pointer-events-none" />}
@@ -4264,7 +4205,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                             <div key={t.id} className="flex flex-col items-center bg-gray-900/80 backdrop-blur-sm p-2 rounded-xl border border-gray-600 shadow-2xl shrink-0">
                                                 <div className="flex items-center gap-3 mb-2">
                                                     
-                                                    {/* STACK STAPPATO */}
                                                     {untapped > 0 && (
                                                         <div className="relative w-28 h-40 cursor-pointer" onClick={() => updateToken(t.id, 'tappedQty', tapped + 1)} title="Tocca per tapparne una">
                                                             {untapped > 1 && (
@@ -4292,7 +4232,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                                         </div>
                                                     )}
 
-                                                    {/* STACK TAPPATO */}
                                                     {tapped > 0 && (
                                                         <div className="relative w-40 h-28 cursor-pointer flex items-center justify-center my-4" onClick={() => updateToken(t.id, 'tappedQty', untapped > 0 ? tapped - 1 : 0)} title="Tocca per stapparne una">
                                                             <div className={`w-28 h-40 rounded-xl border-2 border-black shadow-2xl flex flex-col overflow-hidden rotate-90 opacity-90 ${t.color || 'bg-gray-800'}`}>
@@ -4318,7 +4257,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                                     )}
                                                 </div>
 
-                                                {/* CONTROLLI SOTTO AL MAZZETTO */}
                                                 <div className="w-40 space-y-1.5">
                                                     <div className="flex items-center justify-between gap-1 bg-black/40 p-1 rounded-lg border border-gray-700">
                                                         <button onClick={() => t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id)} className="w-6 h-6 bg-red-600 rounded text-white font-black text-xs flex items-center justify-center active:scale-90">-</button>
@@ -4372,12 +4310,11 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                 {/* Barra Controlli Pedine Bottom */}
                                 <div className="flex gap-2 p-2 shrink-0 z-20 items-center justify-between bg-gray-900/90 border-t border-gray-700">
                                     <button onClick={() => setShowBgMenu(true)} className="bg-gray-700 hover:bg-gray-600 px-4 py-2.5 rounded-lg text-white text-base shadow border border-gray-500" title="Sfondo Battaglia">🖼️</button>
-                                    <button onClick={openSearch} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 px-4 rounded-lg text-white font-black shadow-lg text-xs md:text-sm active:scale-95 transition-transform border border-emerald-400 flex items-center justify-center gap-1">
+                                    <button onClick={() => setShowSearchModal(true)} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 px-4 rounded-lg text-white font-black shadow-lg text-xs md:text-sm active:scale-95 transition-transform border border-emerald-400 flex items-center justify-center gap-1">
                                         🔍 CERCA / AGGIUNGI PEDINA
                                     </button>
                                 </div>
                                 
-                                {/* Modali Interni a Tokens */}
                                 {splittingTokenId && (
                                     <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-sm p-4 flex flex-col items-center justify-center animate-fade">
                                         <div className="bg-gray-800 border-2 border-amber-500 rounded-xl p-4 w-full max-w-xs shadow-2xl text-center space-y-3">
@@ -4412,13 +4349,61 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                 )}
                             </div>
                         )}
-
                     </div>
+
+                    {/* MODALE DI RICERCA PEDINA CHE SI SOVRAPPONE ALLA VISTA UNIFICATA */}
+                    {showSearchModal && (
+                        <div className="absolute inset-0 z-[100] bg-gray-900/98 backdrop-blur-md p-4 flex flex-col animate-fade overflow-y-auto">
+                            <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
+                                <h4 className="text-emerald-400 font-black text-lg">🔍 Aggiungi Pedina</h4>
+                                <button onClick={() => setShowSearchModal(false)} className="bg-red-600 text-white px-3 py-1 rounded font-bold text-xs">Chiudi</button>
+                            </div>
+                            <div className="space-y-3 mb-4">
+                                <div>
+                                    <label className="text-gray-400 text-xs font-bold block mb-1">Nome della Pedina:</label>
+                                    <input type="text" placeholder="es. Goblin, Treasure, Zombie..." value={tokenQuery} onChange={e=>setTokenQuery(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="text-gray-400 text-xs font-bold block mb-1">Testo Abilità:</label>
+                                        <input type="text" placeholder="es. haste, flying" value={tokenOracle} onChange={e=>setTokenOracle(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
+                                    </div>
+                                    <div>
+                                        <label className="text-gray-400 text-xs font-bold block mb-1">Forza / Costituzione:</label>
+                                        <input type="text" placeholder="es. 1/1, 2/2" value={tokenPT} onChange={e=>setTokenPT(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm text-center focus:border-emerald-500 shadow-inner" />
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 pt-2">
+                                    <button onClick={searchOfficialToken} disabled={isSearching} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 py-3 rounded-lg text-white font-black shadow text-xs active:scale-95 transition-transform border border-emerald-400">
+                                        {isSearching ? '⏳ CERCO...' : '🔎 CERCA UFFICIALE'}
+                                    </button>
+                                    <button onClick={generateToken} disabled={isGeneratingToken} className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 py-3 rounded-lg text-white font-black shadow text-xs active:scale-95 transition-transform border border-purple-400" title="Crea Token Personalizzato con IA">
+                                        {isGeneratingToken ? '⏳ CREO...' : '✨ CREA CUSTOM (IA)'}
+                                    </button>
+                                </div>
+                            </div>
+                            {cmdResults.length > 0 && (
+                                <div className="flex-1 bg-black/60 p-3 rounded-xl border border-gray-700 overflow-y-auto">
+                                    <p className="text-gray-300 text-xs font-bold mb-2">Risultati Trovati (Tocca per posizionare):</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {cmdResults.map(res => (
+                                            <div key={res.id} onClick={() => addOfficialToken(res)} className="cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-emerald-500 shadow-lg active:scale-95 transition-transform bg-gray-800">
+                                                <img src={res.img} className="w-full h-40 object-cover" />
+                                                <div className="p-1.5 bg-black/80 text-center">
+                                                    <span className="text-xs text-white font-bold truncate block">{res.name}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </React.Fragment>
             );
         }
 
-        // --- I VECCHI MODALI RIMASTI (EDIT NAME, SEARCH SFONDO, COMMANDER SELECT) ---
+        // --- I MODALI SINGOLI RIMASTI (EDIT NAME E RICERCHE SFONDI/COMANDANTI) ---
         if (type === 'editName') {
             return renderModal(
                 <React.Fragment>
@@ -4529,57 +4514,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                         </div>
                     )}
                 </React.Fragment>
-            );
-        }
-
-        // --- SUB-MODAL RICERCA PEDINA (Aperto dalla vista Tokens) ---
-        if (showSearchModal) {
-            return (
-                <div className="fixed inset-0 z-[10000] pointer-events-auto bg-gray-900/98 backdrop-blur-md p-4 flex flex-col animate-fade overflow-y-auto" style={{transform: 'rotate(0deg)'}}>
-                    <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
-                        <h4 className="text-emerald-400 font-black text-lg">🔍 Aggiungi Pedina</h4>
-                        <button onClick={closeSearch} className="bg-red-600 text-white px-3 py-1 rounded font-bold text-xs">Chiudi</button>
-                    </div>
-                    <div className="space-y-3 mb-4">
-                        <div>
-                            <label className="text-gray-400 text-xs font-bold block mb-1">Nome della Pedina:</label>
-                            <input type="text" placeholder="es. Goblin, Treasure, Zombie..." value={tokenQuery} onChange={e=>setTokenQuery(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div>
-                                <label className="text-gray-400 text-xs font-bold block mb-1">Testo Abilità:</label>
-                                <input type="text" placeholder="es. haste, flying" value={tokenOracle} onChange={e=>setTokenOracle(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
-                            </div>
-                            <div>
-                                <label className="text-gray-400 text-xs font-bold block mb-1">Forza / Costituzione:</label>
-                                <input type="text" placeholder="es. 1/1, 2/2" value={tokenPT} onChange={e=>setTokenPT(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm text-center focus:border-emerald-500 shadow-inner" />
-                            </div>
-                        </div>
-                        <div className="flex gap-2 pt-2">
-                            <button onClick={searchOfficialToken} disabled={isSearching} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 py-3 rounded-lg text-white font-black shadow text-xs active:scale-95 transition-transform border border-emerald-400">
-                                {isSearching ? '⏳ CERCO...' : '🔎 CERCA UFFICIALE'}
-                            </button>
-                            <button onClick={generateToken} disabled={isGeneratingToken} className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 py-3 rounded-lg text-white font-black shadow text-xs active:scale-95 transition-transform border border-purple-400" title="Crea Token Personalizzato con IA">
-                                {isGeneratingToken ? '⏳ CREO...' : '✨ CREA CUSTOM (IA)'}
-                            </button>
-                        </div>
-                    </div>
-                    {cmdResults.length > 0 && (
-                        <div className="flex-1 bg-black/60 p-3 rounded-xl border border-gray-700 overflow-y-auto">
-                            <p className="text-gray-300 text-xs font-bold mb-2">Risultati Trovati (Tocca per posizionare):</p>
-                            <div className="grid grid-cols-2 gap-3">
-                                {cmdResults.map(res => (
-                                    <div key={res.id} onClick={() => addOfficialToken(res)} className="cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-emerald-500 shadow-lg active:scale-95 transition-transform bg-gray-800">
-                                        <img src={res.img} className="w-full h-40 object-cover" />
-                                        <div className="p-1.5 bg-black/80 text-center">
-                                            <span className="text-xs text-white font-bold truncate block">{res.name}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
             );
         }
 
