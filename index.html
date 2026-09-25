@@ -3188,44 +3188,36 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       </div>
     );
 
-    // --- COMPONENTE MODALI A TUTTO SCHERMO (RUOTATI VERSO IL GIOCATORE, NO TAGLI) ---
+    // --- COMPONENTE MODALI A TUTTO SCHERMO ---
     const PlayerModals = ({ type, player, opponents, onClose, updateStat, updateMana, toggleImmunity, updatePlayerConfig, rotation }) => {
+        // Tab Unificati (Il click sul cruscotto apre sempre di base il tab richiesto)
+        const [currentTab, setCurrentTab] = useState(type);
+        useEffect(() => { setCurrentTab(type); }, [type]);
+
         const [cmdQuery, setCmdQuery] = useState("");
         const [cmdResults, setCmdResults] = useState([]);
         const [isSearching, setIsSearching] = useState(false);
         const [tempName, setTempName] = useState("");
         
-        // Stati per la Plancia Pedine
         const [tokenQuery, setTokenQuery] = useState("");
-        const [tokenOracle, setTokenOracle] = useState(""); // TESTO ABILITA'
-        const [tokenPT, setTokenPT] = useState(""); // FORZA E COSTITUZIONE
+        const [tokenOracle, setTokenOracle] = useState(""); 
+        const [tokenPT, setTokenPT] = useState(""); 
         const [isGeneratingToken, setIsGeneratingToken] = useState(false);
         const [showBgMenu, setShowBgMenu] = useState(false);
+        const [showSearchModal, setShowSearchModal] = useState(false);
+        const [splittingTokenId, setSplittingTokenId] = useState(null);
+        const [splitQty, setSplitQty] = useState(1);
 
-        // Imposta il nome temporaneo quando si apre il modale EditName
-        useEffect(() => {
-            if (type === 'editName' && player) {
-                setTempName(player.name);
-            }
-        }, [type, player]);
-
-        const saveName = () => {
-            if (tempName.trim() !== "") {
-                updatePlayerConfig(player.id, 'name', tempName.trim());
-            }
-            onClose();
-        };
+        useEffect(() => { if (type === 'editName' && player) setTempName(player.name); }, [type, player]);
+        const saveName = () => { if (tempName.trim() !== "") updatePlayerConfig(player.id, 'name', tempName.trim()); onClose(); };
 
         const eseguiRicercaCmd = () => {
             if(!cmdQuery.trim()) return;
             setIsSearching(true);
-            fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(cmdQuery.trim() + " (is:commander OR t:legendary)")}&unique=art`)
-               .then(res => res.json())
-               .then(data => {
+            fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(cmdQuery.trim() + " (is:commander OR t:legendary)")}&unique=art`).then(res => res.json()).then(data => {
                  if(data.data) {
                     const results = data.data.map(c => {
-                        let imgUrl = "";
-                        let mCost = c.mana_cost || "";
+                        let imgUrl = ""; let mCost = c.mana_cost || "";
                         if (c.image_uris && c.image_uris.art_crop) imgUrl = c.image_uris.art_crop;
                         else if (c.card_faces && c.card_faces.length > 0) {
                             if (c.card_faces[0].image_uris && c.card_faces[0].image_uris.art_crop) imgUrl = c.card_faces[0].image_uris.art_crop;
@@ -3239,18 +3231,15 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                }).catch(e => { console.error(e); setIsSearching(false); });
         };
 
-        // --- GESTIONE ROTAZIONE MODALI BASE E FIX 2 GIOCATORI ---
+        const isUnifiedTab = ['stats', 'mana', 'tokens'].includes(currentTab);
         let effectiveRotation = rotation;
         const numPlay = opponents.length + 1;
 
         if (type === 'search' || type === 'editName' || type === 'cmdrSelect') {
-            effectiveRotation = 0; // SEMPRE DRITTI A 0 GRADI (VERTICALE)
-        } else if (type === 'tokens') {
-            if (numPlay <= 2) {
-                effectiveRotation = 0; // CSS DRITTO A 0. L'hardware ruoterà fisicamente in landscape a tutto schermo!
-            } else {
-                effectiveRotation = (rotation === 90 || rotation === -90) ? 0 : rotation; // LOGICA BASE 3-6
-            }
+            effectiveRotation = 0; 
+        } else if (isUnifiedTab) {
+            if (numPlay <= 2) effectiveRotation = 0; 
+            else effectiveRotation = (rotation === 90 || rotation === -90) ? 0 : rotation; 
         }
         
         const isSideways = effectiveRotation === 90 || effectiveRotation === -90;
@@ -3258,12 +3247,348 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
         
         const renderModal = (content) => (
             <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-md overflow-hidden">
-                <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-4 sm:p-6 pointer-events-auto" style={modalStyle}>
+                <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-2 sm:p-4 pointer-events-auto" style={modalStyle}>
                     {content}
                 </div>
             </div>
         );
 
+        useEffect(() => {
+            try {
+                if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+                    if (showSearchModal) window.screen.orientation.lock('portrait').catch(function(){});
+                    else window.screen.orientation.lock('landscape').catch(function(){});
+                }
+            } catch(e) {}
+        }, [showSearchModal]);
+
+        const updateToken = (tId, field, val) => {
+            const updated = (player.tokens || []).map(t => {
+                if (t.id === tId) { let newObj = { ...t, [field]: val }; if (field === 'qty' && newObj.tappedQty > val) newObj.tappedQty = val; return newObj; }
+                return t;
+            });
+            updatePlayerConfig(player.id, 'tokens', updated);
+        };
+        const deleteToken = (tId) => { updatePlayerConfig(player.id, 'tokens', (player.tokens || []).filter(t => t.id !== tId)); };
+
+        const handleSplitConfirm = (t) => {
+            const amount = parseInt(splitQty) || 1;
+            if (amount <= 0 || amount >= t.qty) { alert("Quantità non valida per la divisione."); return; }
+            const newToken = { ...t, id: 'tok-' + Date.now(), qty: amount, tappedQty: Math.min(t.tappedQty || 0, amount), counters: 0 };
+            const remainingQty = t.qty - amount;
+            const updated = (player.tokens || []).map(item => {
+                if (item.id === t.id) return { ...item, qty: remainingQty, tappedQty: Math.min(item.tappedQty || 0, remainingQty) };
+                return item;
+            });
+            updated.push(newToken);
+            updatePlayerConfig(player.id, 'tokens', updated);
+            setSplittingTokenId(null);
+        };
+
+        const searchOfficialToken = () => {
+            if(!tokenQuery.trim() && !tokenOracle.trim() && !tokenPT.trim()) { alert("Inserisci almeno un parametro di ricerca."); return; }
+            setIsSearching(true); setCmdResults([]);
+            let q = "t:token";
+            if (tokenQuery.trim()) q += ` ${tokenQuery.trim()}`; if (tokenOracle.trim()) q += ` o:"${tokenOracle.trim()}"`;
+            if (tokenPT.trim()) { const pt = tokenPT.trim().split('/'); if (pt.length === 2) q += ` pow:${pt[0]} tou:${pt[1]}`; else q += ` pow:${pt[0]}`; }
+            fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(q)}&unique=art`).then(res => res.json()).then(data => {
+                    if (data.data) {
+                        const results = data.data.map(c => { let imgUrl = ""; if (c.image_uris && c.image_uris.normal) imgUrl = c.image_uris.normal; else if (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris) imgUrl = c.card_faces[0].image_uris.normal; return { id: c.id, name: c.name, img: imgUrl, pt: c.power ? `${c.power}/${c.toughness}` : "" }; }).filter(c => c.img);
+                        setCmdResults(results); if(results.length === 0) alert("Nessuna pedina trovata.");
+                    } else { alert("Nessuna pedina trovata."); }
+                    setIsSearching(false);
+                }).catch(e => { setIsSearching(false); });
+        };
+
+        const addOfficialToken = (tok) => {
+            const newToken = { id: 'tok-' + Date.now(), name: tok.name, pt: tok.pt, abilities: "", color: "bg-gray-800", img: tok.img, qty: 1, tappedQty: 0, counters: 0 };
+            updatePlayerConfig(player.id, 'tokens', [...(player.tokens || []), newToken]);
+            setShowSearchModal(false); setCmdResults([]); setTokenQuery(""); setTokenOracle(""); setTokenPT("");
+        };
+
+        const generateToken = async () => {
+            if(!tokenQuery.trim() && !tokenOracle.trim() && !tokenPT.trim()) { alert("Inserisci almeno un parametro per l'IA."); return; }
+            let apiKey = localStorage.getItem('gemini_api_key');
+            if (!apiKey) { apiKey = window.prompt("API Key Gemini:"); if (!apiKey) return; localStorage.setItem('gemini_api_key', apiKey); }
+            setIsGeneratingToken(true);
+            try {
+                const promptStr = `Crea una pedina per Magic The Gathering. Nome: "${tokenQuery || 'Sconosciuto'}". Testo abilità: "${tokenOracle}". Forza/Costituzione: "${tokenPT}". Rispondi SOLO ed ESCLUSIVAMENTE con un JSON valido strutturato così:\n{\n  "name": "Nome (es. Goblin)",\n  "pt": "Forza/Cost. (es. 1/1, vuoto se non creatura)",\n  "abilities": "Abilità (es. Volare, rapidità)",\n  "color": "una classe tailwind es. bg-red-800, bg-blue-800, bg-green-800, bg-gray-300 (bianco), bg-gray-800 (nero/incolore), bg-yellow-600 (oro)"\n}`;
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: promptStr }] }] }) });
+                const data = await response.json();
+                let jsonText = data.candidates[0].content.parts[0].text; const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+                let tokenData = JSON.parse(jsonMatch[0]);
+                const newToken = { id: 'tok-' + Date.now(), name: (tokenData && tokenData.name) ? tokenData.name : "Pedina", pt: (tokenData && tokenData.pt) ? tokenData.pt : "", abilities: (tokenData && tokenData.abilities) ? tokenData.abilities : "", color: (tokenData && tokenData.color) ? tokenData.color : "bg-gray-800", img: null, qty: 1, tappedQty: 0, counters: 0 };
+                updatePlayerConfig(player.id, 'tokens', [...(player.tokens || []), newToken]);
+                setShowSearchModal(false); setCmdResults([]); setTokenQuery(""); setTokenOracle(""); setTokenPT("");
+            } catch(e) { alert("⚠️ ERRORE AI:\n" + e.message); }
+            setIsGeneratingToken(false);
+        };
+        const SfondiPedine = ['plains_sfondo.jpg', 'island_sfondo.jpg', 'swamp_sfondo.jpg', 'mountain_sfondo.jpg', 'forest_sfondo.jpg', 'eldrazi_sfondo.jpg', 'yokai_sfondo.jpg', 'yokai2_sfondo.jpg', 'yokai3_sfondo.jpg'];
+        const ManaColors = [ { id: 'W', color: 'bg-yellow-100 text-yellow-900', label: 'W' }, { id: 'U', color: 'bg-blue-500 text-white', label: 'U' }, { id: 'B', color: 'bg-gray-800 text-white', label: 'B' }, { id: 'R', color: 'bg-red-500 text-white', label: 'R' }, { id: 'G', color: 'bg-green-500 text-white', label: 'G' }, { id: 'C', color: 'bg-gray-400 text-gray-900', label: 'C' } ];
+
+        // --- RENDERIZZA CRUSCOTTO UNIFICATA ---
+        if (isUnifiedTab) {
+            return renderModal(
+                <React.Fragment>
+                    {/* MENU TAB HEADER */}
+                    <div className="flex bg-gray-950 p-1.5 rounded-xl mb-3 shrink-0 border border-gray-700 shadow-inner overflow-hidden items-center justify-between">
+                        <div className="flex flex-1 gap-1 h-full">
+                            <button onClick={() => setCurrentTab('stats')} className={`flex-1 py-2 md:py-3 text-xs md:text-sm font-black rounded-lg transition-all ${currentTab === 'stats' ? 'bg-gray-700 text-white shadow-md border border-gray-500' : 'text-gray-400 hover:text-white'}`}>⚙️ Stats</button>
+                            <button onClick={() => setCurrentTab('mana')} className={`flex-1 py-2 md:py-3 text-xs md:text-sm font-black rounded-lg transition-all ${currentTab === 'mana' ? 'bg-gray-700 text-white shadow-md border border-gray-500' : 'text-gray-400 hover:text-white'}`}>🔮 Mana</button>
+                            <button onClick={() => setCurrentTab('tokens')} className={`flex-1 py-2 md:py-3 text-xs md:text-sm font-black rounded-lg transition-all ${currentTab === 'tokens' ? 'bg-gray-700 text-white shadow-md border border-gray-500' : 'text-gray-400 hover:text-white'}`}>♟️ Pedine</button>
+                        </div>
+                        <button onClick={onClose} className="ml-2 bg-red-600 active:bg-red-500 px-4 py-2 md:py-3 rounded-lg text-white font-black shadow-lg text-xs md:text-sm transition-colors">✖ CHIUDI</button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto relative min-h-0 flex flex-col">
+                        
+                        {/* VIEW: STATISTICHE E SEGNALINI */}
+                        {currentTab === 'stats' && (
+                            <div className="space-y-4 px-1 pb-4 animate-fade">
+                                {/* Griglia Danni Comandante */}
+                                <h4 className="text-white font-black text-xs md:text-sm uppercase text-center opacity-50 bg-gray-800 rounded-full py-1 mb-2">⚔️ Danni Comandante Subiti</h4>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
+                                    {opponents.map(opp => (
+                                        <div key={opp.id} className="relative bg-gray-800 rounded-xl overflow-hidden border border-gray-600 h-24 md:h-32 flex items-center justify-center cursor-pointer active:scale-95 transition-transform shadow-lg" onClick={() => updateStat(player.id, 'cmdDmg', 1, opp.id)}>
+                                            {opp.bgUrl && <img src={opp.bgUrl} className="absolute inset-0 w-full h-full object-cover object-top opacity-30 pointer-events-none" />}
+                                            <div className="relative z-10 flex flex-col items-center pointer-events-none p-1 w-full h-full justify-center">
+                                                <span className="text-white font-bold text-[10px] md:text-xs truncate max-w-[90%] bg-black/50 px-2 py-0.5 rounded-full mb-1">{opp.name}</span>
+                                                <span className="text-4xl md:text-5xl font-black text-red-400 drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">{(player.cmdDmg && player.cmdDmg[opp.id]) || 0}</span>
+                                            </div>
+                                            <button onClick={(e) => { e.stopPropagation(); updateStat(player.id, 'cmdDmg', -1, opp.id); }} className="absolute bottom-1 right-1 w-8 h-8 md:w-10 md:h-10 bg-black/70 rounded-lg text-white font-black text-xl md:text-2xl flex items-center justify-center border border-gray-500 z-20 active:bg-red-600 hover:bg-gray-700 shadow-md">-</button>
+                                        </div>
+                                    ))}
+                                    {opponents.length === 0 && <p className="col-span-full text-center text-gray-500 text-xs font-bold">Nessun avversario per calcolare i danni.</p>}
+                                </div>
+
+                                {/* Griglia Segnalini Personali */}
+                                <h4 className="text-white font-black text-xs md:text-sm uppercase text-center opacity-50 bg-gray-800 rounded-full py-1 mt-6 mb-2">🔢 Contatori Personali</h4>
+                                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+                                    {[
+                                        {id: 'poison', icon: '💧', label: 'Veleno', col: 'text-green-400'},
+                                        {id: 'cmdCasts', icon: '⚔️', label: 'Casts', col: 'text-gray-300'},
+                                        {id: 'emblems', icon: '🛡️', label: 'Emblemi', col: 'text-purple-400'},
+                                        {id: 'energy', icon: '⚡', label: 'Energia', col: 'text-blue-400'},
+                                        {id: 'rad', icon: '☢️', label: 'Rad', col: 'text-lime-400'},
+                                        {id: 'exp', icon: '✨', label: 'Exp', col: 'text-yellow-400'},
+                                        {id: 'ticket', icon: '🎫', label: 'Ticket', col: 'text-orange-400'}
+                                    ].map(stat => (
+                                        <div key={stat.id} className="relative bg-gray-900 rounded-xl border border-gray-700 h-20 md:h-24 flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-transform shadow-inner hover:bg-gray-800" onClick={() => updateStat(player.id, stat.id, 1)}>
+                                            <span className="text-gray-400 text-[9px] md:text-[10px] font-bold uppercase pointer-events-none flex flex-col items-center gap-0.5 mt-1"><span className="text-lg md:text-xl">{stat.icon}</span> {stat.label}</span>
+                                            <span className={`text-2xl md:text-3xl font-black pointer-events-none mt-auto mb-2 ${stat.col}`}>{player[stat.id] || 0}</span>
+                                            <button onClick={(e) => { e.stopPropagation(); updateStat(player.id, stat.id, -1); }} className="absolute bottom-1 right-1 w-6 h-6 md:w-8 md:h-8 bg-black/60 rounded-md text-white font-bold md:text-xl flex items-center justify-center border border-gray-600 z-20 active:bg-red-600">-</button>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Designatori di Stato */}
+                                <h4 className="text-white font-black text-xs md:text-sm uppercase text-center opacity-50 bg-gray-800 rounded-full py-1 mt-6 mb-2">🔰 Stati Speciali</h4>
+                                <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
+                                    <button onClick={() => updatePlayerConfig(player.id, 'monarch', !player.monarch)} className={`p-3 md:p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.monarch ? 'bg-yellow-600 border-yellow-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-400'}`}><span className="text-2xl md:text-3xl">👑</span><span className="text-[10px] md:text-xs">Monarca</span></button>
+                                    <button onClick={() => updatePlayerConfig(player.id, 'initiative', !player.initiative)} className={`p-3 md:p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.initiative ? 'bg-red-600 border-red-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-400'}`}><span className="text-2xl md:text-3xl">🗡️</span><span className="text-[10px] md:text-xs">Iniziativa</span></button>
+                                    <button onClick={() => updatePlayerConfig(player.id, 'blessing', !player.blessing)} className={`p-3 md:p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.blessing ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-400'}`}><span className="text-2xl md:text-3xl">🏛️</span><span className="text-[10px] md:text-xs">City's Blessing</span></button>
+                                    <button onClick={() => { let next = 'day'; if(player.dayNight === 'day') next = 'night'; else if(player.dayNight === 'night') next = 'none'; updatePlayerConfig(player.id, 'dayNight', next); }} className={`p-3 md:p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all col-span-3 lg:col-span-1 ${player.dayNight === 'day' ? 'bg-yellow-400 border-yellow-200 text-black' : (player.dayNight === 'night' ? 'bg-blue-900 border-blue-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-400')}`}><span className="text-2xl md:text-3xl">{player.dayNight === 'day' ? '☀️' : (player.dayNight === 'night' ? '🌙' : '🌤️')}</span><span className="text-[10px] md:text-xs">{player.dayNight === 'day' ? 'Giorno' : (player.dayNight === 'night' ? 'Notte' : 'Ciclo G/N')}</span></button>
+                                </div>
+                                
+                                <button onClick={() => toggleImmunity(player.id)} className={`w-full py-4 mt-6 font-black rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.5)] border text-sm md:text-base transition-colors ${player.immune ? 'bg-cyan-600 text-white border-cyan-400' : 'bg-gray-900 text-gray-400 border-gray-700 hover:bg-gray-800'}`}>{player.immune ? '🛡️ Immunità Attiva' : 'Attiva Immunità (The One Ring)'}</button>
+                            </div>
+                        )}
+
+                        {/* VIEW: MANA POOL */}
+                        {currentTab === 'mana' && (
+                            <div className="flex-1 flex flex-col animate-fade h-full">
+                                <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto content-start pb-4">
+                                    {ManaColors.map(m => (
+                                        <div key={m.id} className="bg-gray-900 rounded-xl border border-gray-700 flex flex-col items-center justify-center p-3 md:p-5 shadow-inner">
+                                            <span className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center font-black text-xl md:text-3xl border-2 shadow-md mb-4 ${m.color}`}>{m.label}</span>
+                                            <div className="flex w-full justify-between items-center gap-2 px-2">
+                                                <button onClick={() => updateMana(player.id, m.id, -1)} className="w-14 h-14 md:w-16 md:h-16 bg-red-900/80 active:bg-red-700 text-red-300 font-black text-3xl md:text-4xl rounded-xl flex items-center justify-center shadow-lg transition-transform active:scale-95">-</button>
+                                                <span className="text-4xl md:text-6xl font-black text-white">{player.mana[m.id]}</span>
+                                                <button onClick={() => updateMana(player.id, m.id, 1)} className="w-14 h-14 md:w-16 md:h-16 bg-green-900/80 active:bg-green-700 text-green-300 font-black text-3xl md:text-4xl rounded-xl flex items-center justify-center shadow-lg transition-transform active:scale-95">+</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button onClick={() => { ManaColors.forEach(m => updatePlayerConfig(player.id, 'mana', {W:0,U:0,B:0,R:0,G:0,C:0})) }} className="w-full mt-2 py-4 font-black shadow-[0_0_15px_rgba(220,38,38,0.4)] bg-red-700 hover:bg-red-600 text-white rounded-xl transition-all text-sm md:text-base shrink-0">🔄 SVUOTA MANA POOL</button>
+                            </div>
+                        )}
+
+                        {/* VIEW: PEDINE */}
+                        {currentTab === 'tokens' && (
+                            <div className="flex-1 flex flex-col animate-fade overflow-hidden border border-gray-700 rounded-xl bg-black relative h-full">
+                                {player.tokenBg && <img src={player.tokenBg} className="absolute inset-0 w-full h-full object-cover opacity-75 z-0 pointer-events-none" />}
+                                
+                                <div className="flex-1 overflow-y-auto p-2 sm:p-4 flex flex-wrap gap-4 sm:gap-6 content-start z-10 relative items-start">
+                                    {(player.tokens || []).map(t => {
+                                        const untapped = t.qty - (t.tappedQty || 0);
+                                        const tapped = t.tappedQty || 0;
+                                        const counters = t.counters || 0;
+
+                                        return (
+                                            <div key={t.id} className="flex flex-col items-center bg-gray-900/80 backdrop-blur-sm p-2 rounded-xl border border-gray-600 shadow-2xl shrink-0">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    
+                                                    {untapped > 0 && (
+                                                        <div className="relative w-28 h-40 cursor-pointer" onClick={() => updateToken(t.id, 'tappedQty', tapped + 1)} title="Tocca per tapparne una">
+                                                            {untapped > 1 && ( <div className="absolute inset-0 rounded-xl bg-gray-700 border border-gray-500 transform translate-x-1.5 translate-y-1.5 pointer-events-none"></div> )}
+                                                            <div className={`absolute inset-0 rounded-xl border-2 border-black shadow-2xl flex flex-col overflow-hidden ${t.color || 'bg-gray-800'}`}>
+                                                                {t.img ? ( <img src={t.img} className="w-full h-full object-cover" /> ) : (
+                                                                    <React.Fragment>
+                                                                        <div className="bg-black/70 p-1 text-center font-bold text-white text-[10px] truncate border-b border-black">{t.name}</div>
+                                                                        <div className="flex-1 p-2 text-[9px] text-white/90 overflow-y-auto leading-tight">{t.abilities}</div>
+                                                                        {t.pt && <div className="bg-black/90 text-white font-black text-center py-1 border-t border-black text-xs">{t.pt}</div>}
+                                                                    </React.Fragment>
+                                                                )}
+                                                            </div>
+                                                            <div className="absolute -top-2.5 -right-2.5 bg-green-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">{untapped}</div>
+                                                            {counters > 0 && ( <div className="absolute -top-2.5 -left-2.5 bg-blue-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">+{counters}/+{counters}</div> )}
+                                                        </div>
+                                                    )}
+
+                                                    {tapped > 0 && (
+                                                        <div className="relative w-40 h-28 cursor-pointer flex items-center justify-center my-4" onClick={() => updateToken(t.id, 'tappedQty', untapped > 0 ? tapped - 1 : 0)} title="Tocca per stapparne una">
+                                                            <div className={`w-28 h-40 rounded-xl border-2 border-black shadow-2xl flex flex-col overflow-hidden rotate-90 opacity-90 ${t.color || 'bg-gray-800'}`}>
+                                                                {t.img ? ( <img src={t.img} className="w-full h-full object-cover" /> ) : (
+                                                                    <React.Fragment>
+                                                                        <div className="bg-black/70 p-1 text-center font-bold text-white text-[10px] truncate border-b border-black">{t.name}</div>
+                                                                        <div className="flex-1 p-2 text-[9px] text-white/90 overflow-y-auto leading-tight">{t.abilities}</div>
+                                                                        {t.pt && <div className="bg-black/90 text-white font-black text-center py-1 border-t border-black text-xs">{t.pt}</div>}
+                                                                    </React.Fragment>
+                                                                )}
+                                                            </div>
+                                                            <div className="absolute -top-3 right-2 bg-red-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">{tapped} 💤</div>
+                                                            {counters > 0 && ( <div className="absolute -top-3 left-2 bg-blue-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">+{counters}/+{counters}</div> )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="w-40 space-y-1.5">
+                                                    <div className="flex items-center justify-between gap-1 bg-black/40 p-1 rounded-lg border border-gray-700">
+                                                        <button onClick={() => t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id)} className="w-6 h-6 bg-red-600 rounded text-white font-black text-xs flex items-center justify-center active:scale-90">-</button>
+                                                        <input type="number" inputMode="numeric" value={t.qty} onChange={e => updateToken(t.id, 'qty', Math.max(1, parseInt(e.target.value) || 1))} className="w-10 bg-gray-900 border border-gray-600 text-white rounded text-center font-black text-xs py-0.5 outline-none" />
+                                                        <button onClick={() => updateToken(t.id, 'qty', t.qty + 1)} className="w-6 h-6 bg-green-600 rounded text-white font-black text-xs flex items-center justify-center active:scale-90">+</button>
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-1 bg-blue-950/50 p-1 rounded-lg border border-blue-800">
+                                                        <span className="text-[9px] font-bold text-blue-300 pl-1">+1/+1:</span>
+                                                        <div className="flex items-center gap-1">
+                                                            <button onClick={() => updateToken(t.id, 'counters', Math.max(0, counters - 1))} className="w-5 h-5 bg-blue-700 rounded text-white font-black text-[10px] flex items-center justify-center active:scale-90">-</button>
+                                                            <span className="w-5 text-center font-black text-white text-xs">{counters}</span>
+                                                            <button onClick={() => updateToken(t.id, 'counters', counters + 1)} className="w-5 h-5 bg-blue-700 rounded text-white font-black text-[10px] flex items-center justify-center active:scale-90">+</button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-1">
+                                                        {untapped > 0 && <button onClick={() => updateToken(t.id, 'tappedQty', tapped + 1)} className="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white text-[9px] font-bold py-1 rounded shadow">Tappa</button>}
+                                                        {tapped > 0 && <button onClick={() => updateToken(t.id, 'tappedQty', tapped - 1)} className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white text-[9px] font-bold py-1 rounded shadow">Stappa</button>}
+                                                        {t.qty > 1 && <button onClick={() => { setSplittingTokenId(t.id); setSplitQty(1); }} className="bg-amber-600 hover:bg-amber-500 text-white text-[9px] font-bold px-2 py-1 rounded shadow" title="Dividi mazzetto">✂️</button>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {(player.tokens || []).length === 0 && (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700 text-xs shadow-inner">La plancia è vuota.<br/>Tocca il tasto in basso per aggiungere pedine!</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Barra Controlli Pedine Bottom */}
+                                <div className="flex gap-2 p-2 shrink-0 z-20 items-center justify-between bg-gray-900/90 border-t border-gray-700">
+                                    <button onClick={() => setShowBgMenu(true)} className="bg-gray-700 hover:bg-gray-600 px-4 py-2.5 rounded-lg text-white text-base shadow border border-gray-500" title="Sfondo Battaglia">🖼️</button>
+                                    <button onClick={() => setShowSearchModal(true)} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2.5 px-4 rounded-lg text-white font-black shadow-lg text-xs md:text-sm active:scale-95 transition-transform border border-emerald-400 flex items-center justify-center gap-1">
+                                        🔍 CERCA / AGGIUNGI PEDINA
+                                    </button>
+                                </div>
+                                
+                                {splittingTokenId && (
+                                    <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-sm p-4 flex flex-col items-center justify-center animate-fade">
+                                        <div className="bg-gray-800 border-2 border-amber-500 rounded-xl p-4 w-full max-w-xs shadow-2xl text-center space-y-3">
+                                            <h4 className="text-white font-black text-base">✂️ Dividi Mazzetto</h4>
+                                            <p className="text-gray-300 text-xs">Quante pedine vuoi separare in un nuovo mazzetto?</p>
+                                            <div className="flex items-center justify-center gap-3 my-2">
+                                                <button onClick={() => setSplitQty(Math.max(1, splitQty - 1))} className="w-10 h-10 bg-red-600 text-white font-black text-xl rounded-lg">-</button>
+                                                <span className="text-2xl font-black text-white w-12">{splitQty}</span>
+                                                <button onClick={() => setSplitQty(splitQty + 1)} className="w-10 h-10 bg-green-600 text-white font-black text-xl rounded-lg">+</button>
+                                            </div>
+                                            <div className="flex gap-2 pt-2">
+                                                <button onClick={() => setSplittingTokenId(null)} className="flex-1 bg-gray-700 text-white font-bold py-2 rounded-lg text-xs">Annulla</button>
+                                                <button onClick={() => handleSplitConfirm(player.tokens.find(x => x.id === splittingTokenId))} className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-black py-2 rounded-lg text-xs shadow">Conferma</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {showBgMenu && (
+                                    <div className="absolute inset-0 z-30 bg-black/95 p-4 flex flex-col gap-4 animate-fade">
+                                        <h4 className="text-white font-black text-xl mb-2 border-b border-gray-700 pb-2">Sfondo Battaglia</h4>
+                                        <div className="grid grid-cols-2 gap-4 overflow-y-auto content-start flex-1">
+                                            <div className="h-28 bg-gray-800 rounded-xl flex items-center justify-center text-gray-400 font-bold border-2 border-dashed border-gray-600 cursor-pointer text-center p-2" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', null); setShowBgMenu(false); }}>Sfondo Vuoto</div>
+                                            {SfondiPedine.map(bg => (
+                                                <div key={bg} className="h-28 rounded-xl border-2 border-transparent hover:border-blue-500 cursor-pointer overflow-hidden relative shadow-lg" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', bg); setShowBgMenu(false); }}>
+                                                    <img src={bg} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+                                                    <span className="absolute bottom-0 w-full bg-black/80 text-white text-[10px] font-bold text-center py-1 truncate px-1">{bg}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <button onClick={() => setShowBgMenu(false)} className="mt-auto bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold transition-colors">Chiudi Menu</button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* MODALE DI RICERCA PEDINA CHE SI SOVRAPPONE ALLA VISTA UNIFICATA */}
+                    {showSearchModal && (
+                        <div className="absolute inset-0 z-[100] bg-gray-900/98 backdrop-blur-md p-4 flex flex-col animate-fade overflow-y-auto">
+                            <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
+                                <h4 className="text-emerald-400 font-black text-lg">🔍 Aggiungi Pedina</h4>
+                                <button onClick={() => setShowSearchModal(false)} className="bg-red-600 text-white px-3 py-1 rounded font-bold text-xs">Chiudi</button>
+                            </div>
+                            <div className="space-y-3 mb-4">
+                                <div>
+                                    <label className="text-gray-400 text-xs font-bold block mb-1">Nome della Pedina:</label>
+                                    <input type="text" placeholder="es. Goblin, Treasure, Zombie..." value={tokenQuery} onChange={e=>setTokenQuery(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="text-gray-400 text-xs font-bold block mb-1">Testo Abilità:</label>
+                                        <input type="text" placeholder="es. haste, flying" value={tokenOracle} onChange={e=>setTokenOracle(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
+                                    </div>
+                                    <div>
+                                        <label className="text-gray-400 text-xs font-bold block mb-1">Forza / Costituzione:</label>
+                                        <input type="text" placeholder="es. 1/1, 2/2" value={tokenPT} onChange={e=>setTokenPT(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm text-center focus:border-emerald-500 shadow-inner" />
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 pt-2">
+                                    <button onClick={searchOfficialToken} disabled={isSearching} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 py-3 rounded-lg text-white font-black shadow text-xs active:scale-95 transition-transform border border-emerald-400">
+                                        {isSearching ? '⏳ CERCO...' : '🔎 CERCA UFFICIALE'}
+                                    </button>
+                                    <button onClick={generateToken} disabled={isGeneratingToken} className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 py-3 rounded-lg text-white font-black shadow text-xs active:scale-95 transition-transform border border-purple-400" title="Crea Token Personalizzato con IA">
+                                        {isGeneratingToken ? '⏳ CREO...' : '✨ CREA CUSTOM (IA)'}
+                                    </button>
+                                </div>
+                            </div>
+                            {cmdResults.length > 0 && (
+                                <div className="flex-1 bg-black/60 p-3 rounded-xl border border-gray-700 overflow-y-auto">
+                                    <p className="text-gray-300 text-xs font-bold mb-2">Risultati Trovati (Tocca per posizionare):</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {cmdResults.map(res => (
+                                            <div key={res.id} onClick={() => addOfficialToken(res)} className="cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-emerald-500 shadow-lg active:scale-95 transition-transform bg-gray-800">
+                                                <img src={res.img} className="w-full h-40 object-cover" />
+                                                <div className="p-1.5 bg-black/80 text-center">
+                                                    <span className="text-xs text-white font-bold truncate block">{res.name}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </React.Fragment>
+            );
+        }
+
+        // --- I MODALI SINGOLI RIMASTI (EDIT NAME E RICERCHE SFONDI/COMANDANTI) ---
         if (type === 'editName') {
             return renderModal(
                 <React.Fragment>
@@ -3276,72 +3601,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                         <input autoFocus type="text" value={tempName} onChange={e => setTempName(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveName()} className="bg-gray-800 border border-gray-500 text-white rounded-xl p-4 outline-none font-black text-2xl focus:border-blue-500 text-center shadow-inner" placeholder="Nome" />
                         <button onClick={saveName} className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-xl shadow-[0_0_15px_rgba(22,163,74,0.5)] transition-all text-xl mt-4">SALVA NOME</button>
                     </div>
-                </React.Fragment>
-            );
-        }
-
-        if (type === 'stats') {
-            return renderModal(
-                <React.Fragment>
-                    <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 mt-2 shrink-0">
-                        <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">⚙️ Statistiche: {player.name}</h3>
-                        <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto pb-10 space-y-6 px-2">
-                        <div>
-                            <h4 className="text-blue-400 font-black text-lg mb-2 uppercase border-b border-gray-700 pb-1">⚔️ Danni Comandante</h4>
-                            {opponents.map(opp => (
-                                <BigStatRow key={opp.id} label={`Da: ${opp.name}`} value={player.cmdDmg[opp.id]} onSub={() => updateStat(player.id, 'cmdDmg', -1, opp.id)} onAdd={() => updateStat(player.id, 'cmdDmg', 1, opp.id)} />
-                            ))}
-                        </div>
-                        <div>
-                            <h4 className="text-green-400 font-black text-lg mb-2 uppercase border-b border-gray-700 pb-1">🔢 Segnalini</h4>
-                            <BigStatRow label="💧 Veleno" value={player.poison} onSub={() => updateStat(player.id, 'poison', -1)} onAdd={() => updateStat(player.id, 'poison', 1)} />
-                            <BigStatRow label="⚔️ Lanci Cmdr" value={player.cmdCasts} onSub={() => updateStat(player.id, 'cmdCasts', -1)} onAdd={() => updateStat(player.id, 'cmdCasts', 1)} />
-                            <BigStatRow label="🛡️ Emblemi" value={player.emblems} onSub={() => updateStat(player.id, 'emblems', -1)} onAdd={() => updateStat(player.id, 'emblems', 1)} />
-                            <BigStatRow label="☢️ Radiazioni" value={player.rad || 0} onSub={() => updateStat(player.id, 'rad', -1)} onAdd={() => updateStat(player.id, 'rad', 1)} />
-                            <BigStatRow label="⚡ Energia" value={player.energy || 0} onSub={() => updateStat(player.id, 'energy', -1)} onAdd={() => updateStat(player.id, 'energy', 1)} />
-                            <BigStatRow label="✨ Esperienza" value={player.exp || 0} onSub={() => updateStat(player.id, 'exp', -1)} onAdd={() => updateStat(player.id, 'exp', 1)} />
-                            <BigStatRow label="🎫 Ticket" value={player.ticket || 0} onSub={() => updateStat(player.id, 'ticket', -1)} onAdd={() => updateStat(player.id, 'ticket', 1)} />
-                        </div>
-                        <div>
-                            <h4 className="text-yellow-400 font-black text-lg mb-2 uppercase border-b border-gray-700 pb-1">🔰 Designatori di Stato</h4>
-                            <div className="grid grid-cols-2 gap-3">
-                                <button onClick={() => updatePlayerConfig(player.id, 'monarch', !player.monarch)} className={`p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.monarch ? 'bg-yellow-600 border-yellow-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-400'}`}><span className="text-2xl">👑</span> Monarca</button>
-                                <button onClick={() => updatePlayerConfig(player.id, 'initiative', !player.initiative)} className={`p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.initiative ? 'bg-red-600 border-red-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-400'}`}><span className="text-2xl">🗡️</span> Iniziativa</button>
-                                <button onClick={() => updatePlayerConfig(player.id, 'blessing', !player.blessing)} className={`p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.blessing ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-400'}`}><span className="text-2xl">🏛️</span> City's Blessing</button>
-                                <button onClick={() => { let next = 'day'; if(player.dayNight === 'day') next = 'night'; else if(player.dayNight === 'night') next = 'none'; updatePlayerConfig(player.id, 'dayNight', next); }} className={`p-4 rounded-xl font-bold shadow-lg flex flex-col items-center justify-center gap-1 border transition-all ${player.dayNight === 'day' ? 'bg-yellow-500 border-yellow-300 text-black' : (player.dayNight === 'night' ? 'bg-blue-900 border-blue-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-400')}`}><span className="text-2xl">{player.dayNight === 'day' ? '☀️' : (player.dayNight === 'night' ? '🌙' : '🌤️')}</span> {player.dayNight === 'day' ? 'Giorno' : (player.dayNight === 'night' ? 'Notte' : 'Nessuno')}</button>
-                            </div>
-                        </div>
-                        <div className="pt-4 flex flex-col gap-3">
-                            <button onClick={() => toggleImmunity(player.id)} className={`w-full py-4 font-black rounded-xl shadow-lg border text-lg ${player.immune ? 'bg-cyan-600 text-white border-cyan-400' : 'bg-gray-800 text-gray-300 border-gray-600'}`}>{player.immune ? '🛡️ Immunità Attiva (Ferma Danni)' : 'Attiva Immunità'}</button>
-                        </div>
-                    </div>
-                </React.Fragment>
-            );
-        }
-
-        if (type === 'mana') {
-            const ManaColors = [ { id: 'W', color: 'bg-yellow-100 text-yellow-900', label: 'W' }, { id: 'U', color: 'bg-blue-500 text-white', label: 'U' }, { id: 'B', color: 'bg-gray-800 text-white', label: 'B' }, { id: 'R', color: 'bg-red-500 text-white', label: 'R' }, { id: 'G', color: 'bg-green-500 text-white', label: 'G' }, { id: 'C', color: 'bg-gray-400 text-gray-900', label: 'C' } ];
-            return renderModal(
-                <React.Fragment>
-                    <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3 mt-2 shrink-0">
-                        <h3 className="text-white font-black text-xl sm:text-2xl truncate pr-2">🔮 Mana Pool: {player.name}</h3>
-                        <button onClick={onClose} className="bg-red-600 px-4 py-2 rounded-lg text-white font-bold shadow-lg shrink-0">Chiudi</button>
-                    </div>
-                    <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto content-start pb-10">
-                        {ManaColors.map(m => (
-                            <div key={m.id} className="bg-gray-800 rounded-2xl border border-gray-700 flex flex-col items-center justify-center p-4 shadow-xl">
-                                <span className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-xl border-2 shadow-md mb-4 ${m.color}`}>{m.label}</span>
-                                <div className="flex w-full justify-between items-center gap-4">
-                                    <button onClick={() => updateMana(player.id, m.id, -1)} className="w-16 h-16 bg-red-900/80 active:bg-red-700 text-red-300 font-black text-4xl rounded-xl flex items-center justify-center shadow-lg transition-transform active:scale-95">-</button>
-                                    <span className="text-5xl font-black text-white">{player.mana[m.id]}</span>
-                                    <button onClick={() => updateMana(player.id, m.id, 1)} className="w-16 h-16 bg-green-900/80 active:bg-green-700 text-green-300 font-black text-4xl rounded-xl flex items-center justify-center shadow-lg transition-transform active:scale-95">+</button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    <button onClick={() => { ManaColors.forEach(m => updatePlayerConfig(player.id, 'mana', {W:0,U:0,B:0,R:0,G:0,C:0})) }} className="w-full mt-auto py-4 font-black shadow-[0_0_15px_rgba(220,38,38,0.4)] bg-red-700 hover:bg-red-600 text-white rounded-xl transition-all text-xl shrink-0">🔄 SVUOTA MANA POOL</button>
                 </React.Fragment>
             );
         }
@@ -3372,7 +3631,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             );
         }
 
-      if (type === 'cmdrSelect') {
+        if (type === 'cmdrSelect') {
             const hasCmdr = !!player.cmdrCard;
             const currentCasts = player.cmdCasts || 0;
             const tax = currentCasts * 2;
@@ -3442,408 +3701,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                 </React.Fragment>
             );
         }
-      
-      if (type === 'tokens') {
-            const SfondiPedine = ['plains_sfondo.jpg', 'island_sfondo.jpg', 'swamp_sfondo.jpg', 'mountain_sfondo.jpg', 'forest_sfondo.jpg', 'eldrazi_sfondo.jpg', 'yokai_sfondo.jpg', 'yokai2_sfondo.jpg', 'yokai3_sfondo.jpg'];
-            
-            const [showSearchModal, setShowSearchModal] = useState(false);
-            const [splittingTokenId, setSplittingTokenId] = useState(null);
-            const [splitQty, setSplitQty] = useState(1);
 
-            // GESTIONE HARDWARE ORIENTAMENTO PLANCIA PEDINE E SOTTO-MODALE RICERCA
-            // Effetto 1: Gestisce i cambi interni (Apertura ricerca pedine = Portrait, Plancia = Landscape)
-            useEffect(() => {
-                try {
-                    if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
-                        if (showSearchModal) {
-                            window.screen.orientation.lock('portrait').catch(function(){});
-                        } else {
-                            window.screen.orientation.lock('landscape').catch(function(){});
-                        }
-                    }
-                } catch(e) {}
-            }, [showSearchModal]);
-
-            
-            const openSearch = () => { setShowSearchModal(true); };
-            const closeSearch = () => {
-                setShowSearchModal(false);
-                setCmdResults([]);
-                setTokenQuery(""); setTokenOracle(""); setTokenPT("");
-            };
-
-            const updateToken = (tId, field, val) => {
-                const updated = (player.tokens || []).map(t => {
-                    if (t.id === tId) {
-                        let newObj = { ...t, [field]: val };
-                        if (field === 'qty' && newObj.tappedQty > val) {
-                            newObj.tappedQty = val;
-                        }
-                        return newObj;
-                    }
-                    return t;
-                });
-                updatePlayerConfig(player.id, 'tokens', updated);
-            };
-
-            const deleteToken = (tId) => {
-                const updated = (player.tokens || []).filter(t => t.id !== tId);
-                updatePlayerConfig(player.id, 'tokens', updated);
-            };
-
-            const handleSplitConfirm = (t) => {
-                const amount = parseInt(splitQty) || 1;
-                if (amount <= 0 || amount >= t.qty) {
-                    alert("Quantità non valida per la divisione.");
-                    return;
-                }
-
-                const newToken = {
-                    ...t,
-                    id: 'tok-' + Date.now(),
-                    qty: amount,
-                    tappedQty: Math.min(t.tappedQty || 0, amount),
-                    counters: 0
-                };
-
-                const remainingQty = t.qty - amount;
-                const updated = (player.tokens || []).map(item => {
-                    if (item.id === t.id) {
-                        return {
-                            ...item,
-                            qty: remainingQty,
-                            tappedQty: Math.min(item.tappedQty || 0, remainingQty)
-                        };
-                    }
-                    return item;
-                });
-
-                updated.push(newToken);
-                updatePlayerConfig(player.id, 'tokens', updated);
-                setSplittingTokenId(null);
-            };
-
-            // 1. RICERCA PEDINE UFFICIALI SCRYFALL
-            const searchOfficialToken = () => {
-                if(!tokenQuery.trim() && !tokenOracle.trim() && !tokenPT.trim()) {
-                    alert("Inserisci almeno un parametro di ricerca.");
-                    return;
-                }
-                setIsSearching(true);
-                setCmdResults([]);
-                
-                let q = "t:token";
-                if (tokenQuery.trim()) q += ` ${tokenQuery.trim()}`;
-                if (tokenOracle.trim()) q += ` o:"${tokenOracle.trim()}"`;
-                if (tokenPT.trim()) {
-                    const pt = tokenPT.trim().split('/');
-                    if (pt.length === 2) q += ` pow:${pt[0]} tou:${pt[1]}`;
-                    else q += ` pow:${pt[0]}`; 
-                }
-
-                fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(q)}&unique=art`)
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.data) {
-                            const results = data.data.map(c => {
-                                let imgUrl = "";
-                                if (c.image_uris && c.image_uris.normal) imgUrl = c.image_uris.normal;
-                                else if (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris) imgUrl = c.card_faces[0].image_uris.normal;
-                                return { id: c.id, name: c.name, img: imgUrl, pt: c.power ? `${c.power}/${c.toughness}` : "" };
-                            }).filter(c => c.img);
-                            setCmdResults(results);
-                            if(results.length === 0) alert("Nessuna pedina trovata.");
-                        } else { alert("Nessuna pedina trovata."); }
-                        setIsSearching(false);
-                    }).catch(e => { console.error(e); setIsSearching(false); });
-            };
-
-            const addOfficialToken = (tok) => {
-                const newToken = { id: 'tok-' + Date.now(), name: tok.name, pt: tok.pt, abilities: "", color: "bg-gray-800", img: tok.img, qty: 1, tappedQty: 0, counters: 0 };
-                updatePlayerConfig(player.id, 'tokens', [...(player.tokens || []), newToken]);
-                closeSearch();
-            };
-
-            // 2. GENERAZIONE CUSTOM (AI)
-            const generateToken = async () => {
-                if(!tokenQuery.trim() && !tokenOracle.trim() && !tokenPT.trim()) {
-                    alert("Inserisci almeno un parametro per l'IA.");
-                    return;
-                }
-                let apiKey = localStorage.getItem('gemini_api_key');
-                if (!apiKey) {
-                    apiKey = window.prompt("Per generare pedine con l'IA serve la API Key:\nIncollala qui:");
-                    if (!apiKey) return;
-                    localStorage.setItem('gemini_api_key', apiKey);
-                }
-                setIsGeneratingToken(true);
-                try {
-                    const promptStr = `Crea una pedina per Magic The Gathering. Nome: "${tokenQuery || 'Sconosciuto'}". Testo abilità: "${tokenOracle}". Forza/Costituzione: "${tokenPT}". Rispondi SOLO ed ESCLUSIVAMENTE con un JSON valido strutturato così:\n{\n  "name": "Nome (es. Goblin)",\n  "pt": "Forza/Cost. (es. 1/1, vuoto se non creatura)",\n  "abilities": "Abilità (es. Volare, rapidità)",\n  "color": "una classe tailwind es. bg-red-800, bg-blue-800, bg-green-800, bg-gray-300 (bianco), bg-gray-800 (nero/incolore), bg-yellow-600 (oro)"\n}`;
-                    
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: promptStr }] }] })
-                    });
-                    const data = await response.json();
-                    
-                    if (data.error) throw new Error(data.error.message);
-                    
-                    let jsonText = data.candidates[0].content.parts[0].text;
-                    const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-                    if (!jsonMatch) throw new Error("Formato risposto non valido.");
-                    
-                    let tokenData = JSON.parse(jsonMatch[0]);
-                    
-                    const newToken = { id: 'tok-' + Date.now(), name: (tokenData && tokenData.name) ? tokenData.name : "Pedina", pt: (tokenData && tokenData.pt) ? tokenData.pt : "", abilities: (tokenData && tokenData.abilities) ? tokenData.abilities : "", color: (tokenData && tokenData.color) ? tokenData.color : "bg-gray-800", img: null, qty: 1, tappedQty: 0, counters: 0 };
-                    updatePlayerConfig(player.id, 'tokens', [...(player.tokens || []), newToken]);
-                    closeSearch();
-                } catch(e) { 
-                    alert("⚠️ ERRORE AI:\n" + e.message); 
-                }
-                setIsGeneratingToken(false);
-            };
-
-            return (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none bg-black/80 backdrop-blur-md overflow-hidden">
-                    
-                    {/* --- 1. PRINCIPALE: PLANCIA PEDINE E SFONDI (ROTANTI) --- */}
-                    <div className="bg-gray-900 border-2 border-gray-600 shadow-2xl flex flex-col p-1 sm:p-2 pointer-events-auto relative" style={modalStyle}>
-                        
-                        {/* INTESTAZIONE MINIMALE */}
-                        <div className="flex justify-between items-center border-b border-gray-700 pb-0.5 px-2 mt-0.5 shrink-0">
-                            <h3 className="text-white font-black text-xs sm:text-sm truncate pr-2">♟️ {player.name}</h3>
-                            <button onClick={onClose} className="bg-red-600 px-2 py-0.5 rounded text-white font-bold text-[10px] shadow shrink-0">Chiudi</button>
-                        </div>
-
-                        {/* CAMPO DI BATTAGGIA MASSIMIZZATO E LUMINOSO */}
-                        <div className="flex-1 relative bg-black overflow-hidden rounded-xl border border-gray-600 mt-1 flex flex-col">
-                            {/* SFONDO LUMINOSO (75%) */}
-                            {player.tokenBg && <img src={player.tokenBg} className="absolute inset-0 w-full h-full object-cover opacity-75 z-0 pointer-events-none" />}
-                            
-                            <div className="flex-1 overflow-y-auto p-2 sm:p-4 flex flex-wrap gap-4 sm:gap-6 content-start z-10 relative items-start">
-                                {(player.tokens || []).map(t => {
-                                    const untapped = t.qty - (t.tappedQty || 0);
-                                    const tapped = t.tappedQty || 0;
-                                    const counters = t.counters || 0;
-
-                                    return (
-                                        <div key={t.id} className="flex flex-col items-center bg-gray-900/80 backdrop-blur-sm p-2 rounded-xl border border-gray-600 shadow-2xl shrink-0">
-                                            
-                                            {/* CARTE MAGGIORI */}
-                                            <div className="flex items-center gap-3 mb-2">
-                                                
-                                                {/* STACK STAPPATO */}
-                                                {untapped > 0 && (
-                                                    <div className="relative w-28 h-40 cursor-pointer" onClick={() => updateToken(t.id, 'tappedQty', tapped + 1)} title="Tocca per tapparne una">
-                                                        {untapped > 1 && (
-                                                            <div className="absolute inset-0 rounded-xl bg-gray-700 border border-gray-500 transform translate-x-1.5 translate-y-1.5 pointer-events-none"></div>
-                                                        )}
-                                                        <div className={`absolute inset-0 rounded-xl border-2 border-black shadow-2xl flex flex-col overflow-hidden ${t.color || 'bg-gray-800'}`}>
-                                                            {t.img ? (
-                                                                <img src={t.img} className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                <React.Fragment>
-                                                                    <div className="bg-black/70 p-1 text-center font-bold text-white text-[10px] truncate border-b border-black">{t.name}</div>
-                                                                    <div className="flex-1 p-2 text-[9px] text-white/90 overflow-y-auto leading-tight">{t.abilities}</div>
-                                                                    {t.pt && <div className="bg-black/90 text-white font-black text-center py-1 border-t border-black text-xs">{t.pt}</div>}
-                                                                </React.Fragment>
-                                                            )}
-                                                        </div>
-                                                        <div className="absolute -top-2.5 -right-2.5 bg-green-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">
-                                                            {untapped}
-                                                        </div>
-                                                        {counters > 0 && (
-                                                            <div className="absolute -top-2.5 -left-2.5 bg-blue-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">
-                                                                +{counters}/+{counters}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* STACK TAPPATO */}
-                                                {tapped > 0 && (
-                                                    <div className="relative w-40 h-28 cursor-pointer flex items-center justify-center my-4" onClick={() => updateToken(t.id, 'tappedQty', untapped > 0 ? tapped - 1 : 0)} title="Tocca per stapparne una">
-                                                        <div className={`w-28 h-40 rounded-xl border-2 border-black shadow-2xl flex flex-col overflow-hidden rotate-90 opacity-90 ${t.color || 'bg-gray-800'}`}>
-                                                            {t.img ? (
-                                                                <img src={t.img} className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                <React.Fragment>
-                                                                    <div className="bg-black/70 p-1 text-center font-bold text-white text-[10px] truncate border-b border-black">{t.name}</div>
-                                                                    <div className="flex-1 p-2 text-[9px] text-white/90 overflow-y-auto leading-tight">{t.abilities}</div>
-                                                                    {t.pt && <div className="bg-black/90 text-white font-black text-center py-1 border-t border-black text-xs">{t.pt}</div>}
-                                                                </React.Fragment>
-                                                            )}
-                                                        </div>
-                                                        <div className="absolute -top-3 right-2 bg-red-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">
-                                                            {tapped} 💤
-                                                        </div>
-                                                        {counters > 0 && (
-                                                            <div className="absolute -top-3 left-2 bg-blue-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">
-                                                                +{counters}/+{counters}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                            </div>
-
-                                            {/* CONTROLLI SOTTO AL MAZZETTO */}
-                                            <div className="w-40 space-y-1.5">
-                                                <div className="flex items-center justify-between gap-1 bg-black/40 p-1 rounded-lg border border-gray-700">
-                                                    <button onClick={() => t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id)} className="w-6 h-6 bg-red-600 rounded text-white font-black text-xs flex items-center justify-center active:scale-90">-</button>
-                                                    <input 
-                                                        type="number" 
-                                                        inputMode="numeric"
-                                                        value={t.qty} 
-                                                        onChange={e => updateToken(t.id, 'qty', Math.max(1, parseInt(e.target.value) || 1))} 
-                                                        className="w-10 bg-gray-900 border border-gray-600 text-white rounded text-center font-black text-xs py-0.5 outline-none" 
-                                                    />
-                                                    <button onClick={() => updateToken(t.id, 'qty', t.qty + 1)} className="w-6 h-6 bg-green-600 rounded text-white font-black text-xs flex items-center justify-center active:scale-90">+</button>
-                                                </div>
-
-                                                <div className="flex items-center justify-between gap-1 bg-blue-950/50 p-1 rounded-lg border border-blue-800">
-                                                    <span className="text-[9px] font-bold text-blue-300 pl-1">+1/+1:</span>
-                                                    <div className="flex items-center gap-1">
-                                                        <button onClick={() => updateToken(t.id, 'counters', Math.max(0, counters - 1))} className="w-5 h-5 bg-blue-700 rounded text-white font-black text-[10px] flex items-center justify-center active:scale-90">-</button>
-                                                        <span className="w-5 text-center font-black text-white text-xs">{counters}</span>
-                                                        <button onClick={() => updateToken(t.id, 'counters', counters + 1)} className="w-5 h-5 bg-blue-700 rounded text-white font-black text-[10px] flex items-center justify-center active:scale-90">+</button>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex gap-1">
-                                                    {untapped > 0 && (
-                                                        <button onClick={() => updateToken(t.id, 'tappedQty', tapped + 1)} className="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white text-[9px] font-bold py-1 rounded shadow">
-                                                            Tappa
-                                                        </button>
-                                                    )}
-                                                    {tapped > 0 && (
-                                                        <button onClick={() => updateToken(t.id, 'tappedQty', tapped - 1)} className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white text-[9px] font-bold py-1 rounded shadow">
-                                                            Stappa
-                                                        </button>
-                                                    )}
-                                                    {t.qty > 1 && (
-                                                        <button onClick={() => { setSplittingTokenId(t.id); setSplitQty(1); }} className="bg-amber-600 hover:bg-amber-500 text-white text-[9px] font-bold px-2 py-1 rounded shadow" title="Dividi mazzetto">
-                                                            ✂️
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                        </div>
-                                    );
-                                })}
-
-                                {(player.tokens || []).length === 0 && (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                        <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700 text-xs">La plancia è vuota.<br/>Tocca il tasto in basso per aggiungere pedine!</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* MODALE DI SPLIT MANTENUTO DENTRO (così ruota in base al giocatore come gli sfondi) */}
-                            {splittingTokenId && (
-                                <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-sm p-4 flex flex-col items-center justify-center animate-fade">
-                                    <div className="bg-gray-800 border-2 border-amber-500 rounded-xl p-4 w-full max-w-xs shadow-2xl text-center space-y-3">
-                                        <h4 className="text-white font-black text-base">✂️ Dividi Mazzetto</h4>
-                                        <p className="text-gray-300 text-xs">Quante pedine vuoi separare in un nuovo mazzetto?</p>
-                                        
-                                        <div className="flex items-center justify-center gap-3 my-2">
-                                            <button onClick={() => setSplitQty(Math.max(1, splitQty - 1))} className="w-10 h-10 bg-red-600 text-white font-black text-xl rounded-lg">-</button>
-                                            <span className="text-2xl font-black text-white w-12">{splitQty}</span>
-                                            <button onClick={() => setSplitQty(splitQty + 1)} className="w-10 h-10 bg-green-600 text-white font-black text-xl rounded-lg">+</button>
-                                        </div>
-
-                                        <div className="flex gap-2 pt-2">
-                                            <button onClick={() => setSplittingTokenId(null)} className="flex-1 bg-gray-700 text-white font-bold py-2 rounded-lg text-xs">Annulla</button>
-                                            <button onClick={() => handleSplitConfirm(player.tokens.find(x => x.id === splittingTokenId))} className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-black py-2 rounded-lg text-xs shadow">Conferma</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* MENU SFONDI MANTENUTO DENTRO (ruota con il giocatore che lo apre) */}
-                            {showBgMenu && (
-                                <div className="absolute inset-0 z-30 bg-black/95 p-4 flex flex-col gap-4 animate-fade">
-                                    <h4 className="text-white font-black text-xl mb-2 border-b border-gray-700 pb-2">Sfondo Battaglia</h4>
-                                    <div className="grid grid-cols-2 gap-4 overflow-y-auto content-start flex-1">
-                                        <div className="h-28 bg-gray-800 rounded-xl flex items-center justify-center text-gray-400 font-bold border-2 border-dashed border-gray-600 cursor-pointer text-center p-2" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', null); setShowBgMenu(false); }}>Sfondo Vuoto</div>
-                                        {SfondiPedine.map(bg => (
-                                            <div key={bg} className="h-28 rounded-xl border-2 border-transparent hover:border-blue-500 cursor-pointer overflow-hidden relative shadow-lg" onClick={() => { updatePlayerConfig(player.id, 'tokenBg', bg); setShowBgMenu(false); }}>
-                                                <img src={bg} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
-                                                <span className="absolute bottom-0 w-full bg-black/80 text-white text-[10px] font-bold text-center py-1 truncate px-1">{bg}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <button onClick={() => setShowBgMenu(false)} className="mt-auto bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold transition-colors">Chiudi Menu</button>
-                                </div>
-                            )}
-
-                        </div>
-
-                        {/* BARRA INFERIORE DELLA PLANCIA */}
-                        <div className="flex gap-2 mt-1 px-1 pb-0.5 shrink-0 z-20 items-center justify-between">
-                            <button onClick={() => setShowBgMenu(true)} className="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-white text-base shadow border border-gray-500" title="Sfondo Battaglia">🖼️</button>
-                            <button onClick={openSearch} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-1.5 px-4 rounded-lg text-white font-black shadow-lg text-xs sm:text-sm active:scale-95 transition-transform border border-emerald-400 flex items-center justify-center gap-1">
-                                🔍 CERCA / AGGIUNGI PEDINA
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* --- 2. RICERCA PEDINE (ESTRATTO DALLA PLANCIA: FISSO DRITTO A 0 GRADI PER TUTTI IN VERTICALE) --- */}
-                    {showSearchModal && (
-                        <div className="absolute inset-0 z-[10000] pointer-events-auto bg-gray-900/98 backdrop-blur-md p-4 flex flex-col animate-fade overflow-y-auto" style={{transform: 'rotate(0deg)'}}>
-                            <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
-                                <h4 className="text-emerald-400 font-black text-lg">🔍 Aggiungi Pedina al Campo</h4>
-                                <button onClick={closeSearch} className="bg-red-600 text-white px-3 py-1 rounded font-bold text-xs">Chiudi</button>
-                            </div>
-
-                            <div className="space-y-3 mb-4">
-                                <div>
-                                    <label className="text-gray-400 text-xs font-bold block mb-1">Nome della Pedina:</label>
-                                    <input type="text" placeholder="es. Goblin, Treasure, Zombie..." value={tokenQuery} onChange={e=>setTokenQuery(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label className="text-gray-400 text-xs font-bold block mb-1">Testo Abilità:</label>
-                                        <input type="text" placeholder="es. haste, flying" value={tokenOracle} onChange={e=>setTokenOracle(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
-                                    </div>
-                                    <div>
-                                        <label className="text-gray-400 text-xs font-bold block mb-1">Forza / Costituzione:</label>
-                                        <input type="text" placeholder="es. 1/1, 2/2" value={tokenPT} onChange={e=>setTokenPT(e.target.value)} className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg p-3 outline-none font-bold text-sm text-center focus:border-emerald-500 shadow-inner" />
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-2 pt-2">
-                                    <button onClick={searchOfficialToken} disabled={isSearching} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 py-3 rounded-lg text-white font-black shadow text-xs active:scale-95 transition-transform border border-emerald-400">
-                                        {isSearching ? '⏳ CERCO...' : '🔎 CERCA UFFICIALE'}
-                                    </button>
-                                    <button onClick={generateToken} disabled={isGeneratingToken} className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 py-3 rounded-lg text-white font-black shadow text-xs active:scale-95 transition-transform border border-purple-400" title="Crea Token Personalizzato con IA">
-                                        {isGeneratingToken ? '⏳ CREO...' : '✨ CREA CUSTOM (IA)'}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* RISULTATI DELLA RICERCA */}
-                            {cmdResults.length > 0 && (
-                                <div className="flex-1 bg-black/60 p-3 rounded-xl border border-gray-700 overflow-y-auto">
-                                    <p className="text-gray-300 text-xs font-bold mb-2">Risultati Trovati (Tocca per posizionare):</p>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {cmdResults.map(res => (
-                                            <div key={res.id} onClick={() => addOfficialToken(res)} className="cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-emerald-500 shadow-lg active:scale-95 transition-transform bg-gray-800">
-                                                <img src={res.img} className="w-full h-40 object-cover" />
-                                                <div className="p-1.5 bg-black/80 text-center">
-                                                    <span className="text-xs text-white font-bold truncate block">{res.name}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            );
-        }
         return null;
     };
     
@@ -3851,7 +3709,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
     const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig, isArchenemy, opponents, isCloud }) => {
       const [showOpponents, setShowOpponents] = useState(false);
       
-      // NUOVO: Gestione dei Punti Vita Fluttuanti
+      // Gestione dei Punti Vita Fluttuanti
       const [lifeDiff, setLifeDiff] = useState(0);
       const diffTimer = useRef(null);
 
@@ -3863,7 +3721,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       useEffect(() => {
           if (lifeDiff !== 0) {
               if (diffTimer.current) clearTimeout(diffTimer.current);
-              // Il numero scompare dopo 1.5 secondi
               diffTimer.current = setTimeout(() => setLifeDiff(0), 1500);
           }
           return () => clearTimeout(diffTimer.current);
@@ -3877,47 +3734,52 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
 
       return (
         <React.Fragment>
-          {player.bgUrl && <img src={player.bgUrl} className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none" />}
+          {/* Sfondo Comandante Fullscreen e senza filtri pesanti per farlo risaltare */}
+          {player.bgUrl && <img src={player.bgUrl} className="absolute inset-0 w-full h-full object-cover object-top opacity-80 pointer-events-none" />}
           {isDead && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-50 pointer-events-none z-10">💀</div>}
           {player.immune && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-30 pointer-events-none text-blue-500 drop-shadow-lg z-10">🛡️</div>}
           
-          <div className="relative flex justify-between items-center bg-black/50 p-2 z-30 border-b border-gray-700 h-[25%] min-h-[50px] w-full px-2 md:px-4 shrink-0">
+          {/* BARRA SUPERIORE (Trasparente, con tasti minimizzati) */}
+          <div className="absolute top-0 inset-x-0 flex justify-between items-start bg-gradient-to-b from-black/90 via-black/40 to-transparent p-2 z-30 min-h-[60px] w-full px-2 md:px-4 shrink-0 pointer-events-none">
             
-            <div className={`flex ${isCloud ? 'flex-row gap-3' : 'flex-col gap-1'} z-30 shrink-0 items-center justify-center`}>
-                <button onClick={() => onOpenModal('search')} className="text-gray-400 hover:text-white transition-transform active:scale-90" title="Imposta Sfondo"><span className="text-xl">🖼️</span></button>
-                <button onClick={() => onOpenModal('cmdrSelect')} className="text-yellow-500 hover:text-yellow-400 transition-transform active:scale-90 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" title="Centro di Comando"><span className="text-xl">👑</span></button>
+            {/* Tasto Sfondo a Sinistra */}
+            <div className={`flex ${isCloud ? 'flex-row gap-3' : 'flex-col gap-1'} z-30 shrink-0 items-center justify-start pointer-events-auto mt-1`}>
+                <button onClick={() => onOpenModal('search')} className="text-gray-300 hover:text-white transition-transform active:scale-90 bg-black/40 rounded-full p-1.5 border border-gray-600 shadow-md" title="Imposta Sfondo"><span className="text-lg leading-none block">🖼️</span></button>
             </div>
             
-            <div className="flex flex-col items-center justify-center overflow-hidden z-20 flex-1 px-1">
-               <span onClick={() => onOpenModal('editName')} className="font-bold text-white text-sm md:text-lg drop-shadow-md truncate cursor-pointer text-center w-full">
+            {/* Nome e Statistiche Rapide al Centro */}
+            <div className="flex flex-col items-center justify-start overflow-hidden z-20 flex-1 px-1 pointer-events-auto mt-1">
+               <span onClick={() => onOpenModal('editName')} className="font-black text-white text-sm md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,1)] truncate cursor-pointer text-center w-full">
                    {isArchenemy && <span className="mr-1 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]" title="Archenemy">👿</span>}
                    {player.name} ✎
                </span>
                <button onClick={() => setShowOpponents(!showOpponents)} className="mt-1 bg-indigo-700/80 hover:bg-indigo-600 text-white font-bold px-2 py-0.5 rounded text-[10px] shadow border border-indigo-400 flex items-center justify-center gap-1 active:scale-95 transition-transform shrink-0">
                     👁️ Avv
                </button>
-               <div className="flex gap-1 mt-1 justify-center flex-wrap">
-                  {player.poison > 0 && <span className="text-green-400 text-[10px] md:text-xs font-black drop-shadow-md">💧{player.poison}</span>}
-                  {player.cmdCasts > 0 && <span className="text-gray-300 text-[10px] md:text-xs font-black drop-shadow-md">⚔️{player.cmdCasts}</span>}
-                  {player.emblems > 0 && <span className="text-purple-400 text-[10px] md:text-xs font-black drop-shadow-md">🛡️{player.emblems}</span>}
-                  {player.rad > 0 && <span className="text-lime-400 text-[10px] md:text-xs font-black drop-shadow-md">☢️{player.rad}</span>}
-                  {player.energy > 0 && <span className="text-blue-400 text-[10px] md:text-xs font-black drop-shadow-md">⚡{player.energy}</span>}
-                  {player.exp > 0 && <span className="text-yellow-400 text-[10px] md:text-xs font-black drop-shadow-md">✨{player.exp}</span>}
-                  {player.ticket > 0 && <span className="text-orange-400 text-[10px] md:text-xs font-black drop-shadow-md">🎫{player.ticket}</span>}
+               {/* Statistiche testuali essenziali se presenti */}
+               <div className="flex gap-1 mt-1 justify-center flex-wrap pointer-events-none">
+                  {player.poison > 0 && <span className="text-green-400 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">💧{player.poison}</span>}
+                  {player.cmdCasts > 0 && <span className="text-gray-300 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">⚔️{player.cmdCasts}</span>}
+                  {player.emblems > 0 && <span className="text-purple-400 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">🛡️{player.emblems}</span>}
+                  {player.rad > 0 && <span className="text-lime-400 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">☢️{player.rad}</span>}
+                  {player.energy > 0 && <span className="text-blue-400 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">⚡{player.energy}</span>}
+                  {player.exp > 0 && <span className="text-yellow-400 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">✨{player.exp}</span>}
+                  {player.ticket > 0 && <span className="text-orange-400 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">🎫{player.ticket}</span>}
                   {player.monarch && <span className="text-yellow-500 text-[10px] md:text-xs font-black drop-shadow-md">👑</span>}
                   {player.initiative && <span className="text-red-400 text-[10px] md:text-xs font-black drop-shadow-md">🗡️</span>}
                   {player.blessing && <span className="text-yellow-100 text-[10px] md:text-xs font-black drop-shadow-md">🏛️</span>}
                </div>
             </div>
             
-            <div className={`flex ${isCloud ? 'flex-row gap-2' : 'flex-col gap-1'} z-30 shrink-0`}>
-               <button onClick={() => onOpenModal('mana')} className={`rounded shadow-lg font-bold bg-emerald-700 text-white hover:bg-emerald-600 transition-colors ${isCloud ? 'px-5 py-3 text-sm border border-emerald-500' : 'px-2 py-1 text-[10px]'}`}>Mana</button>
-               <button onClick={() => onOpenModal('stats')} className={`rounded shadow-lg font-bold bg-gray-700 text-white hover:bg-gray-600 transition-colors ${isCloud ? 'px-5 py-3 text-sm border border-gray-500' : 'px-2 py-1 text-[10px]'}`}>Stats</button>
+            {/* Tasto Comandante a Destra */}
+            <div className={`flex ${isCloud ? 'flex-row gap-3' : 'flex-col gap-1'} z-30 shrink-0 items-center justify-start pointer-events-auto mt-1`}>
+                <button onClick={() => onOpenModal('cmdrSelect')} className="text-yellow-400 hover:text-yellow-300 transition-transform active:scale-90 drop-shadow-[0_0_5px_rgba(234,179,8,0.8)] bg-black/40 rounded-full p-1.5 border border-yellow-600/50 shadow-md" title="Centro di Comando"><span className="text-lg leading-none block">👑</span></button>
             </div>
           </div>
-          
+
+          {/* TABELLA AVVERSARI VELOCE */}
           {showOpponents && (
-            <div className="absolute top-12 left-2 right-2 bg-gray-900/98 border-2 border-indigo-500 rounded-xl p-3 z-[100] shadow-2xl animate-fade backdrop-blur-md">
+            <div className="absolute top-14 left-2 right-2 bg-gray-900/98 border-2 border-indigo-500 rounded-xl p-3 z-[100] shadow-2xl animate-fade backdrop-blur-md">
                 <div className="flex justify-between items-center mb-2 border-b border-gray-700 pb-2">
                     <h3 className="text-white font-black text-xs sm:text-sm">👁️ Stato Avversari</h3>
                     <button onClick={() => setShowOpponents(false)} className="bg-red-600 text-white px-3 py-1 rounded font-bold text-xs shadow active:scale-95">Chiudi</button>
@@ -3939,26 +3801,32 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             </div>
           )}
 
-          <div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%] w-full relative">
-            {/* NUOVO: I tasti +/- ora usano handleLifeChange per attivare il contatore */}
-            <button onClick={() => handleLifeChange(-1)} className="w-1/4 h-full flex items-center justify-center text-5xl md:text-6xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
+          {/* AREA CENTRALE PUNTI VITA (TAP LATERALE) */}
+          <div className="absolute inset-0 z-20 flex items-center justify-between pointer-events-none">
+            <button onClick={() => handleLifeChange(-1)} className="w-1/3 h-full pointer-events-auto bg-transparent hover:bg-red-500/10 active:bg-red-500/20 transition-colors outline-none border-none flex items-center justify-start pl-2 md:pl-6 text-3xl text-white/0 hover:text-white/30 font-black">-</button>
             
-            <div className="w-2/4 flex flex-col items-center justify-center relative">
-                <span className="text-center text-5xl md:text-6xl lg:text-7xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)] truncate">{player.life}</span>
-                {/* NUOVO: Il Danno Fluttuante */}
+            <div className="w-1/3 h-full flex flex-col items-center justify-center relative pointer-events-none">
+                <span className="text-[6rem] sm:text-8xl md:text-[9rem] font-black text-white drop-shadow-[0_5px_15px_rgba(0,0,0,1)] truncate transition-transform transform">
+                    {player.life}
+                </span>
                 {lifeDiff !== 0 && (
-                    <div className={`absolute -top-8 md:-top-12 text-3xl md:text-5xl font-black drop-shadow-[0_2px_5px_rgba(0,0,0,1)] z-40 animate-fade transition-opacity ${lifeDiff > 0 ? 'text-green-400' : 'text-red-500'}`}>
+                    <div className={`absolute -top-8 sm:-top-12 text-3xl sm:text-5xl font-black drop-shadow-[0_2px_5px_rgba(0,0,0,1)] z-40 animate-fade transition-opacity ${lifeDiff > 0 ? 'text-green-400' : 'text-red-500'}`}>
                         {lifeDiff > 0 ? `+${lifeDiff}` : lifeDiff}
                     </div>
                 )}
             </div>
 
-            <button onClick={() => handleLifeChange(1)} className="w-1/4 h-full flex items-center justify-center text-5xl md:text-6xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
-            
-            <button onClick={() => onOpenModal('tokens')} className="absolute bottom-1 md:bottom-2 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-full shadow-lg text-[10px] md:text-xs font-bold bg-emerald-800/90 text-emerald-100 hover:bg-emerald-700 transition-colors border border-emerald-500 flex items-center gap-1 z-30">
-                ♟️ Pedine
-            </button>
+            <button onClick={() => handleLifeChange(1)} className="w-1/3 h-full pointer-events-auto bg-transparent hover:bg-green-500/10 active:bg-green-500/20 transition-colors outline-none border-none flex items-center justify-end pr-2 md:pr-6 text-3xl text-white/0 hover:text-white/30 font-black">+</button>
           </div>
+
+          {/* NUOVO TASTO CRUSCOTTO UNIFICATO IN BASSO */}
+          <button onClick={() => onOpenModal('stats')} className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 sm:py-3 rounded-2xl shadow-[0_5px_15px_rgba(0,0,0,0.9)] text-[10px] sm:text-xs font-bold bg-gray-900/95 text-white border border-gray-600 flex items-center justify-center gap-3 sm:gap-6 z-30 backdrop-blur-md active:scale-95 transition-transform outline-none pointer-events-auto">
+              <div className="flex flex-col items-center leading-tight"><span className="text-xl sm:text-2xl">⚙️</span><span className="opacity-70 mt-0.5">Stats</span></div>
+              <div className="w-px h-6 sm:h-8 bg-gray-600"></div>
+              <div className="flex flex-col items-center leading-tight"><span className="text-xl sm:text-2xl">🔮</span><span className="opacity-70 mt-0.5">Mana</span></div>
+              <div className="w-px h-6 sm:h-8 bg-gray-600"></div>
+              <div className="flex flex-col items-center leading-tight"><span className="text-xl sm:text-2xl">♟️</span><span className="opacity-70 mt-0.5">Pedine</span></div>
+          </button>
         </React.Fragment>
       );
     };
