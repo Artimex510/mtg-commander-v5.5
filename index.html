@@ -3753,9 +3753,14 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                    {isArchenemy && <span className="mr-1 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]" title="Archenemy">👿</span>}
                    {player.name} ✎
                </span>
-               <button onClick={() => setShowOpponents(!showOpponents)} className="mt-1 bg-indigo-700/80 hover:bg-indigo-600 text-white font-bold px-2 py-0.5 rounded text-[10px] shadow border border-indigo-400 flex items-center justify-center gap-1 active:scale-95 transition-transform shrink-0">
-                    👁️ Avv
-               </button>
+               
+               {/* Il tasto Avversari compare SOLO in modalità Cloud */}
+               {isCloud && (
+                   <button onClick={() => setShowOpponents(!showOpponents)} className="mt-1 bg-indigo-700/80 hover:bg-indigo-600 text-white font-bold px-2 py-0.5 rounded text-[10px] shadow border border-indigo-400 flex items-center justify-center gap-1 active:scale-95 transition-transform shrink-0">
+                        👁️ Avv
+                   </button>
+               )}
+               
                {/* Statistiche testuali essenziali se presenti */}
                <div className="flex gap-1 mt-1 justify-center flex-wrap pointer-events-none">
                   {player.poison > 0 && <span className="text-green-400 text-[10px] md:text-xs font-black drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">💧{player.poison}</span>}
@@ -3777,8 +3782,8 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             </div>
           </div>
 
-          {/* TABELLA AVVERSARI VELOCE */}
-          {showOpponents && (
+          {/* TABELLA AVVERSARI VELOCE (Protetta per il Cloud) */}
+          {showOpponents && isCloud && (
             <div className="absolute top-14 left-2 right-2 bg-gray-900/98 border-2 border-indigo-500 rounded-xl p-3 z-[100] shadow-2xl animate-fade backdrop-blur-md">
                 <div className="flex justify-between items-center mb-2 border-b border-gray-700 pb-2">
                     <h3 className="text-white font-black text-xs sm:text-sm">👁️ Stato Avversari</h3>
@@ -3806,8 +3811,8 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             <button onClick={() => handleLifeChange(-1)} className="w-1/3 h-full pointer-events-auto bg-transparent hover:bg-red-500/10 active:bg-red-500/20 transition-colors outline-none border-none flex items-center justify-start pl-2 md:pl-6 text-3xl text-white/0 hover:text-white/30 font-black">-</button>
             
             <div className="w-1/3 h-full flex flex-col items-center justify-center relative pointer-events-none">
-                {/* Punti Vita Rimpiccioliti */}
-                <span className="text-[5rem] sm:text-7xl md:text-[8rem] font-black text-white drop-shadow-[0_5px_15px_rgba(0,0,0,1)] truncate transition-transform transform">
+                {/* Punti Vita Rimpiccioliti Ulteriormente */}
+                <span className="text-[4.5rem] sm:text-6xl md:text-[7rem] font-black text-white drop-shadow-[0_5px_15px_rgba(0,0,0,1)] truncate transition-transform transform">
                     {player.life}
                 </span>
                 
@@ -3822,8 +3827,8 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             <button onClick={() => handleLifeChange(1)} className="w-1/3 h-full pointer-events-auto bg-transparent hover:bg-green-500/10 active:bg-green-500/20 transition-colors outline-none border-none flex items-center justify-end pr-2 md:pr-6 text-3xl text-white/0 hover:text-white/30 font-black">+</button>
           </div>
 
-          {/* NUOVO TASTO CRUSCOTTO UNIFICATO IN BASSO (Piccolo, quadrato, unico simbolo) */}
-          <button onClick={() => onOpenModal('stats')} className="absolute bottom-3 sm:bottom-4 left-1/2 transform -translate-x-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-xl shadow-[0_5px_15px_rgba(0,0,0,0.9)] bg-gray-900/95 text-white border border-gray-500 flex items-center justify-center z-30 backdrop-blur-md active:scale-95 transition-transform outline-none pointer-events-auto" title="Statistiche, Mana e Pedine">
+          {/* NUOVO TASTO CRUSCOTTO UNIFICATO IN BASSO (Abbassato al minimo) */}
+          <button onClick={() => onOpenModal('stats')} className="absolute bottom-1 sm:bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-xl shadow-[0_5px_15px_rgba(0,0,0,0.9)] bg-gray-900/95 text-white border border-gray-500 flex items-center justify-center z-30 backdrop-blur-md active:scale-95 transition-transform outline-none pointer-events-auto" title="Statistiche, Mana e Pedine">
               <span className="text-2xl sm:text-3xl drop-shadow-md">⚔️</span>
           </button>
         </React.Fragment>
