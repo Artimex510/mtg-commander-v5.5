@@ -3850,6 +3850,25 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
     // --- CARTELLA GIOCATORE ---
     const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig, isArchenemy, opponents, isCloud }) => {
       const [showOpponents, setShowOpponents] = useState(false);
+      
+      // NUOVO: Gestione dei Punti Vita Fluttuanti
+      const [lifeDiff, setLifeDiff] = useState(0);
+      const diffTimer = useRef(null);
+
+      const handleLifeChange = (amount) => {
+          updateStat(player.id, 'life', amount);
+          setLifeDiff(prev => prev + amount);
+      };
+
+      useEffect(() => {
+          if (lifeDiff !== 0) {
+              if (diffTimer.current) clearTimeout(diffTimer.current);
+              // Il numero scompare dopo 1.5 secondi
+              diffTimer.current = setTimeout(() => setLifeDiff(0), 1500);
+          }
+          return () => clearTimeout(diffTimer.current);
+      }, [lifeDiff]);
+
       let isDead = false;
       if (!player.immune) {
          if (player.life <= 0) isDead = true; if (player.poison >= (player.maxPoison || 10)) isDead = true;
@@ -3870,13 +3889,12 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             </div>
             
             <div className="flex flex-col items-center justify-center overflow-hidden z-20 flex-1 px-1">
-               {/* Click sul nome ora apre il modale EditName verticale! */}
                <span onClick={() => onOpenModal('editName')} className="font-bold text-white text-sm md:text-lg drop-shadow-md truncate cursor-pointer text-center w-full">
                    {isArchenemy && <span className="mr-1 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]" title="Archenemy">👿</span>}
                    {player.name} ✎
                </span>
-              <button onClick={() => setShowOpponents(!showOpponents)} className="mt-1 bg-indigo-700/80 hover:bg-indigo-600 text-white font-bold px-2 py-0.5 rounded text-[10px] shadow border border-indigo-400 flex items-center justify-center gap-1 active:scale-95 transition-transform shrink-0">
-                   👁️ Avv
+               <button onClick={() => setShowOpponents(!showOpponents)} className="mt-1 bg-indigo-700/80 hover:bg-indigo-600 text-white font-bold px-2 py-0.5 rounded text-[10px] shadow border border-indigo-400 flex items-center justify-center gap-1 active:scale-95 transition-transform shrink-0">
+                    👁️ Avv
                </button>
                <div className="flex gap-1 mt-1 justify-center flex-wrap">
                   {player.poison > 0 && <span className="text-green-400 text-[10px] md:text-xs font-black drop-shadow-md">💧{player.poison}</span>}
@@ -3897,8 +3915,8 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                <button onClick={() => onOpenModal('stats')} className={`rounded shadow-lg font-bold bg-gray-700 text-white hover:bg-gray-600 transition-colors ${isCloud ? 'px-5 py-3 text-sm border border-gray-500' : 'px-2 py-1 text-[10px]'}`}>Stats</button>
             </div>
           </div>
-          {/* --- MINI TABELLA AVVERSARI IN DIRETTA (SCOMPARSA) --- */}
-        {showOpponents && (
+          
+          {showOpponents && (
             <div className="absolute top-12 left-2 right-2 bg-gray-900/98 border-2 border-indigo-500 rounded-xl p-3 z-[100] shadow-2xl animate-fade backdrop-blur-md">
                 <div className="flex justify-between items-center mb-2 border-b border-gray-700 pb-2">
                     <h3 className="text-white font-black text-xs sm:text-sm">👁️ Stato Avversari</h3>
@@ -3910,39 +3928,33 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                             <span className="text-white font-bold text-xs truncate max-w-[35%] pr-1">{opp.name}</span>
                             <div className="flex gap-2 text-xs font-black">
                                 <span className="bg-red-900/50 text-red-300 px-1.5 py-0.5 rounded border border-red-800" title="Punti Vita attuali">❤️ {opp.life}</span>
-                                
-                                {opp.poison > 0 && (
-                                    <span className="bg-green-900/50 text-green-300 px-1.5 py-0.5 rounded border border-green-800" title="Segnalini Veleno">💧 {opp.poison}</span>
-                                )}
-                                
-                                {/* Danni Comandante SUBITI (Arancione/Rosso) */}
-                                {player.cmdDmg && player.cmdDmg[opp.id] > 0 && (
-                                    <span className="bg-orange-900/50 text-orange-300 px-1.5 py-0.5 rounded border border-orange-800" title={`Danni Comandante che HAI SUBÌTO da ${opp.name}`}>
-                                        🩸⚔️ {player.cmdDmg[opp.id]}
-                                    </span>
-                                )}
-
-                                {/* Danni Comandante INFLITTI (Verde Smeraldo) */}
-                                {opp.cmdDmg && opp.cmdDmg[player.id] > 0 && (
-                                    <span className="bg-emerald-900/50 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500" title={`Danni Comandante che HAI INFLITTO a ${opp.name}`}>
-                                        🎯⚔️ {opp.cmdDmg[player.id]}
-                                    </span>
-                                )}
+                                {opp.poison > 0 && ( <span className="bg-green-900/50 text-green-300 px-1.5 py-0.5 rounded border border-green-800">💧 {opp.poison}</span> )}
+                                {player.cmdDmg && player.cmdDmg[opp.id] > 0 && ( <span className="bg-orange-900/50 text-orange-300 px-1.5 py-0.5 rounded border border-orange-800">🩸 {player.cmdDmg[opp.id]}</span> )}
+                                {opp.cmdDmg && opp.cmdDmg[player.id] > 0 && ( <span className="bg-emerald-900/50 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500">🎯 {opp.cmdDmg[player.id]}</span> )}
                             </div>
                         </div>
                     ))}
-                    {(!opponents || opponents.length === 0) && (
-                        <p className="text-gray-500 text-xs text-center font-bold">Nessun avversario rilevato.</p>
-                    )}
+                    {(!opponents || opponents.length === 0) && <p className="text-gray-500 text-xs text-center font-bold">Nessun avversario rilevato.</p>}
                 </div>
             </div>
-        )}
+          )}
+
           <div className="flex-1 flex items-center justify-between px-2 z-20 h-[75%] w-full relative">
-            <button onClick={() => updateStat(player.id, 'life', -1)} className="w-1/4 h-full flex items-center justify-center text-5xl md:text-6xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
-            <div className="w-2/4 text-center text-5xl md:text-6xl lg:text-7xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)] truncate">{player.life}</div>
-            <button onClick={() => updateStat(player.id, 'life', 1)} className="w-1/4 h-full flex items-center justify-center text-5xl md:text-6xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
+            {/* NUOVO: I tasti +/- ora usano handleLifeChange per attivare il contatore */}
+            <button onClick={() => handleLifeChange(-1)} className="w-1/4 h-full flex items-center justify-center text-5xl md:text-6xl font-bold text-red-500 active:bg-red-500/20 rounded-l-xl transition-colors drop-shadow-md">-</button>
             
-            {/* Tasto Pedine Fluttuante in Basso al Centro */}
+            <div className="w-2/4 flex flex-col items-center justify-center relative">
+                <span className="text-center text-5xl md:text-6xl lg:text-7xl font-black text-white drop-shadow-[0_5px_8px_rgba(0,0,0,1)] truncate">{player.life}</span>
+                {/* NUOVO: Il Danno Fluttuante */}
+                {lifeDiff !== 0 && (
+                    <div className={`absolute -top-8 md:-top-12 text-3xl md:text-5xl font-black drop-shadow-[0_2px_5px_rgba(0,0,0,1)] z-40 animate-fade transition-opacity ${lifeDiff > 0 ? 'text-green-400' : 'text-red-500'}`}>
+                        {lifeDiff > 0 ? `+${lifeDiff}` : lifeDiff}
+                    </div>
+                )}
+            </div>
+
+            <button onClick={() => handleLifeChange(1)} className="w-1/4 h-full flex items-center justify-center text-5xl md:text-6xl font-bold text-green-500 active:bg-green-500/20 rounded-r-xl transition-colors drop-shadow-md">+</button>
+            
             <button onClick={() => onOpenModal('tokens')} className="absolute bottom-1 md:bottom-2 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-full shadow-lg text-[10px] md:text-xs font-bold bg-emerald-800/90 text-emerald-100 hover:bg-emerald-700 transition-colors border border-emerald-500 flex items-center gap-1 z-30">
                 ♟️ Pedine
             </button>
