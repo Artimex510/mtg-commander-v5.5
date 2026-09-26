@@ -3231,7 +3231,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                }).catch(e => { console.error(e); setIsSearching(false); });
         };
 
-        const isUnifiedTab = ['stats', 'mana', 'tokens'].includes(currentTab);
+        const isUnifiedTab = ['stats', 'mana', 'tokens', 'style'].includes(currentTab);
         let effectiveRotation = rotation;
         const numPlay = opponents.length + 1;
 
@@ -3326,6 +3326,25 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
         const SfondiPedine = ['plains_sfondo.jpg', 'island_sfondo.jpg', 'swamp_sfondo.jpg', 'mountain_sfondo.jpg', 'forest_sfondo.jpg', 'eldrazi_sfondo.jpg', 'yokai_sfondo.jpg', 'yokai2_sfondo.jpg', 'yokai3_sfondo.jpg'];
         const ManaColors = [ { id: 'W', color: 'bg-yellow-100 text-yellow-900', label: 'W' }, { id: 'U', color: 'bg-blue-500 text-white', label: 'U' }, { id: 'B', color: 'bg-gray-800 text-white', label: 'B' }, { id: 'R', color: 'bg-red-500 text-white', label: 'R' }, { id: 'G', color: 'bg-green-500 text-white', label: 'G' }, { id: 'C', color: 'bg-gray-400 text-gray-900', label: 'C' } ];
 
+        // PALETTE COLORI STILE LIFETAP (Colori bilanciati per UI)
+        const playerColors = [
+            { id: 'w', class: 'bg-stone-300' },
+            { id: 'u', class: 'bg-blue-800' },
+            { id: 'b', class: 'bg-zinc-800' },
+            { id: 'r', class: 'bg-red-800' },
+            { id: 'g', class: 'bg-emerald-800' },
+            { id: 'azorius', class: 'bg-gradient-to-br from-stone-300 to-blue-800' },
+            { id: 'dimir', class: 'bg-gradient-to-br from-blue-800 to-zinc-900' },
+            { id: 'rakdos', class: 'bg-gradient-to-br from-zinc-900 to-red-800' },
+            { id: 'gruul', class: 'bg-gradient-to-br from-red-800 to-emerald-800' },
+            { id: 'selesnya', class: 'bg-gradient-to-br from-stone-300 to-emerald-800' },
+            { id: 'orzhov', class: 'bg-gradient-to-br from-stone-300 to-zinc-800' },
+            { id: 'izzet', class: 'bg-gradient-to-br from-blue-800 to-red-800' },
+            { id: 'golgari', class: 'bg-gradient-to-br from-zinc-800 to-emerald-800' },
+            { id: 'boros', class: 'bg-gradient-to-br from-stone-300 to-red-800' },
+            { id: 'simic', class: 'bg-gradient-to-br from-emerald-800 to-blue-800' }
+        ];
+
         // --- RENDERIZZA CRUSCOTTO UNIFICATA ---
         if (isUnifiedTab) {
             return renderModal(
@@ -3333,11 +3352,12 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                     {/* MENU TAB HEADER */}
                     <div className="flex bg-gray-950 p-1.5 rounded-xl mb-3 shrink-0 border border-gray-700 shadow-inner overflow-hidden items-center justify-between">
                         <div className="flex flex-1 gap-1 h-full">
-                            <button onClick={() => setCurrentTab('stats')} className={`flex-1 py-2 md:py-3 text-xs md:text-sm font-black rounded-lg transition-all ${currentTab === 'stats' ? 'bg-gray-700 text-white shadow-md border border-gray-500' : 'text-gray-400 hover:text-white'}`}>⚙️ Stats</button>
-                            <button onClick={() => setCurrentTab('mana')} className={`flex-1 py-2 md:py-3 text-xs md:text-sm font-black rounded-lg transition-all ${currentTab === 'mana' ? 'bg-gray-700 text-white shadow-md border border-gray-500' : 'text-gray-400 hover:text-white'}`}>🔮 Mana</button>
-                            <button onClick={() => setCurrentTab('tokens')} className={`flex-1 py-2 md:py-3 text-xs md:text-sm font-black rounded-lg transition-all ${currentTab === 'tokens' ? 'bg-gray-700 text-white shadow-md border border-gray-500' : 'text-gray-400 hover:text-white'}`}>♟️ Pedine</button>
+                            <button onClick={() => setCurrentTab('stats')} className={`flex-1 py-2 text-[10px] md:text-xs font-black rounded-lg transition-all ${currentTab === 'stats' ? 'bg-gray-700 text-white shadow-md border border-gray-500' : 'text-gray-400 hover:text-white'}`}>⚙️ Stats</button>
+                            <button onClick={() => setCurrentTab('mana')} className={`flex-1 py-2 text-[10px] md:text-xs font-black rounded-lg transition-all ${currentTab === 'mana' ? 'bg-gray-700 text-white shadow-md border border-gray-500' : 'text-gray-400 hover:text-white'}`}>🔮 Mana</button>
+                            <button onClick={() => setCurrentTab('tokens')} className={`flex-1 py-2 text-[10px] md:text-xs font-black rounded-lg transition-all ${currentTab === 'tokens' ? 'bg-gray-700 text-white shadow-md border border-gray-500' : 'text-gray-400 hover:text-white'}`}>♟️ Pedine</button>
+                            <button onClick={() => setCurrentTab('style')} className={`flex-1 py-2 text-[10px] md:text-xs font-black rounded-lg transition-all ${currentTab === 'style' ? 'bg-gray-700 text-white shadow-md border border-gray-500' : 'text-gray-400 hover:text-white'}`}>🎨 Stile</button>
                         </div>
-                        <button onClick={onClose} className="ml-2 bg-red-600 active:bg-red-500 px-4 py-2 md:py-3 rounded-lg text-white font-black shadow-lg text-xs md:text-sm transition-colors">✖ CHIUDI</button>
+                        <button onClick={onClose} className="ml-1 md:ml-2 bg-red-600 active:bg-red-500 px-3 md:px-4 py-2 rounded-lg text-white font-black shadow-lg text-[10px] md:text-xs transition-colors">✖</button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto relative min-h-0 flex flex-col">
@@ -3348,16 +3368,20 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                 {/* Griglia Danni Comandante */}
                                 <h4 className="text-white font-black text-xs md:text-sm uppercase text-center opacity-50 bg-gray-800 rounded-full py-1 mb-2">⚔️ Danni Comandante Subiti</h4>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
-                                    {opponents.map(opp => (
-                                        <div key={opp.id} className="relative bg-gray-800 rounded-xl overflow-hidden border border-gray-600 h-24 md:h-32 flex items-center justify-center cursor-pointer active:scale-95 transition-transform shadow-lg" onClick={() => updateStat(player.id, 'cmdDmg', 1, opp.id)}>
-                                            {opp.bgUrl && <img src={opp.bgUrl} className="absolute inset-0 w-full h-full object-cover object-top opacity-30 pointer-events-none" />}
-                                            <div className="relative z-10 flex flex-col items-center pointer-events-none p-1 w-full h-full justify-center">
-                                                <span className="text-white font-bold text-[10px] md:text-xs truncate max-w-[90%] bg-black/50 px-2 py-0.5 rounded-full mb-1">{opp.name}</span>
-                                                <span className="text-4xl md:text-5xl font-black text-red-400 drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">{(player.cmdDmg && player.cmdDmg[opp.id]) || 0}</span>
+                                    {opponents.map(opp => {
+                                        // Applica il colore dell'avversario. Se ha immagine, la renderizza con opacità 50%.
+                                        const oppColor = opp.color || 'bg-gray-800';
+                                        return (
+                                            <div key={opp.id} className={`relative rounded-xl overflow-hidden border border-gray-600 h-24 md:h-32 flex items-center justify-center cursor-pointer active:scale-95 transition-transform shadow-lg ${oppColor}`} onClick={() => updateStat(player.id, 'cmdDmg', 1, opp.id)}>
+                                                {opp.bgUrl && <img src={opp.bgUrl} className="absolute inset-0 w-full h-full object-cover object-top opacity-50 pointer-events-none mix-blend-overlay" />}
+                                                <div className="relative z-10 flex flex-col items-center pointer-events-none p-1 w-full h-full justify-center">
+                                                    <span className="text-white font-bold text-[10px] md:text-xs truncate max-w-[90%] bg-black/60 px-2 py-0.5 rounded-full mb-1">{opp.name}</span>
+                                                    <span className="text-4xl md:text-5xl font-black text-white drop-shadow-[0_4px_6px_rgba(220,38,38,1)]">{(player.cmdDmg && player.cmdDmg[opp.id]) || 0}</span>
+                                                </div>
+                                                <button onClick={(e) => { e.stopPropagation(); updateStat(player.id, 'cmdDmg', -1, opp.id); }} className="absolute bottom-1 right-1 w-8 h-8 md:w-10 md:h-10 bg-black/70 rounded-lg text-white font-black text-xl md:text-2xl flex items-center justify-center border border-gray-500 z-20 active:bg-red-600 hover:bg-gray-700 shadow-md">-</button>
                                             </div>
-                                            <button onClick={(e) => { e.stopPropagation(); updateStat(player.id, 'cmdDmg', -1, opp.id); }} className="absolute bottom-1 right-1 w-8 h-8 md:w-10 md:h-10 bg-black/70 rounded-lg text-white font-black text-xl md:text-2xl flex items-center justify-center border border-gray-500 z-20 active:bg-red-600 hover:bg-gray-700 shadow-md">-</button>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                     {opponents.length === 0 && <p className="col-span-full text-center text-gray-500 text-xs font-bold">Nessun avversario per calcolare i danni.</p>}
                                 </div>
 
@@ -3426,13 +3450,20 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
 
                                         return (
                                             <div key={t.id} className="flex flex-col items-center bg-gray-900/80 backdrop-blur-sm p-2 rounded-xl border border-gray-600 shadow-2xl shrink-0">
+                                                
+                                                {/* CARTE MAGGIORI */}
                                                 <div className="flex items-center gap-3 mb-2">
                                                     
+                                                    {/* STACK STAPPATO */}
                                                     {untapped > 0 && (
                                                         <div className="relative w-28 h-40 cursor-pointer" onClick={() => updateToken(t.id, 'tappedQty', tapped + 1)} title="Tocca per tapparne una">
-                                                            {untapped > 1 && ( <div className="absolute inset-0 rounded-xl bg-gray-700 border border-gray-500 transform translate-x-1.5 translate-y-1.5 pointer-events-none"></div> )}
+                                                            {untapped > 1 && (
+                                                                <div className="absolute inset-0 rounded-xl bg-gray-700 border border-gray-500 transform translate-x-1.5 translate-y-1.5 pointer-events-none"></div>
+                                                            )}
                                                             <div className={`absolute inset-0 rounded-xl border-2 border-black shadow-2xl flex flex-col overflow-hidden ${t.color || 'bg-gray-800'}`}>
-                                                                {t.img ? ( <img src={t.img} className="w-full h-full object-cover" /> ) : (
+                                                                {t.img ? (
+                                                                    <img src={t.img} className="w-full h-full object-cover" />
+                                                                ) : (
                                                                     <React.Fragment>
                                                                         <div className="bg-black/70 p-1 text-center font-bold text-white text-[10px] truncate border-b border-black">{t.name}</div>
                                                                         <div className="flex-1 p-2 text-[9px] text-white/90 overflow-y-auto leading-tight">{t.abilities}</div>
@@ -3440,15 +3471,24 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                                                     </React.Fragment>
                                                                 )}
                                                             </div>
-                                                            <div className="absolute -top-2.5 -right-2.5 bg-green-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">{untapped}</div>
-                                                            {counters > 0 && ( <div className="absolute -top-2.5 -left-2.5 bg-blue-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">+{counters}/+{counters}</div> )}
+                                                            <div className="absolute -top-2.5 -right-2.5 bg-green-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">
+                                                                {untapped}
+                                                            </div>
+                                                            {counters > 0 && (
+                                                                <div className="absolute -top-2.5 -left-2.5 bg-blue-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">
+                                                                    +{counters}/+{counters}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
 
+                                                    {/* STACK TAPPATO */}
                                                     {tapped > 0 && (
                                                         <div className="relative w-40 h-28 cursor-pointer flex items-center justify-center my-4" onClick={() => updateToken(t.id, 'tappedQty', untapped > 0 ? tapped - 1 : 0)} title="Tocca per stapparne una">
                                                             <div className={`w-28 h-40 rounded-xl border-2 border-black shadow-2xl flex flex-col overflow-hidden rotate-90 opacity-90 ${t.color || 'bg-gray-800'}`}>
-                                                                {t.img ? ( <img src={t.img} className="w-full h-full object-cover" /> ) : (
+                                                                {t.img ? (
+                                                                    <img src={t.img} className="w-full h-full object-cover" />
+                                                                ) : (
                                                                     <React.Fragment>
                                                                         <div className="bg-black/70 p-1 text-center font-bold text-white text-[10px] truncate border-b border-black">{t.name}</div>
                                                                         <div className="flex-1 p-2 text-[9px] text-white/90 overflow-y-auto leading-tight">{t.abilities}</div>
@@ -3456,18 +3496,33 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                                                     </React.Fragment>
                                                                 )}
                                                             </div>
-                                                            <div className="absolute -top-3 right-2 bg-red-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">{tapped} 💤</div>
-                                                            {counters > 0 && ( <div className="absolute -top-3 left-2 bg-blue-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">+{counters}/+{counters}</div> )}
+                                                            <div className="absolute -top-3 right-2 bg-red-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">
+                                                                {tapped} 💤
+                                                            </div>
+                                                            {counters > 0 && (
+                                                                <div className="absolute -top-3 left-2 bg-blue-600 text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-black shadow-xl z-20">
+                                                                    +{counters}/+{counters}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
+
                                                 </div>
 
+                                                {/* CONTROLLI SOTTO AL MAZZETTO */}
                                                 <div className="w-40 space-y-1.5">
                                                     <div className="flex items-center justify-between gap-1 bg-black/40 p-1 rounded-lg border border-gray-700">
                                                         <button onClick={() => t.qty > 1 ? updateToken(t.id, 'qty', t.qty - 1) : deleteToken(t.id)} className="w-6 h-6 bg-red-600 rounded text-white font-black text-xs flex items-center justify-center active:scale-90">-</button>
-                                                        <input type="number" inputMode="numeric" value={t.qty} onChange={e => updateToken(t.id, 'qty', Math.max(1, parseInt(e.target.value) || 1))} className="w-10 bg-gray-900 border border-gray-600 text-white rounded text-center font-black text-xs py-0.5 outline-none" />
+                                                        <input 
+                                                            type="number" 
+                                                            inputMode="numeric"
+                                                            value={t.qty} 
+                                                            onChange={e => updateToken(t.id, 'qty', Math.max(1, parseInt(e.target.value) || 1))} 
+                                                            className="w-10 bg-gray-900 border border-gray-600 text-white rounded text-center font-black text-xs py-0.5 outline-none" 
+                                                        />
                                                         <button onClick={() => updateToken(t.id, 'qty', t.qty + 1)} className="w-6 h-6 bg-green-600 rounded text-white font-black text-xs flex items-center justify-center active:scale-90">+</button>
                                                     </div>
+
                                                     <div className="flex items-center justify-between gap-1 bg-blue-950/50 p-1 rounded-lg border border-blue-800">
                                                         <span className="text-[9px] font-bold text-blue-300 pl-1">+1/+1:</span>
                                                         <div className="flex items-center gap-1">
@@ -3476,15 +3531,29 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                                             <button onClick={() => updateToken(t.id, 'counters', counters + 1)} className="w-5 h-5 bg-blue-700 rounded text-white font-black text-[10px] flex items-center justify-center active:scale-90">+</button>
                                                         </div>
                                                     </div>
+
                                                     <div className="flex gap-1">
-                                                        {untapped > 0 && <button onClick={() => updateToken(t.id, 'tappedQty', tapped + 1)} className="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white text-[9px] font-bold py-1 rounded shadow">Tappa</button>}
-                                                        {tapped > 0 && <button onClick={() => updateToken(t.id, 'tappedQty', tapped - 1)} className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white text-[9px] font-bold py-1 rounded shadow">Stappa</button>}
-                                                        {t.qty > 1 && <button onClick={() => { setSplittingTokenId(t.id); setSplitQty(1); }} className="bg-amber-600 hover:bg-amber-500 text-white text-[9px] font-bold px-2 py-1 rounded shadow" title="Dividi mazzetto">✂️</button>}
+                                                        {untapped > 0 && (
+                                                            <button onClick={() => updateToken(t.id, 'tappedQty', tapped + 1)} className="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white text-[9px] font-bold py-1 rounded shadow">
+                                                                Tappa
+                                                            </button>
+                                                        )}
+                                                        {tapped > 0 && (
+                                                            <button onClick={() => updateToken(t.id, 'tappedQty', tapped - 1)} className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white text-[9px] font-bold py-1 rounded shadow">
+                                                                Stappa
+                                                            </button>
+                                                        )}
+                                                        {t.qty > 1 && (
+                                                            <button onClick={() => { setSplittingTokenId(t.id); setSplitQty(1); }} className="bg-amber-600 hover:bg-amber-500 text-white text-[9px] font-bold px-2 py-1 rounded shadow" title="Dividi mazzetto">
+                                                                ✂️
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
                                         );
                                     })}
+
                                     {(player.tokens || []).length === 0 && (
                                         <div className="w-full h-full flex items-center justify-center">
                                             <p className="text-gray-400 font-bold text-center bg-black/60 p-4 rounded-xl border border-gray-700 text-xs shadow-inner">La plancia è vuota.<br/>Tocca il tasto in basso per aggiungere pedine!</p>
@@ -3505,11 +3574,13 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                         <div className="bg-gray-800 border-2 border-amber-500 rounded-xl p-4 w-full max-w-xs shadow-2xl text-center space-y-3">
                                             <h4 className="text-white font-black text-base">✂️ Dividi Mazzetto</h4>
                                             <p className="text-gray-300 text-xs">Quante pedine vuoi separare in un nuovo mazzetto?</p>
+                                            
                                             <div className="flex items-center justify-center gap-3 my-2">
                                                 <button onClick={() => setSplitQty(Math.max(1, splitQty - 1))} className="w-10 h-10 bg-red-600 text-white font-black text-xl rounded-lg">-</button>
                                                 <span className="text-2xl font-black text-white w-12">{splitQty}</span>
                                                 <button onClick={() => setSplitQty(splitQty + 1)} className="w-10 h-10 bg-green-600 text-white font-black text-xl rounded-lg">+</button>
                                             </div>
+
                                             <div className="flex gap-2 pt-2">
                                                 <button onClick={() => setSplittingTokenId(null)} className="flex-1 bg-gray-700 text-white font-bold py-2 rounded-lg text-xs">Annulla</button>
                                                 <button onClick={() => handleSplitConfirm(player.tokens.find(x => x.id === splittingTokenId))} className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-black py-2 rounded-lg text-xs shadow">Conferma</button>
@@ -3517,6 +3588,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                         </div>
                                     </div>
                                 )}
+
                                 {showBgMenu && (
                                     <div className="absolute inset-0 z-30 bg-black/95 p-4 flex flex-col gap-4 animate-fade">
                                         <h4 className="text-white font-black text-xl mb-2 border-b border-gray-700 pb-2">Sfondo Battaglia</h4>
@@ -3532,6 +3604,28 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                         <button onClick={() => setShowBgMenu(false)} className="mt-auto bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold transition-colors">Chiudi Menu</button>
                                     </div>
                                 )}
+                            </div>
+                        )}
+
+                        {/* VIEW: STILE E COLORI GIOCATORE */}
+                        {currentTab === 'style' && (
+                            <div className="flex-1 flex flex-col animate-fade h-full p-2">
+                                <h4 className="text-white font-black text-xs md:text-sm uppercase text-center opacity-50 bg-gray-800 rounded-full py-1 mb-3">🎨 Colore Plancia Giocatore</h4>
+                                
+                                <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 overflow-y-auto pb-4 px-1 content-start">
+                                    <div onClick={() => updatePlayerConfig(player.id, 'color', null)} className="h-12 md:h-16 rounded-xl bg-gray-900 border-2 border-gray-600 flex items-center justify-center cursor-pointer shadow-lg active:scale-95 text-[10px] md:text-xs text-gray-400 font-bold text-center">Nero<br/>Base</div>
+                                    
+                                    {playerColors.map(c => (
+                                        <div key={c.id} onClick={() => updatePlayerConfig(player.id, 'color', c.class)} className={`h-12 md:h-16 rounded-xl ${c.class} border-2 ${player.color === c.class ? 'border-white shadow-[0_0_15px_rgba(255,255,255,0.8)] scale-105' : 'border-black/50'} cursor-pointer shadow-lg active:scale-95 transition-transform`}></div>
+                                    ))}
+                                </div>
+                                
+                                <div className="mt-4 border-t border-gray-700 pt-4 px-1">
+                                    <button onClick={() => updatePlayerConfig(player.id, 'mixBg', !player.mixBg)} className={`w-full py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 border transition-all ${player.mixBg ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-400'}`}>
+                                        <span className="text-xl">🔀</span> MIX COLORE + COMANDANTE
+                                    </button>
+                                    <p className="text-[10px] text-gray-400 text-center mt-2 px-4">Attiva questa opzione per fondere il colore con lo sfondo del Comandante. Se disattivata, l'immagine del Comandante coprirà completamente il colore.</p>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -3567,6 +3661,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                     </button>
                                 </div>
                             </div>
+                            {/* RISULTATI DELLA RICERCA */}
                             {cmdResults.length > 0 && (
                                 <div className="flex-1 bg-black/60 p-3 rounded-xl border border-gray-700 overflow-y-auto">
                                     <p className="text-gray-300 text-xs font-bold mb-2">Risultati Trovati (Tocca per posizionare):</p>
@@ -3732,10 +3827,17 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
          if (player.cmdDmg) { Object.keys(player.cmdDmg).forEach(key => { if (player.cmdDmg[key] >= 21) isDead = true; }); }
       }
 
+      // Determina il colore di base. Se non c'è colore, resta nero. Se l'utente ha messo l'immagine ma non ha attivato il MIX, il colore non viene renderizzato (torna nero).
+      const activeColorClass = (player.bgUrl && !player.mixBg) ? 'bg-gray-900' : (player.color || 'bg-gray-900');
+
       return (
         <React.Fragment>
-          {/* Sfondo Comandante Fullscreen e senza filtri pesanti per farlo risaltare */}
-          {player.bgUrl && <img src={player.bgUrl} className="absolute inset-0 w-full h-full object-cover object-top opacity-80 pointer-events-none" />}
+          {/* Sfondo Colore Solido / Sfumatura */}
+          <div className={`absolute inset-0 w-full h-full z-0 pointer-events-none ${activeColorClass}`}></div>
+
+          {/* Sfondo Comandante Fullscreen. Se c'è mixBg attivo, l'immagine è semitrasparente. */}
+          {player.bgUrl && <img src={player.bgUrl} className={`absolute inset-0 w-full h-full object-cover object-top pointer-events-none z-0 ${player.mixBg ? 'opacity-50 mix-blend-overlay' : 'opacity-80'}`} />}
+          
           {isDead && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-50 pointer-events-none z-10">💀</div>}
           {player.immune && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-30 pointer-events-none text-blue-500 drop-shadow-lg z-10">🛡️</div>}
           
@@ -3811,12 +3913,12 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             <button onClick={() => handleLifeChange(-1)} className="w-1/3 h-full pointer-events-auto bg-transparent hover:bg-red-500/10 active:bg-red-500/20 transition-colors outline-none border-none flex items-center justify-start pl-2 md:pl-6 text-3xl text-white/0 hover:text-white/30 font-black">-</button>
             
             <div className="w-1/3 h-full flex flex-col items-center justify-center relative pointer-events-none">
-                {/* Punti Vita Ridotti Ulteriormente (da 3rem base a 2.5rem base) */}
+                {/* Punti Vita come da tua istruzione */}
                 <span className="text-[2.5rem] sm:text-[3.5rem] md:text-[4.5rem] font-black text-white drop-shadow-[0_5px_15px_rgba(0,0,0,1)] truncate transition-transform transform">
                     {player.life}
                 </span>
                 
-                {/* Numeri Fluttuanti Danni/Cure: Abbassati al 35% dall'alto per non coprire il centro */}
+                {/* Numeri Fluttuanti Danni/Cure: mantenuti top-[35%] */}
                 {lifeDiff !== 0 && (
                     <div className={`absolute top-[35%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-4xl sm:text-5xl font-black drop-shadow-[0_4px_10px_rgba(0,0,0,1)] z-[100] animate-fade transition-opacity pointer-events-none ${lifeDiff > 0 ? 'text-green-400' : 'text-red-500'}`}>
                         {lifeDiff > 0 ? `+${lifeDiff}` : lifeDiff}
@@ -3828,7 +3930,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           </div>
 
           {/* NUOVO TASTO CRUSCOTTO UNIFICATO IN BASSO (Semitrasparente, effetto vetro) */}
-          <button onClick={() => onOpenModal('stats')} className="absolute bottom-1 sm:bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-xl shadow-[0_5px_15px_rgba(0,0,0,0.5)] bg-black/30 hover:bg-black/50 text-white border border-gray-400/50 flex items-center justify-center z-30 backdrop-blur-md active:scale-95 transition-all outline-none pointer-events-auto" title="Statistiche, Mana e Pedine">
+          <button onClick={() => onOpenModal('stats')} className="absolute bottom-1 sm:bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-xl shadow-[0_5px_15px_rgba(0,0,0,0.5)] bg-black/30 hover:bg-black/50 text-white border border-gray-400/50 flex items-center justify-center z-30 backdrop-blur-md active:scale-95 transition-all outline-none pointer-events-auto" title="Statistiche, Mana, Pedine e Stili">
               <span className="text-2xl sm:text-3xl drop-shadow-md opacity-90">⚔️</span>
           </button>
         </React.Fragment>
