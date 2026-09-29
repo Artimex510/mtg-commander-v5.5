@@ -3762,7 +3762,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
     };
     
     // --- CARTELLA GIOCATORE ---
-    const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig, isArchenemy, opponents, isCloud }) => {
+    const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig, isArchenemy, opponents, isCloud, isStartingPlayer }) => {
       const [showOpponents, setShowOpponents] = useState(false);
       
       const [lifeDiff, setLifeDiff] = useState(0);
@@ -3800,6 +3800,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           
           {isDead && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-50 pointer-events-none z-10">💀</div>}
           {player.immune && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-30 pointer-events-none text-blue-500 drop-shadow-lg z-10">🛡️</div>}
+          {isStartingPlayer && <div className="absolute inset-0 border-4 border-yellow-400 shadow-[inset_0_0_50px_rgba(250,204,21,0.6)] animate-pulse pointer-events-none z-[60] rounded-xl"></div>}
           
           {/* BARRA SUPERIORE (Trasparente, con tasti minimizzati) */}
           <div className="absolute top-0 inset-x-0 flex justify-between items-start bg-gradient-to-b from-black/90 via-black/40 to-transparent p-2 z-30 min-h-[60px] w-full px-2 md:px-4 shrink-0 pointer-events-none">
@@ -3811,8 +3812,9 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             
             {/* Nome e Statistiche Rapide al Centro */}
             <div className="flex flex-col items-center justify-start overflow-hidden z-20 flex-1 px-1 pointer-events-auto mt-1">
-               <span onClick={() => onOpenModal('editName')} className="font-black text-white text-sm md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,1)] truncate cursor-pointer text-center w-full">
+               <span onClick={() => onOpenModal('editName')} className="font-black text-white text-sm md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,1)] truncate cursor-pointer text-center w-full relative">
                    {isArchenemy && <span className="mr-1 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]" title="Archenemy">👿</span>}
+                   {isStartingPlayer && <span className="mr-1 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)] animate-bounce inline-block" title="Inizia per Primo">🥇</span>}
                    {player.name} ✎
                </span>
                
@@ -3921,6 +3923,18 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           active: false, planes: [], currentPlane: null, showModal: false, enlargedImage: null
       });
       const [planarDieResult, setPlanarDieResult] = useState(null);
+      const [startingPlayerId, setStartingPlayerId] = useState(null);
+
+      const rollForStart = () => {
+          if (players.length === 0) return;
+          const randomPlayer = players[Math.floor(Math.random() * players.length)];
+          setStartingPlayerId(randomPlayer.id);
+          setShowDice(false);
+          // Rimuove l'illuminazione dopo 5 secondi
+          setTimeout(() => {
+              setStartingPlayerId(null);
+          }, 5000);
+      };
 
       // IDENTIFICATORE LOCALE PER IL BLOCCO POSTAZIONE CLOUD
       const localClientId = React.useRef(Math.random().toString(36).substring(2)).current;
@@ -4459,7 +4473,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                // --- PLANCIA PERSONALE CLOUD ---
                <React.Fragment>
                   <div className="flex-1 w-full relative overflow-hidden bg-gray-900 shadow-xl">
-                      <PlayerCard isCloud={true} player={myPlayer} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={0} isArchenemy={archenemy.playerId === myPlayer.id} onOpenModal={(type) => setActiveModal({type, playerId: myPlayer.id, rotation: 0})} opponents={players.filter(p => p.id !== myPlayerId)} />
+                      <PlayerCard isCloud={true} player={myPlayer} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={0} isArchenemy={archenemy.playerId === myPlayer.id} isStartingPlayer={startingPlayerId === myPlayer.id} onOpenModal={(type) => setActiveModal({type, playerId: myPlayer.id, rotation: 0})} opponents={players.filter(p => p.id !== myPlayerId)} />
                   </div>
                   
                   <div className="h-[75px] bg-gray-950 border-t border-gray-700 flex flex-row items-center justify-around shadow-2xl z-[120] py-2 px-4 w-full shrink-0">
@@ -4529,7 +4543,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                          <div key={p.id} className={`${wrapperClass} ${rowStart} ${colStart} ${rowSpan}`} style={{ containerType: 'size' }}>
                              <div className={`absolute flex flex-col bg-gray-900 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] ${isSideways ? 'top-1/2 left-1/2' : 'inset-0'}`} 
                                   style={{ width: isSideways ? '100cqh' : '100cqw', height: isSideways ? '100cqw' : '100cqh', transform: isSideways ? `translate(-50%, -50%) rotate(${rotDeg}deg)` : `rotate(${rotDeg}deg)` }}>
-                                 <PlayerCard player={p} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={rotDeg} isArchenemy={archenemy.playerId === p.id} opponents={players.filter(op => op.id !== p.id)} onOpenModal={(type) => setActiveModal({type, playerId: p.id, rotation: rotDeg})} />
+                                 <PlayerCard player={p} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={rotDeg} isArchenemy={archenemy.playerId === p.id} isStartingPlayer={startingPlayerId === p.id} opponents={players.filter(op => op.id !== p.id)} onOpenModal={(type) => setActiveModal({type, playerId: p.id, rotation: rotDeg})} />
                              </div>
                          </div>
                      );
@@ -4712,6 +4726,9 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
              <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 animate-fade" onClick={() => setShowDice(false)}>
                 <div className="bg-gray-900 border border-purple-500 rounded-2xl p-6 shadow-2xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
                    <h3 className="text-xl font-black text-white mb-4 text-center">🎲 Lancia Dado</h3>
+                   <button onClick={rollForStart} className="w-full mb-4 bg-yellow-600 hover:bg-yellow-500 border border-yellow-400 rounded-xl py-4 font-black text-white shadow-[0_0_15px_rgba(202,138,4,0.5)] active:scale-95 text-xl transition-all flex items-center justify-center gap-2">
+                       🥇 SORTEGGIA CHI INIZIA 
+                   </button>
                    <div className="grid grid-cols-2 gap-4">
                       <button onClick={() => rollDice(2)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl py-6 font-bold text-white shadow-lg active:scale-95 text-lg transition-all">🪙 Moneta (D2)</button>
                       <button onClick={() => rollDice(6)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl py-6 font-bold text-white shadow-lg active:scale-95 text-lg transition-all">🎲 Dado (D6)</button>
