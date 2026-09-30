@@ -3925,6 +3925,13 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const [planarDieResult, setPlanarDieResult] = useState(null);
       const [startingPlayerId, setStartingPlayerId] = useState(null);
 
+      // --- NUOVI STATI TIMER TURNI (MTG Chess Clock) ---
+      const [useTimer, setUseTimer] = useState(false);
+      const [turnMinutes, setTurnMinutes] = useState(3);
+      const [activeTurnIdx, setActiveTurnIdx] = useState(-1);
+      const [timeRemaining, setTimeRemaining] = useState(0);
+      const [isTimerPaused, setIsTimerPaused] = useState(true);
+
       const rollForStart = () => {
           if (players.length === 0) return;
           const randomPlayer = players[Math.floor(Math.random() * players.length)];
@@ -3941,6 +3948,30 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
 
       const wakeLockRef = React.useRef(null);
       const stateRef = React.useRef({ numPlayers, archenemy, activeModal, planechase });
+
+      // --- LOGICA COUNTDOWN TIMER ---
+      useEffect(() => {
+          let interval = null;
+          if (activeTurnIdx >= 0 && !isTimerPaused && timeRemaining > 0) {
+              interval = setInterval(() => {
+                  setTimeRemaining(prev => prev - 1);
+              }, 1000);
+          } else if (timeRemaining === 0 && !isTimerPaused && activeTurnIdx >= 0) {
+              passTurn();
+          }
+          return () => clearInterval(interval);
+      }, [activeTurnIdx, isTimerPaused, timeRemaining]);
+
+      const passTurn = () => {
+          setActiveTurnIdx(prev => (prev + 1) % players.length);
+          setTimeRemaining(turnMinutes * 60);
+      };
+
+      const formatTime = (secs) => {
+          const m = Math.floor(secs / 60);
+          const s = secs % 60;
+          return `${m}:${s < 10 ? '0' : ''}${s}`;
+      };
 
       // --- 🛰️ IL RADAR FIREBASE ---
       useEffect(() => {
@@ -4048,7 +4079,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                       const curr = stateRef.current;
                       const isPlanechaseOpen = curr.planechase ? curr.planechase.showModal : false;
                       let fallbackMode = 'auto';
-                      if (curr.archenemy.showModal || isPlanechaseOpen || (curr.activeModal && (curr.activeModal.type === 'search' || curr.activeModal.type === 'editName'))) {
+                      if (curr.archenemy.showModal || isPlanechaseOpen || (curr.activeModal && (curr.activeModal.type === 'search' || curr.activeModal.type === 'editName' || curr.activeModal.type === 'cmdrSelect'))) {
                           fallbackMode = 'portrait';
                       } else if (curr.activeModal && curr.activeModal.type === 'tokens') {
                           fallbackMode = 'landscape';
@@ -4237,9 +4268,19 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
              tokens: [], tokenBg: null
           });
         }
+        
+        if (useTimer) {
+            setActiveTurnIdx(0);
+            setTimeRemaining(turnMinutes * 60);
+            setIsTimerPaused(true);
+        } else {
+            setActiveTurnIdx(-1);
+        }
+
         setPlayers(newPlayers); 
         setView('game_active');
       };
+      
       const resetGame = () => {
           const isConfirmed = window.confirm("Vuoi davvero resettare la partita? Punti vita e segnalini torneranno ai valori iniziali.");
           if (isConfirmed) {
@@ -4249,6 +4290,12 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                   let resetDmg = {}; prev.forEach(op => { if(op.id !== p.id) resetDmg[`${op.id}`] = 0; });
                   return { ...p, life: startLife, poison: 0, cmdCasts: 0, emblems: 0, rad: 0, energy: 0, exp: 0, ticket: 0, cmdDmg: resetDmg, monarch: false, initiative: false, blessing: false, dayNight: 'none', immune: false, mana: {W:0, U:0, B:0, R:0, G:0, C:0}, tokens: [] };
               }));
+              
+              if (useTimer) {
+                  setActiveTurnIdx(0);
+                  setTimeRemaining(turnMinutes * 60);
+                  setIsTimerPaused(true);
+              }
           }
           let lockMode = 'auto';
           if (activeModal && activeModal.type === 'tokens') lockMode = 'landscape';
@@ -4361,6 +4408,24 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                     <option value={20}>20 (Standard Base)</option>
                   </select>
                 </div>
+                
+                {/* CHECKBOX E SETUP TIMER TURNI */}
+                <div className="mb-4">
+                    <label className="flex items-center gap-3 text-white font-bold bg-purple-900/40 p-3 rounded-lg border border-purple-500 cursor-pointer shadow-inner">
+                        <input type="checkbox" checked={useTimer} onChange={e=>setUseTimer(e.target.checked)} className="w-6 h-6 accent-purple-500" />
+                        <span className="text-sm">Abilita Timer Turni (Orologio)</span>
+                    </label>
+                    {useTimer && (
+                        <div className="mt-2 flex items-center justify-between bg-gray-900 p-3 rounded-lg border border-gray-700 animate-fade">
+                            <span className="text-gray-400 font-bold text-sm">Minuti per Turno:</span>
+                            <div className="flex items-center gap-2">
+                                <input type="number" min="1" max="60" value={turnMinutes} onChange={e=>setTurnMinutes(parseInt(e.target.value)||1)} className="w-16 bg-gray-800 text-white text-center text-xl rounded p-2 font-black outline-none border border-purple-500" />
+                                <span className="text-gray-500 font-bold">min</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 <div className="mb-6">
                    <label className="flex items-center gap-3 text-white font-bold bg-blue-900/40 p-3 rounded-lg border border-blue-500 cursor-pointer shadow-inner">
                      <input type="checkbox" checked={teamMode} onChange={e=>setTeamMode(e.target.checked)} className="w-6 h-6 accent-blue-500" />
@@ -4455,10 +4520,10 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       );
 
       let gridClass = '';
-      if (players.length <= 2) gridClass = 'grid-cols-1 grid-rows-[1fr_55px_1fr]';
-      else if (players.length === 3 || players.length === 4) gridClass = 'grid-cols-[1fr_55px_1fr] grid-rows-2';
-      else if (players.length === 5) gridClass = 'grid-cols-[1fr_1fr_55px_1.2fr] grid-rows-2';
-      else if (players.length === 6) gridClass = 'grid-cols-[1.2fr_1fr_55px_1fr_1.2fr] grid-rows-2';
+      if (players.length <= 2) gridClass = 'grid-cols-1 grid-rows-[1fr_65px_1fr]';
+      else if (players.length === 3 || players.length === 4) gridClass = 'grid-cols-[1fr_65px_1fr] grid-rows-2';
+      else if (players.length === 5) gridClass = 'grid-cols-[1fr_1fr_65px_1.2fr] grid-rows-2';
+      else if (players.length === 6) gridClass = 'grid-cols-[1.2fr_1fr_65px_1fr_1.2fr] grid-rows-2';
 
       let currentArchenemyName = "Sconosciuto";
       if (archenemy.playerId) { const archPlayer = players.find(p => p.id === archenemy.playerId); if (archPlayer) currentArchenemyName = archPlayer.name; }
@@ -4473,7 +4538,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                // --- PLANCIA PERSONALE CLOUD ---
                <React.Fragment>
                   <div className="flex-1 w-full relative overflow-hidden bg-gray-900 shadow-xl">
-                      <PlayerCard isCloud={true} player={myPlayer} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={0} isArchenemy={archenemy.playerId === myPlayer.id} isStartingPlayer={startingPlayerId === myPlayer.id} onOpenModal={(type) => setActiveModal({type, playerId: myPlayer.id, rotation: 0})} opponents={players.filter(p => p.id !== myPlayerId)} />
+                      <PlayerCard isCloud={true} player={myPlayer} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={0} isArchenemy={archenemy.playerId === myPlayer.id} isStartingPlayer={startingPlayerId === myPlayer.id} opponents={players.filter(p => p.id !== myPlayerId)} onOpenModal={(type) => setActiveModal({type, playerId: myPlayer.id, rotation: 0})} />
                   </div>
                   
                   <div className="h-[75px] bg-gray-950 border-t border-gray-700 flex flex-row items-center justify-around shadow-2xl z-[120] py-2 px-4 w-full shrink-0">
@@ -4543,6 +4608,12 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                          <div key={p.id} className={`${wrapperClass} ${rowStart} ${colStart} ${rowSpan}`} style={{ containerType: 'size' }}>
                              <div className={`absolute flex flex-col bg-gray-900 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] ${isSideways ? 'top-1/2 left-1/2' : 'inset-0'}`} 
                                   style={{ width: isSideways ? '100cqh' : '100cqw', height: isSideways ? '100cqw' : '100cqh', transform: isSideways ? `translate(-50%, -50%) rotate(${rotDeg}deg)` : `rotate(${rotDeg}deg)` }}>
+                                 
+                                 {/* EFFETTO GLOW PER IL GIOCATORE ATTIVO (TIMER) */}
+                                 {useTimer && activeTurnIdx === index && (
+                                     <div className="absolute inset-0 border-4 border-purple-500 shadow-[inset_0_0_40px_rgba(168,85,247,0.6)] animate-pulse pointer-events-none z-[60] rounded-xl"></div>
+                                 )}
+
                                  <PlayerCard player={p} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={rotDeg} isArchenemy={archenemy.playerId === p.id} isStartingPlayer={startingPlayerId === p.id} opponents={players.filter(op => op.id !== p.id)} onOpenModal={(type) => setActiveModal({type, playerId: p.id, rotation: rotDeg})} />
                              </div>
                          </div>
@@ -4558,28 +4629,46 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                     <button onClick={exitGame} className="flex flex-col items-center gap-1 text-red-500 font-bold hover:text-red-400 transition-colors" title="Esci dalla Partita">
                         <span className="text-xl">✖</span> <span className="text-[10px] uppercase">Esci</span>
                     </button>
-                    <div className={players.length <= 2 ? "w-px h-6 bg-gray-700" : "w-6 h-px bg-gray-700"}></div>
-                    <button onClick={() => setShowDice(true)} className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 w-12 h-12 rounded-xl shadow-lg border border-gray-600 transform transition-transform active:scale-90" title="Lancia Dadi">
-                        <span className="text-2xl drop-shadow-md">🎲</span>
+                    <div className={players.length <= 2 ? "w-px h-4 bg-gray-700" : "w-4 h-px bg-gray-700"}></div>
+
+                    {/* UI DEL TIMER AL CENTRO DELLA PLANCIA */}
+                    {useTimer && activeTurnIdx >= 0 && (
+                        <div className={`flex ${players.length <= 2 ? 'flex-row' : 'flex-col'} items-center justify-center bg-gray-900 rounded-xl px-2 py-1.5 border border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.3)] gap-2`}>
+                            <span className={`text-xl font-black font-mono leading-none ${timeRemaining < 30 ? 'text-red-500 animate-pulse' : 'text-purple-400'}`}>
+                                {formatTime(timeRemaining)}
+                            </span>
+                            <div className={`flex ${players.length <= 2 ? 'flex-row' : 'flex-col'} gap-1`}>
+                                <button onClick={() => setIsTimerPaused(!isTimerPaused)} className="text-[10px] bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded text-white font-bold active:scale-90">{isTimerPaused ? '▶' : '⏸️'}</button>
+                                <button onClick={passTurn} className="text-[10px] bg-gray-600 hover:bg-gray-500 px-2 py-1 rounded text-white font-bold active:scale-90">⏭</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {!useTimer && (
+                        <button onClick={() => setShowDice(true)} className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 w-12 h-12 rounded-xl shadow-lg border border-gray-600 transform transition-transform active:scale-90" title="Lancia Dadi">
+                            <span className="text-2xl drop-shadow-md">🎲</span>
+                        </button>
+                    )}
+
+                    <div className={players.length <= 2 ? "w-px h-4 bg-gray-700" : "w-4 h-px bg-gray-700"}></div>
+                    <button onClick={() => setArchenemy(prev => ({...prev, showModal: true}))} className={`flex items-center justify-center w-10 h-10 rounded-xl shadow-lg border transform transition-transform active:scale-90 ${archenemy.active ? 'bg-red-800 border-red-500 animate-pulse' : 'bg-gray-800 border-gray-600 hover:bg-gray-700'}`} title="Archenemy">
+                        <span className="text-xl drop-shadow-md">👿</span>
                     </button>
-                    <button onClick={() => setArchenemy(prev => ({...prev, showModal: true}))} className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-lg border transform transition-transform active:scale-90 ${archenemy.active ? 'bg-red-800 border-red-500 animate-pulse' : 'bg-gray-800 border-gray-600 hover:bg-gray-700'}`} title="Archenemy">
-                        <span className="text-2xl drop-shadow-md">👿</span>
+                    <button onClick={() => setPlanechase(prev => ({...prev, showModal: true}))} className={`flex items-center justify-center w-10 h-10 rounded-xl shadow-lg border transform transition-transform active:scale-90 ${planechase.active ? 'bg-indigo-800 border-indigo-500 animate-pulse' : 'bg-gray-800 border-gray-600 hover:bg-gray-700'}`} title="Planechase">
+                        <span className="text-xl drop-shadow-md">🌌</span>
                     </button>
-                    <button onClick={() => setPlanechase(prev => ({...prev, showModal: true}))} className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-lg border transform transition-transform active:scale-90 ${planechase.active ? 'bg-indigo-800 border-indigo-500 animate-pulse' : 'bg-gray-800 border-gray-600 hover:bg-gray-700'}`} title="Planechase">
-                        <span className="text-2xl drop-shadow-md">🌌</span>
-                    </button>
-                    <div className={players.length <= 2 ? "w-px h-6 bg-gray-700" : "w-6 h-px bg-gray-700"}></div>
+                    <div className={players.length <= 2 ? "w-px h-4 bg-gray-700" : "w-4 h-px bg-gray-700"}></div>
+                    
                     {/* BLOCCO VITTORIA E RESET OTTIMIZZATO */}
                     <div className={players.length <= 2 ? "flex flex-row items-center gap-3" : "flex flex-col items-center gap-3"}>
                         <button onClick={() => {
                             const winnerName = window.prompt("Chi ha vinto? Inserisci il NOME ESATTO del giocatore (es. Player 1):");
                             if(winnerName) {
-                                // Cerca la plancia esatta del giocatore per rubargli il nome del comandante!
                                 const foundPlayer = players.find(p => p.name.toLowerCase() === winnerName.trim().toLowerCase());
                                 if (foundPlayer) {
                                     declareWinner(foundPlayer);
                                 } else {
-                                    declareWinner({ id: 'manual', name: winnerName }); // Fallback di sicurezza
+                                    declareWinner({ id: 'manual', name: winnerName }); 
                                 }
                             }
                         }} className="flex flex-col items-center gap-1 text-yellow-500 font-bold hover:text-yellow-400 transition-colors" title="Dichiara Vincitore">
@@ -4726,7 +4815,13 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
              <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 animate-fade" onClick={() => setShowDice(false)}>
                 <div className="bg-gray-900 border border-purple-500 rounded-2xl p-6 shadow-2xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
                    <h3 className="text-xl font-black text-white mb-4 text-center">🎲 Lancia Dado</h3>
-                   <button onClick={rollForStart} className="w-full mb-4 bg-yellow-600 hover:bg-yellow-500 border border-yellow-400 rounded-xl py-4 font-black text-white shadow-[0_0_15px_rgba(202,138,4,0.5)] active:scale-95 text-xl transition-all flex items-center justify-center gap-2">
+                   <button onClick={() => {
+                        if (players.length === 0) return;
+                        const randomPlayer = players[Math.floor(Math.random() * players.length)];
+                        setActiveTurnIdx(players.findIndex(p => p.id === randomPlayer.id));
+                        setShowDice(false);
+                        alert(`Inizia: ${randomPlayer.name}! 🥇`);
+                   }} className="w-full mb-4 bg-yellow-600 hover:bg-yellow-500 border border-yellow-400 rounded-xl py-4 font-black text-white shadow-[0_0_15px_rgba(202,138,4,0.5)] active:scale-95 text-xl transition-all flex items-center justify-center gap-2">
                        🥇 SORTEGGIA CHI INIZIA 
                    </button>
                    <div className="grid grid-cols-2 gap-4">
