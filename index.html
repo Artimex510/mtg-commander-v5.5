@@ -2311,6 +2311,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       );
     };
     // --- VISUALIZZATORE MAZZI (SOLO LETTURA E TRADUZIONE) ---
+    // --- VISUALIZZATORE MAZZI (SOLO LETTURA E TRADUZIONE) ---
     const DeckViewer = ({deck, navigate}) => {
       const [viewingCard, setViewingCard] = useState(null);
       const [itaImg, setItaImg] = useState(null);
@@ -2368,7 +2369,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       };
 
       const translateCard = (card) => {
-        if (card.isCustom) return alert("Le carte Proxy non possono essere tradotte dal database.");
+        if (card.isCustom) return alert("Le carte Proxy o i Token non possono essere tradotti.");
         if (itaImg) { setShowIta(!showIta); return; } 
         setTranslating(true);
         fetch(`https://api.scryfall.com/cards/search?q=!"${card.name}"+lang:it`)
@@ -2390,13 +2391,13 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       };
 
       const defFront = viewingCard ? (viewingCard.proxyImage || viewingCard.image || "mtg-bg.jpg") : "";
-      const defBack = viewingCard ? viewingCard.imageBack : null;
+      const defBack = viewingCard ? (viewingCard.imgBack || viewingCard.imageBack) : null;
       const currentFront = showIta && itaImg ? itaImg : defFront;
       const currentBack = showIta && itaImgBack ? itaImgBack : defBack;
       const displayImg = showBack && currentBack ? currentBack : currentFront;
 
       return (
-        <div className="max-w-2xl mx-auto relative z-10 w-full">
+        <div className="max-w-2xl mx-auto relative z-10 w-full space-y-4">
            {viewingCard && (
              <div className="w-full flex flex-col animate-fade pb-10">
                <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700 sticky top-0 z-50 shadow-md mb-6">
@@ -2406,7 +2407,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                <div className="flex-1 flex flex-col items-center justify-start p-2">
                  <img src={displayImg} alt={viewingCard.name} className="w-auto max-h-[50vh] object-contain rounded-xl mb-4 shadow-2xl" />
                  
-                 {(itaImgBack || viewingCard.imageBack) && (
+                 {currentBack && (
                     <button onClick={() => setShowBack(!showBack)} className="w-full max-w-sm bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded-lg shadow-md border border-gray-500 mb-4 transition-colors">🔄 {showBack ? "Vedi Fronte" : "Vedi Retro"}</button>
                  )}
                  <div className="w-full max-w-sm bg-gray-900 p-3 rounded-xl border border-gray-700 flex justify-between items-center mb-4 shadow-inner">
@@ -2414,68 +2415,22 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                        <span className="text-gray-400 text-[10px] font-bold uppercase">Prezzo Scryfall</span>
                        <span className="text-yellow-400 font-black text-lg">{(viewingCard.prices && viewingCard.prices.eur) ? `€ ${viewingCard.prices.eur}` : ((viewingCard.prices && viewingCard.prices.usd) ? `$ ${viewingCard.prices.usd}` : "N/D")}</span>
                     </div>
-                    <div className="flex gap-2">
-                       <button onClick={() => { 
-                           const priceStr = (viewingCard.prices && viewingCard.prices.eur) ? viewingCard.prices.eur : "0";
-                           const priceNum = parseFloat(priceStr) || 0;
-                           const currentColl = collection || [];
-                           
-                           const existingIndex = currentColl.findIndex(c => c.scryfallId === viewingCard.id);
-                           let newColl = [...currentColl];
-                           
-                           if(existingIndex >= 0) { 
-                               newColl[existingIndex].qty += 1; 
-                           } else { 
-                               newColl.push({ 
-                                   id: 'coll-' + Math.random(), 
-                                   scryfallId: viewingCard.id, // ID vero della carta per distinguere le art
-                                   name: viewingCard.name, 
-                                   img: displayImg, 
-                                   colors: viewingCard.colors || [], 
-                                   price: priceNum, 
-                                   qty: 1, 
-                                   folder: 'Generale',
-                                   type: viewingCard.type || "",
-                                   rarity: viewingCard.rarity || "common",
-                                   setName: viewingCard.setName || "Set Base",
-                                   setCode: viewingCard.setCode || ""
-                               }); 
-                           }
-                           setCollection(newColl); 
-                           alert("Aggiunta a La Mia Collezione!"); 
-                       }} className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-3 py-2 rounded-lg shadow active:scale-95 text-xl" title="Aggiungi al Raccoglitore">📁</button>
-                       <button onClick={() => { setPrintQueue([...(printQueue || []), {img: displayImg, name: viewingCard.name}]); alert("Aggiunta alla coda di stampa!"); }} className="bg-cyan-600 hover:bg-cyan-500 text-white font-black px-3 py-2 rounded-lg shadow active:scale-95 text-xl" title="Aggiungi all'Area Stampa">🖨️</button>
-                       <button onClick={() => addToCart('single', viewingCard)} className="bg-yellow-600 hover:bg-yellow-500 text-white font-black px-3 py-2 rounded-lg shadow flex items-center gap-2 active:scale-95" title="Aggiungi al Carrello">🛒</button>
-                    </div>
-                 </div>
-                 <div className="w-full max-w-sm mb-4 flex gap-2">
-                    <button onClick={() => translateCard(viewingCard)} disabled={translating} className="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-[0_0_15px_rgba(67,56,202,0.4)] border border-indigo-500 transition-all text-xs">
-                      {translating ? "Traduco..." : (showIta ? "🇬🇧 Torna in Inglese" : "🇮🇹 Traduci")}
-                    </button>
-                    <button onClick={() => fetchOtherPrints(viewingCard)} disabled={loadingPrints} className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-xl shadow-lg border border-orange-500 transition-all text-xs">
-                       {loadingPrints ? "Cerco..." : "🖼️ Altre Stampe"}
-                    </button>
                  </div>
                  
-                 <button onClick={() => openEdhrec(viewingCard)} className="w-full max-w-sm bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center gap-2 mt-2 mb-4">
-                    🛡️ VEDI SINERGIE SU EDHREC
-                 </button>
-
-                 {printsList.length > 0 && (
-                    <div className="w-full max-w-sm mb-4 bg-gray-800 p-2 rounded-xl border border-gray-600 shadow-md animate-fade">
-                       <p className="text-xs text-gray-300 font-bold mb-2">Tocca un'art per vederla in grande:</p>
-                       <div className="flex overflow-x-auto gap-2 pb-2">
-                          {printsList.map(p => (
-                             <img key={p.id} src={p.image} className="w-20 rounded cursor-pointer border-2 border-transparent hover:border-blue-500 shadow-sm shrink-0" 
-                                  onClick={() => { setViewingCard({...viewingCard, id: p.id, image: p.image, imageBack: p.imageBack, rarity: p.rarity, setCode: p.setCode, setName: p.setName, prices: p.prices}); setPrintsList([]); setShowIta(false); }} />
-                          ))}
-                       </div>
-                    </div>
+                 {!viewingCard.isCustom && viewingCard.type && (
+                     <div className="w-full max-w-sm mb-4 flex gap-2">
+                        <button onClick={() => translateCard(viewingCard)} disabled={translating} className="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-[0_0_15px_rgba(67,56,202,0.4)] border border-indigo-500 transition-all text-xs">
+                          {translating ? "Traduco..." : (showIta ? "🇬🇧 Torna in Inglese" : "🇮🇹 Traduci")}
+                        </button>
+                        <button onClick={() => fetchOtherPrints(viewingCard)} disabled={loadingPrints} className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-xl shadow-lg border border-orange-500 transition-all text-xs">
+                           {loadingPrints ? "Cerco..." : "🖼️ Altre Stampe"}
+                        </button>
+                     </div>
                  )}
-
-                 {/* ECCO LA TAB REGOLE E LEGALITA' AGGIUNTA */}
-                 <CardDetailsTabs card={viewingCard} />
-
+                 
+                 {!viewingCard.isCustom && viewingCard.type && (
+                     <CardDetailsTabs card={viewingCard} />
+                 )}
                </div>
              </div>
           )}
@@ -2518,12 +2473,36 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                      )
                   })}
                 </div>
-             </div>
-           </div>
+
+                {/* --- SEZIONE: MOSTRA I TOKEN GENERATI DA SCRYFALL --- */}
+                {deck.generatedTokens && deck.generatedTokens.length > 0 && (
+                     <div className="mt-8 border-t border-gray-700 pt-6 animate-fade">
+                         <h3 className="text-xl font-black text-purple-400 mb-4 flex items-center gap-2">
+                             <span className="text-2xl">♟️</span> Pedine del Mazzo ({deck.generatedTokens.length})
+                         </h3>
+                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                             {deck.generatedTokens.map((t, i) => (
+                                <div key={i} className="relative cursor-pointer hover:ring-2 hover:ring-purple-500 rounded-xl transition-all shadow-[0_4px_10px_rgba(0,0,0,0.5)] bg-black" onClick={() => openViewer({...t, image: t.img, isCustom: true})}>
+                                    {t.img ? (
+                                        <img src={t.img} className="w-full rounded-xl border border-gray-600" alt={t.name} />
+                                    ) : (
+                                        <div className={`w-full rounded-xl border border-gray-500 flex flex-col p-2 h-36 ${t.color || 'bg-gray-800'}`}>
+                                            <span className="font-black text-white text-[10px] text-center border-b border-white/30 pb-1 mb-1 truncate">{t.name}</span>
+                                            <span className="text-[8px] text-gray-100 flex-1 overflow-hidden leading-tight font-semibold">{t.abilities}</span>
+                                        </div>
+                                    )}
+                                </div>
+                             ))}
+                         </div>
+                     </div>
+                 )}
+
+              </div>
+            </div>
         </div>
       );
     };
-
+    
     // --- I MIEI MAZZI ---
     const MyDecks = ({navigate}) => {
       const [decks, setDecks] = useState([]);
@@ -2670,9 +2649,106 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
         const [showHyperModal, setShowHyperModal] = useState(false);
         const [hyperTarget, setHyperTarget] = useState(10); 
         
-        // --- STATI E LOGICA AI IN-APP ---
+        // --- LOGICA AI IN-APP ---
         const [isAiLoading, setIsAiLoading] = useState(false);
         const [aiResponse, setAiResponse] = useState(null);
+
+        // --- NUOVA LOGICA: RICERCA AUTOMATICA PEDINE VIA SCRYFALL ---
+        const [isTokenLoading, setIsTokenLoading] = useState(false);
+
+        const generateTokensScryfall = async () => {
+            setIsTokenLoading(true);
+            try {
+                // Estraiamo i nomi per la ricerca massiva
+                const uniqueNames = [...new Set(deck.cards.map(c => c.name))];
+                let allRelatedTokens = [];
+                
+                // Chunk da 75 per API Scryfall
+                for (let i = 0; i < uniqueNames.length; i += 75) {
+                    const chunk = uniqueNames.slice(i, i + 75).map(n => ({ name: n }));
+                    const res = await fetch('https://api.scryfall.com/cards/collection', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ identifiers: chunk })
+                    });
+                    const data = await res.json();
+                    if (data.data) {
+                        data.data.forEach(card => {
+                            if (card.all_parts) {
+                                card.all_parts.forEach(part => {
+                                    if (part.component === 'token' || (part.type_line && part.type_line.toLowerCase().includes('emblem'))) {
+                                        allRelatedTokens.push(part.id);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+
+                const uniqueTokenIds = [...new Set(allRelatedTokens)];
+                
+                if (uniqueTokenIds.length === 0) {
+                    alert("Scryfall non ha rilevato nessuna pedina o emblema originale associato alle carte del tuo mazzo.");
+                    setIsTokenLoading(false);
+                    return;
+                }
+
+                let finalTokens = [];
+                for (let i = 0; i < uniqueTokenIds.length; i += 75) {
+                    const chunk = uniqueTokenIds.slice(i, i + 75).map(id => ({ id: id }));
+                    const res = await fetch('https://api.scryfall.com/cards/collection', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ identifiers: chunk })
+                    });
+                    const data = await res.json();
+                    if (data.data) {
+                        data.data.forEach((t, idx) => {
+                            let img = ""; let imgBack = null;
+                            if (t.image_uris && t.image_uris.normal) img = t.image_uris.normal;
+                            else if (t.card_faces && t.card_faces.length > 0 && t.card_faces[0].image_uris) img = t.card_faces[0].image_uris.normal;
+                            
+                            if (t.card_faces && t.card_faces.length > 1 && t.card_faces[1].image_uris) {
+                                imgBack = t.card_faces[1].image_uris.normal;
+                            }
+                            
+                            let abilities = t.oracle_text || "";
+                            let pt = t.power ? `${t.power}/${t.toughness}` : "";
+                            let colorClass = "bg-gray-800"; // Default Base
+                            if (t.colors) {
+                                if (t.colors.length > 1) colorClass = "bg-yellow-600 text-white";
+                                else if (t.colors[0] === 'W') colorClass = "bg-gray-300 text-black";
+                                else if (t.colors[0] === 'U') colorClass = "bg-blue-800 text-white";
+                                else if (t.colors[0] === 'B') colorClass = "bg-gray-800 text-white";
+                                else if (t.colors[0] === 'R') colorClass = "bg-red-800 text-white";
+                                else if (t.colors[0] === 'G') colorClass = "bg-green-800 text-white";
+                            }
+
+                            finalTokens.push({
+                                id: 'sm-tok-' + Date.now() + '-' + idx, name: t.name, pt: pt, abilities: abilities, color: colorClass, img: img, imgBack: imgBack, qty: 1, tappedQty: 0, counters: 0
+                            });
+                        });
+                    }
+                }
+
+                // Salvataggio permanente nel Mazzo
+                let savedDecks = JSON.parse(localStorage.getItem('mtg_decks') || '[]');
+                savedDecks = savedDecks.map(d => {
+                    if (d.id === deck.id) return { ...d, generatedTokens: finalTokens };
+                    return d;
+                });
+                localStorage.setItem('mtg_decks', JSON.stringify(savedDecks));
+                deck.generatedTokens = finalTokens; 
+                
+                if (auth.currentUser) syncToCloud(auth.currentUser.uid).catch(e=>{});
+                
+                alert(`Ricerca completata! 🎉\nScryfall ha trovato ${finalTokens.length} pedine ed emblemi originali per questo mazzo.\nSono stati salvati e puoi vederli nella sezione "Stampa" o cliccando su "👁️ Vis" del mazzo.`);
+                
+            } catch (err) {
+                alert("Errore durante la ricerca su Scryfall: " + err.message);
+            }
+            setIsTokenLoading(false);
+        };
 
         const askGeminiSynergy = async () => {
             let apiKey = localStorage.getItem('gemini_api_key');
@@ -2684,7 +2760,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
 
             setIsAiLoading(true); setAiResponse(null);
 
-            // FIX: Parola 'letale' addolcita per superare i filtri di sicurezza di Google e formattazione migliorata (\n)
             const promptTesto = `Sei un esperto Deckbuilder di Magic: The Gathering. Formato: ${formatName}. Comandante: ${cmdName}.\n\nLista del mazzo:\n${listText}\n\nIgnora le carte ovvie o la top 100 di EDHREC. Trovami 5 carte "tech" (sconosciute, vecchie o molto economiche) che abbiano una sinergia incredibile e nascosta con le meccaniche di questo mazzo. Spiega brevemente il perché per ciascuna in italiano. Usa un elenco puntato. Non usare formattazione complessa.`;
 
             try {
@@ -2694,10 +2769,8 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                 });
                 const data = await response.json();
                 
-                // Se la chiave API è sbagliata o il limite è raggiunto
                 if (data.error) throw new Error(data.error.message);
                 
-                // Se l'IA ha bloccato la risposta per "Safety Reason" (Filtri di sicurezza di Google)
                 if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content) {
                      throw new Error("La risposta è stata bloccata dai filtri di sicurezza di Google (oppure ha restituito un risultato vuoto).");
                 }
@@ -2859,24 +2932,13 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
 
                localProduced.forEach(m => { if (manaSources[m] !== undefined) manaSources[m]++; });
 
-               // RUOLI STRATEGICI: Vocabolario Espanso (Le carte modali prenderanno + ruoli in automatico)
+               // RUOLI STRATEGICI
                if (!isLand) {
-                   // RAMP: "search your library for a basic land", "search your library for a land card", "onto the battlefield tapped", sassi
                    if (localProduced.length > 0 || oracleLower.includes("search your library for a basic land") || oracleLower.includes("search your library for a land") || oracleLower.includes("put it onto the battlefield tapped")) roles.ramp++;
-                   
-                   // DRAW: "draw ", "draws ", "into your hand"
                    if ((oracleLower.includes("draw ") && !oracleLower.includes("draw the game")) || oracleLower.includes("draws ") || oracleLower.includes("into your hand")) roles.draw++;
-                   
-                   // RECURSION: Ritorna cose dal cimitero
                    if ((oracleLower.includes("return ") || oracleLower.includes("put ") || oracleLower.includes("cast ")) && oracleLower.includes("graveyard")) roles.recursion++;
-                   
-                   // COUNTER: Basta "counter target" per prendere spell, noncreature spell, creature spell, activated ability...
                    if (oracleLower.includes("counter target") || oracleLower.includes("counter up to")) roles.counter++;
-                   
-                   // WIPE: Distruggi/Esilia tutto o ciascuno
                    if (oracleLower.includes("destroy all") || oracleLower.includes("destroy each") || oracleLower.includes("exile all") || oracleLower.includes("exile each") || oracleLower.includes("damage to each") || oracleLower.includes("damage to all") || oracleLower.includes("return all") || oracleLower.includes("return each")) roles.wipe++;
-                   
-                   // TUTOR / GESTIONE: Scry, Surveil, Ricerca generica
                    if (oracleLower.includes("search your library") || oracleLower.includes("scry ") || oracleLower.includes("surveil ") || oracleLower.includes("look at the top")) roles.tutor++;
                }
             });
@@ -2885,7 +2947,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             avgCMC = mainboard.filter(c => !String(c.type || "").toLowerCase().includes('land')).reduce((acc, c) => acc + (Number(c.cmc) || 0), 0) / (nonLandCount > 0 ? nonLandCount : 1);
             Object.values(curve).forEach(v => { if(v > maxCurve) maxCurve = v; });
         }
-      
+        
         const typeTotalNonLand = totalCards - typeCounts.Land;
         const totalSources = Object.values(manaSources).reduce((a,b)=>a+b, 0);
         
@@ -2911,6 +2973,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
             const p4 = calcHypergeometric(totalCards, typeCounts.Land, 7, 4);
             probPlayableHand = ((p2 + p3 + p4) * 100).toFixed(1);
         }
+
       return (
            <div className="max-w-2xl mx-auto space-y-4">
              <button onClick={() => navigate('mydecks')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-2 shadow transition-colors">⬅ Indietro ai Mazzi</button>
@@ -3017,7 +3080,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                  {String(formatName).toLowerCase() === 'commander' && (
                      <div className="bg-gray-800 p-4 rounded-xl border-2 border-orange-500 shadow-lg mt-6">
                          <div className="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
-                             <h3 className="text-xl font-black text-white flex items-center gap-2">⚖️ Commander Bracket</h3>
+                             <h3 className="text-xl font-black text-white flex items-center gap-2">⚖️️ Commander Bracket</h3>
                              <span className="bg-orange-600 text-white px-3 py-1 rounded-lg font-black text-xl shadow">Livello {deckBracket}</span>
                          </div>
                          <p className="text-gray-300 text-sm font-semibold mb-4">
@@ -3057,6 +3120,11 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                          <button onClick={() => copyPrompt('bling')} className="bg-yellow-700 hover:bg-yellow-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">✨ TROVA RISTAMPE</button>
                          <button onClick={() => copyPrompt('top5')} className="bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2">💸 ALTERNATIVE TOP 5</button>
                          <button onClick={() => setShowBudgetModal(true)} className="bg-indigo-900 border border-indigo-500 hover:bg-indigo-800 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2 col-span-1 sm:col-span-2">💸 BUDGETIZZA INTERO MAZZO</button>
+                         
+                         {/* NUOVO TASTO GENERATORE TOKEN SCRYFALL */}
+                         <button onClick={generateTokensScryfall} disabled={isTokenLoading} className="bg-emerald-900 border border-emerald-500 hover:bg-emerald-800 text-white text-xs font-black py-3 rounded-lg shadow transition-colors flex items-center justify-center gap-2 col-span-1 sm:col-span-2 mt-2">
+                             {isTokenLoading ? "🔍 RICERCA SU SCRYFALL IN CORSO..." : "♟️ CERCA PEDINE DEL MAZZO (SCRYFALL)"}
+                         </button>
                      </div>
                  </div>
                  {aiResponse && ReactDOM.createPortal(
@@ -3154,21 +3222,52 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
     };
       
     const PrintView = ({deck, navigate}) => {
+      const [printMode, setPrintMode] = useState('all'); // 'all', 'cards', 'tokens'
+      
       if(!deck) return null;
       return (
         <div className="print-container w-full h-full bg-white text-black p-4 absolute top-0 left-0 z-50">
-          <div className="no-print mb-4 p-4 bg-gray-100 rounded border border-gray-300 flex justify-between items-center shadow-md">
-            <p className="font-bold text-gray-800 text-sm">Usa "Stampa -> Salva come PDF".<br/>(Carte formattate a 63x88mm).</p>
-            <div className="space-x-2 flex">
-              <button onClick={() => navigate('mydecks')} className="px-4 py-2 bg-gray-500 text-white rounded font-bold transition-colors">Indietro</button>
-              <button onClick={() => window.print()} className="px-4 py-2 bg-blue-600 text-white font-bold rounded transition-colors">Stampa PDF</button>
+          <div className="no-print mb-4 p-4 bg-gray-100 rounded border border-gray-300 flex flex-col md:flex-row gap-4 justify-between items-center shadow-md">
+            <div>
+                <p className="font-bold text-gray-800 text-sm">Usa "Stampa -> Salva come PDF". (Formato 63x88mm).</p>
+                {deck.generatedTokens && deck.generatedTokens.length > 0 && (
+                    <div className="mt-2 flex gap-4 bg-white p-2 rounded shadow-sm border border-gray-200 text-sm">
+                        <label className="font-bold cursor-pointer flex items-center gap-1"><input type="radio" value="all" checked={printMode==='all'} onChange={e=>setPrintMode(e.target.value)} className="accent-blue-600" /> Carte + Pedine</label>
+                        <label className="font-bold cursor-pointer flex items-center gap-1"><input type="radio" value="cards" checked={printMode==='cards'} onChange={e=>setPrintMode(e.target.value)} className="accent-blue-600" /> Solo Carte</label>
+                        <label className="font-bold cursor-pointer flex items-center gap-1"><input type="radio" value="tokens" checked={printMode==='tokens'} onChange={e=>setPrintMode(e.target.value)} className="accent-blue-600" /> Solo Pedine</label>
+                    </div>
+                )}
+            </div>
+            <div className="space-x-2 flex shrink-0">
+              <button onClick={() => navigate('mydecks')} className="px-4 py-2 bg-gray-500 hover:bg-gray-400 text-white rounded font-bold transition-colors">Indietro</button>
+              <button onClick={() => window.print()} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded transition-colors shadow">🖨️ Stampa PDF</button>
             </div>
           </div>
           <div className="print-grid">
-            {deck.cards.map((c, i) => (
+            {printMode !== 'tokens' && deck.cards.map((c, i) => (
               <React.Fragment key={i}>
                 <img src={c.proxyImage || c.image || "mtg-bg.jpg"} className="print-card shadow-sm border border-gray-300" />
                 {c.imageBack && !c.isCustom && <img src={c.imageBack} className="print-card shadow-sm border border-gray-300" />}
+              </React.Fragment>
+            ))}
+            
+            {/* STAMPA DEI TOKEN GENERATI DA SCRYFALL CON ART ORIGINALE */}
+            {printMode !== 'cards' && deck.generatedTokens && deck.generatedTokens.map((t, i) => (
+              <React.Fragment key={'tok-'+i}>
+                {t.img ? (
+                    <img src={t.img} className="print-card shadow-sm border border-gray-300" />
+                ) : (
+                    <div className={`print-card shadow-sm border-[3px] border-black flex flex-col p-3 text-white ${t.color || 'bg-gray-800'}`}>
+                        <h3 className="font-black text-center text-lg border-b-2 border-white/50 pb-2 mb-2 uppercase">{t.name}</h3>
+                        <p className="text-xs text-center flex-1 overflow-hidden leading-snug mt-1 font-semibold">{t.abilities}</p>
+                        {t.pt ? (
+                            <div className="text-center font-black mt-auto bg-black/60 rounded-lg py-1.5 text-xl shadow-inner border border-white/20">{t.pt}</div>
+                        ) : (
+                            <div className="text-center font-bold mt-auto bg-black/40 rounded-lg py-1 text-xs uppercase tracking-widest border border-white/20">Token / Emblem</div>
+                        )}
+                    </div>
+                )}
+                {t.imgBack && <img src={t.imgBack} className="print-card shadow-sm border border-gray-300" />}
               </React.Fragment>
             ))}
           </div>
