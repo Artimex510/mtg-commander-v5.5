@@ -4401,7 +4401,8 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
         }
         
         if (useTimer) {
-            setActiveTurnIdx(0);
+            // Seleziona un giocatore casuale da cui far partire il timer
+            setActiveTurnIdx(Math.floor(Math.random() * numPlayers));
             setTimeRemaining(turnMinutes * 60);
             setIsTimerPaused(true);
         } else {
@@ -4423,7 +4424,8 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
               }));
               
               if (useTimer) {
-                  setActiveTurnIdx(0);
+                  // Resetta partendo di nuovo da un giocatore a caso
+                  setActiveTurnIdx(Math.floor(Math.random() * players.length));
                   setTimeRemaining(turnMinutes * 60);
                   setIsTimerPaused(true);
               }
@@ -4774,8 +4776,9 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                 {formatTime(timeRemaining)}
                             </span>
                             <div className={`flex ${players.length <= 2 ? 'flex-row' : 'flex-col'} gap-1`}>
-                                <button onClick={() => setIsTimerPaused(!isTimerPaused)} className="text-[10px] bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded text-white font-bold active:scale-90">{isTimerPaused ? '▶' : '⏸️'}</button>
-                                <button onClick={passTurn} className="text-[10px] bg-gray-600 hover:bg-gray-500 px-2 py-1 rounded text-white font-bold active:scale-90">⏭</button>
+                                <button onClick={() => setIsTimerPaused(!isTimerPaused)} className="text-[10px] bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded text-white font-bold active:scale-90" title="Play/Pausa">{isTimerPaused ? '▶' : '⏸️'}</button>
+                                <button onClick={passTurn} className="text-[10px] bg-gray-600 hover:bg-gray-500 px-2 py-1 rounded text-white font-bold active:scale-90" title="Passa Turno">⏭</button>
+                                <button onClick={() => setShowDice(true)} className="text-[10px] bg-indigo-600 hover:bg-indigo-500 px-2 py-1 rounded text-white font-bold active:scale-90" title="Lancia Dadi / Sorteggia">🎲</button>
                             </div>
                         </div>
                     )}
