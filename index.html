@@ -3536,22 +3536,52 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                             </div>
                         )}
 
-                        {/* VIEW: MANA POOL */}
+                        {/* VIEW: MANA POOL & STORM TRACKER */}
                         {currentTab === 'mana' && (
                             <div className="flex-1 flex flex-col animate-fade h-full">
+                                {/* STORM COUNTER */}
+                                <div className="bg-purple-900/30 border border-purple-500/50 rounded-xl p-3 mb-3 flex items-center justify-between shadow-inner shrink-0">
+                                    <div className="flex flex-col">
+                                        <span className="text-purple-300 font-black text-sm uppercase tracking-widest flex items-center gap-2"><span className="text-xl">🌩️</span> Storm Count</span>
+                                        <span className="text-[10px] text-purple-400/80">Magie lanciate in questo turno</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <button onClick={() => updatePlayerConfig(player.id, 'storm', Math.max(0, (player.storm || 0) - 1))} className="w-10 h-10 bg-red-900/80 text-red-300 font-black text-2xl rounded-lg active:scale-95 transition-transform border border-red-700">-</button>
+                                        <span onClick={() => { const val = window.prompt("Inserisci Storm Count esatto:", player.storm || 0); if(val !== null && !isNaN(val)) updatePlayerConfig(player.id, 'storm', Math.max(0, parseInt(val))); }} className="text-3xl font-black text-white w-10 text-center cursor-pointer hover:text-purple-300 transition-colors" title="Tocca per inserire numero">
+                                            {player.storm || 0}
+                                        </span>
+                                        <button onClick={() => updatePlayerConfig(player.id, 'storm', (player.storm || 0) + 1)} className="w-10 h-10 bg-green-900/80 text-green-300 font-black text-2xl rounded-lg active:scale-95 transition-transform border border-green-700">+</button>
+                                    </div>
+                                </div>
+
+                                {/* MANA POOL */}
                                 <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto content-start pb-4">
                                     {ManaColors.map(m => (
-                                        <div key={m.id} className="bg-gray-900 rounded-xl border border-gray-700 flex flex-col items-center justify-center p-3 md:p-5 shadow-inner">
-                                            <span className={`w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center font-black text-xl md:text-3xl border-2 shadow-md mb-4 ${m.color}`}>{m.label}</span>
-                                            <div className="flex w-full justify-between items-center gap-2 px-2">
-                                                <button onClick={() => updateMana(player.id, m.id, -1)} className="w-14 h-14 md:w-16 md:h-16 bg-red-900/80 active:bg-red-700 text-red-300 font-black text-3xl md:text-4xl rounded-xl flex items-center justify-center shadow-lg transition-transform active:scale-95">-</button>
-                                                <span className="text-4xl md:text-6xl font-black text-white">{player.mana[m.id]}</span>
-                                                <button onClick={() => updateMana(player.id, m.id, 1)} className="w-14 h-14 md:w-16 md:h-16 bg-green-900/80 active:bg-green-700 text-green-300 font-black text-3xl md:text-4xl rounded-xl flex items-center justify-center shadow-lg transition-transform active:scale-95">+</button>
+                                        <div key={m.id} className="bg-gray-900 rounded-xl border border-gray-700 flex flex-col items-center justify-center p-3 md:p-4 shadow-inner relative group">
+                                            {/* Tasto Rapido +5 Floating Mana */}
+                                            <button onClick={() => updateMana(player.id, m.id, 5)} className="absolute top-2 right-2 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold px-2 py-1 rounded-md text-[10px] shadow border border-gray-600 active:scale-90 transition-all">+5</button>
+                                            
+                                            <span className={`w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center font-black text-lg md:text-2xl border-2 shadow-md mb-2 mt-2 ${m.color}`}>{m.label}</span>
+                                            
+                                            <div className="flex w-full justify-between items-center gap-2 px-1">
+                                                <button onClick={() => updateMana(player.id, m.id, -1)} className="w-10 h-10 md:w-12 md:h-12 bg-red-900/80 active:bg-red-700 text-red-300 font-black text-2xl rounded-lg flex items-center justify-center shadow transition-transform active:scale-95">-</button>
+                                                
+                                                {/* Numero Mana Cliccabile */}
+                                                <span onClick={() => { const val = window.prompt(`Inserisci mana ${m.label} esatto:`, player.mana[m.id]); if(val !== null && !isNaN(val)) updatePlayerConfig(player.id, 'mana', {...player.mana, [m.id]: Math.max(0, parseInt(val))}); }} className="text-3xl md:text-4xl font-black text-white cursor-pointer hover:text-blue-300 transition-colors" title="Tocca per inserire numero">
+                                                    {player.mana[m.id]}
+                                                </span>
+                                                
+                                                <button onClick={() => updateMana(player.id, m.id, 1)} className="w-10 h-10 md:w-12 md:h-12 bg-green-900/80 active:bg-green-700 text-green-300 font-black text-2xl rounded-lg flex items-center justify-center shadow transition-transform active:scale-95">+</button>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={() => { ManaColors.forEach(m => updatePlayerConfig(player.id, 'mana', {W:0,U:0,B:0,R:0,G:0,C:0})) }} className="w-full mt-2 py-4 font-black shadow-[0_0_15px_rgba(220,38,38,0.4)] bg-red-700 hover:bg-red-600 text-white rounded-xl transition-all text-sm md:text-base shrink-0">🔄 SVUOTA MANA POOL</button>
+                                <button onClick={() => { 
+                                    updatePlayerConfig(player.id, 'mana', {W:0, U:0, B:0, R:0, G:0, C:0}); 
+                                    updatePlayerConfig(player.id, 'storm', 0); 
+                                }} className="w-full mt-2 py-4 font-black shadow-[0_0_15px_rgba(220,38,38,0.4)] bg-red-700 hover:bg-red-600 text-white rounded-xl transition-all text-sm md:text-base shrink-0">
+                                    🔄 SVUOTA MANA E STORM
+                                </button>
                             </div>
                         )}
 
