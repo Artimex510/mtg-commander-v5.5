@@ -723,7 +723,7 @@
         );
     };
 
-    // --- COMPONENTE STATISTICHE PARTITE ---
+    // --- COMPONENTE STATISTICHE PARTITE (HALL OF FAME ANALITICA) ---
     const MatchStatistics = ({ navigate }) => {
         const [history, setHistory] = useState([]);
         const [loading, setLoading] = useState(true);
@@ -742,44 +742,111 @@
         const winsByCmdr = {};
 
         history.forEach(m => {
-            winsByPlayer[m.winnerName] = (winsByPlayer[m.winnerName] || 0) + 1;
-            if (m.winnerCommander) winsByCmdr[m.winnerCommander] = (winsByCmdr[m.winnerCommander] || 0) + 1;
+            const pName = m.winnerName || "Sconosciuto";
+            winsByPlayer[pName] = (winsByPlayer[pName] || 0) + 1;
+            
+            if (m.winnerCommander && m.winnerCommander !== "Sconosciuto") {
+                winsByCmdr[m.winnerCommander] = (winsByCmdr[m.winnerCommander] || 0) + 1;
+            }
         });
 
+        // Ordinamento per creare le classifiche
+        const sortedPlayers = Object.entries(winsByPlayer).sort((a,b) => b[1] - a[1]);
+        const sortedCmdrs = Object.entries(winsByCmdr).sort((a,b) => b[1] - a[1]);
+
+        // Calcolo Nemesi (Giocatore con più vittorie in assoluto)
+        const nemesis = sortedPlayers.length > 0 ? sortedPlayers[0][0] : "Nessuno";
+        const nemesisWins = sortedPlayers.length > 0 ? sortedPlayers[0][1] : 0;
+
         return (
-            <div className="max-w-2xl mx-auto space-y-4 p-4 animate-fade">
+            <div className="max-w-4xl mx-auto space-y-4 p-4 animate-fade pb-20">
                 <button onClick={() => navigate('game')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-2 shadow transition-colors">⬅ Torna al Tavolo</button>
-                <div className="bg-gray-800/90 p-6 rounded-xl border border-gray-600 shadow-xl backdrop-blur-sm">
-                    <h2 className="text-3xl font-black text-center text-purple-400 drop-shadow-md mb-6">📊 Hall of Fame</h2>
+                <div className="bg-gray-800/90 p-6 md:p-8 rounded-xl border border-gray-600 shadow-xl backdrop-blur-sm">
+                    <h2 className="text-3xl md:text-4xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 drop-shadow-md mb-8">📊 Hall of Fame</h2>
                     
-                    {loading ? <p className="text-center text-white">Caricamento statistiche...</p> : totalMatches === 0 ? <p className="text-center text-gray-400">Nessuna partita registrata. Gioca e dichiara un vincitore!</p> : (
-                        <div className="space-y-6">
-                            <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 text-center shadow-inner">
-                                <p className="text-gray-400 text-sm font-bold uppercase">Partite Totali Giocate</p>
-                                <p className="text-4xl font-black text-white">{totalMatches}</p>
+                    {loading ? <p className="text-center text-white font-bold animate-pulse">Analisi database in corso...</p> : totalMatches === 0 ? <p className="text-center text-gray-400 font-bold">Nessuna partita registrata. Gioca e dichiara un vincitore!</p> : (
+                        <div className="space-y-8">
+                            
+                            {/* OVERVIEW WIDGETS */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 text-center shadow-inner flex flex-col justify-center">
+                                    <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Partite Giocate</p>
+                                    <p className="text-4xl font-black text-white">{totalMatches}</p>
+                                </div>
+                                <div className="bg-gray-900 p-4 rounded-xl border border-red-900 shadow-inner flex flex-col justify-center col-span-2 md:col-span-3 relative overflow-hidden group">
+                                    <div className="absolute -right-4 -bottom-4 text-7xl opacity-20 group-hover:scale-110 transition-transform">👿</div>
+                                    <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-1 relative z-10">La Nemesi del Gruppo</p>
+                                    <p className="text-3xl md:text-4xl font-black text-white truncate pr-10 relative z-10">{nemesis}</p>
+                                    <p className="text-xs text-red-300 mt-1 font-semibold relative z-10">Ha dominato il tavolo con {nemesisWins} vittorie ({((nemesisWins/totalMatches)*100).toFixed(0)}% Winrate).</p>
+                                </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner">
-                                    <h3 className="text-emerald-400 font-black mb-3 border-b border-gray-700 pb-2">🏆 Vittorie per Giocatore</h3>
-                                    {Object.entries(winsByPlayer).sort((a,b)=>b[1]-a[1]).map(([name, wins]) => (
-                                        <div key={name} className="flex justify-between items-center mb-2">
-                                            <span className="text-white font-bold">{name}</span>
-                                            <span className="bg-emerald-800 text-emerald-200 px-2 py-1 rounded text-xs font-black">{wins} Vittorie ({((wins/totalMatches)*100).toFixed(0)}%)</span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* WINRATE GIOCATORI */}
+                                <div className="bg-gray-900 p-5 rounded-xl border border-gray-700 shadow-inner">
+                                    <h3 className="text-emerald-400 font-black mb-4 flex items-center gap-2 text-lg border-b border-gray-700 pb-2"><span className="text-2xl">🏆</span> Winrate Giocatori</h3>
+                                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                                        {sortedPlayers.map(([name, wins], idx) => {
+                                            const winrate = ((wins / totalMatches) * 100).toFixed(1);
+                                            return (
+                                                <div key={name} className="relative">
+                                                    <div className="flex justify-between items-end mb-1">
+                                                        <span className="text-white font-bold text-sm flex items-center gap-2">
+                                                            {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '🔹'} {name}
+                                                        </span>
+                                                        <span className="text-emerald-300 text-xs font-black">{wins} Vit. ({winrate}%)</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-800 rounded-full h-2.5 border border-gray-700 overflow-hidden">
+                                                        <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-2.5 rounded-full transition-all duration-1000" style={{ width: `${winrate}%` }}></div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* COMANDANTI PIÙ LETALI */}
+                                <div className="bg-gray-900 p-5 rounded-xl border border-gray-700 shadow-inner">
+                                    <h3 className="text-orange-400 font-black mb-4 flex items-center gap-2 text-lg border-b border-gray-700 pb-2"><span className="text-2xl">👑</span> Comandanti Letali</h3>
+                                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                                        {sortedCmdrs.slice(0, 10).map(([cmdr, wins], idx) => {
+                                            const winrate = ((wins / totalMatches) * 100).toFixed(1);
+                                            return (
+                                                <div key={cmdr} className="relative">
+                                                    <div className="flex justify-between items-end mb-1">
+                                                        <span className="text-white font-bold text-sm truncate pr-2 w-2/3" title={cmdr}>{idx + 1}. {cmdr}</span>
+                                                        <span className="text-orange-300 text-xs font-black shrink-0">{wins} Vit. ({winrate}%)</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-800 rounded-full h-2.5 border border-gray-700 overflow-hidden">
+                                                        <div className="bg-gradient-to-r from-orange-600 to-yellow-400 h-2.5 rounded-full transition-all duration-1000" style={{ width: `${winrate}%` }}></div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* CRONOLOGIA RECENTE */}
+                            <div className="bg-gray-900 p-5 rounded-xl border border-gray-700 shadow-inner">
+                                <h3 className="text-blue-400 font-black mb-4 flex items-center gap-2 text-lg border-b border-gray-700 pb-2"><span className="text-2xl">📜</span> Ultime Partite (Cronologia)</h3>
+                                <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
+                                    {history.slice(0, 10).map(m => (
+                                        <div key={m.id} className="bg-gray-800 p-3 rounded-lg border border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow hover:border-gray-500 transition-colors">
+                                            <div className="flex flex-col">
+                                                <span className="text-white font-bold text-sm">Vittoria di <span className="text-yellow-400">{m.winnerName}</span></span>
+                                                <span className="text-gray-400 text-[10px]">{new Date(m.date).toLocaleString('it-IT')} • {m.playerCount} Giocatori {m.teamMode ? '(2HG)' : ''}</span>
+                                            </div>
+                                            {m.winnerCommander && m.winnerCommander !== "Sconosciuto" && (
+                                                <span className="bg-blue-900/50 text-blue-300 px-3 py-1.5 rounded-lg text-xs font-bold border border-blue-800 truncate max-w-[200px] text-center" title={m.winnerCommander}>
+                                                    👑 {m.winnerCommander}
+                                                </span>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
-
-                                <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner">
-                                    <h3 className="text-orange-400 font-black mb-3 border-b border-gray-700 pb-2">👑 Comandanti più Letali</h3>
-                                    {Object.entries(winsByCmdr).filter(([name])=>name!=="Sconosciuto").sort((a,b)=>b[1]-a[1]).map(([cmdr, wins]) => (
-                                        <div key={cmdr} className="flex justify-between items-center mb-2">
-                                            <span className="text-white font-bold text-sm truncate pr-2">{cmdr}</span>
-                                            <span className="bg-orange-800 text-orange-200 px-2 py-1 rounded text-xs font-black">{wins} Vittorie</span>
-                                        </div>
-                                    ))}
-                                </div>
                             </div>
+
                         </div>
                     )}
                 </div>
