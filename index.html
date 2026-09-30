@@ -4708,32 +4708,37 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                      let rotDeg = 0; let rowStart = ""; let colStart = ""; let rowSpan = "";
                      
                      if (players.length <= 2) {
-                         if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
-                         if (index === 1) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }
+                         // 0: Basso, 1: Alto
+                         if (index === 0) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }
+                         if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                      } else if (players.length === 3) {
-                         if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
-                         if (index === 1) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
+                         // Orario: Basso-Sx -> Alto-Sx -> Lato Destro
+                         if (index === 0) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
+                         if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                          if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rowSpan = "row-span-2"; rotDeg = -90; }
                      } else if (players.length === 4) {
-                         if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
-                         if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = 180; }
-                         if (index === 2) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
+                         // Orario: Basso-Sx -> Alto-Sx -> Alto-Dx -> Basso-Dx
+                         if (index === 0) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
+                         if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
+                         if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = 180; }
                          if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-3"; rotDeg = 0; }
                      } else if (players.length === 5) {
-                         if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
-                         if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
-                         if (index === 2) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
-                         if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
-                         if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-4"; rowSpan = "row-span-2"; rotDeg = -90; }
+                         // Orario: Basso-Sx -> Alto-Sx -> Alto-Centro -> Lato Destro -> Basso-Centro
+                         if (index === 0) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
+                         if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
+                         if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
+                         if (index === 3) { rowStart = "row-start-1"; colStart = "col-start-4"; rowSpan = "row-span-2"; rotDeg = -90; }
+                         if (index === 4) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
                      } else if (players.length === 6) {
-                         if (index === 0) { rowStart = "row-start-1"; colStart = "col-start-1"; rowSpan = "row-span-2"; rotDeg = 90; }
-                         if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
-                         if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-4"; rotDeg = 180; }
-                         if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
-                         if (index === 4) { rowStart = "row-start-2"; colStart = "col-start-4"; rotDeg = 0; }
-                         if (index === 5) { rowStart = "row-start-1"; colStart = "col-start-5"; rowSpan = "row-span-2"; rotDeg = -90; }
+                         // Orario: Basso-Sx -> Lato Sinistro -> Alto-Sx -> Alto-Dx -> Lato Destro -> Basso-Dx
+                         if (index === 0) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
+                         if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-1"; rowSpan = "row-span-2"; rotDeg = 90; }
+                         if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
+                         if (index === 3) { rowStart = "row-start-1"; colStart = "col-start-4"; rotDeg = 180; }
+                         if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-5"; rowSpan = "row-span-2"; rotDeg = -90; }
+                         if (index === 5) { rowStart = "row-start-2"; colStart = "col-start-4"; rotDeg = 0; }
                      }
-
+                 
                      const isSideways = rotDeg === 90 || rotDeg === -90;
                      return (
                          <div key={p.id} className={`${wrapperClass} ${rowStart} ${colStart} ${rowSpan}`} style={{ containerType: 'size' }}>
