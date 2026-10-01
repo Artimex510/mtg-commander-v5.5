@@ -4171,7 +4171,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           
           setShowDice(false);
           
-          // Rimuove l'illuminazione dopo 5 secondi
+          // Rimuove l'illuminazione dopo 10 secondi
           setTimeout(() => {
               setStartingPlayerId(null);
           }, 10000);
@@ -4287,7 +4287,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       useEffect(() => {
           if (view === 'game_active') {
               let lockMode = 'auto';
-              if (archenemy.showModal || planechase.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName' || activeModal.type === 'cmdrSelect'))) {
+              if (archenemy.showModal || planechase.showModal || showVoteSetup || voting.active || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName' || activeModal.type === 'cmdrSelect'))) {
                   lockMode = 'portrait';
               } else if (activeModal && activeModal.type === 'tokens') {
                   lockMode = 'landscape';
@@ -4305,7 +4305,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
               document.addEventListener('visibilitychange', handleVisibilityChange);
               return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
           }
-      }, [view, numPlayers, archenemy.showModal, planechase.showModal, activeModal, lobbyMode, inCloudRoom, showDice]);
+      }, [view, numPlayers, archenemy.showModal, planechase.showModal, activeModal, lobbyMode, inCloudRoom, showDice, showVoteSetup, voting.active]);
       
       useEffect(() => {
           if (view === 'game_active') {
@@ -4377,7 +4377,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
               setPlanarDieResult("🌀 CAOS!\nInneschi l'abilità Caos del piano attuale."); 
               setTimeout(() => setPlanarDieResult(null), 2500); 
           } else { 
-              setPlanarDieResult("✖️ VUOTO.\nNon succede nulla."); 
+              setPlanarDieResult("✖️️ VUOTO.\nNon succede nulla."); 
               setTimeout(() => setPlanarDieResult(null), 1500); 
           }
       };
@@ -4397,7 +4397,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
               id: `P${i + 1}`, teamId: teamMode ? Math.ceil((i + 1)/2) : (i + 1), name: `Player ${i + 1}`, 
               life: startLife, poison: 0, cmdCasts: 0, emblems: 0, rad: 0, energy: 0, exp: 0, ticket: 0,
               cmdDmg: {}, monarch: false, initiative: false, blessing: false, dayNight: 'none', immune: false,
-              mana: { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 }, tokens: [], tokenBg: null, bgUrl: null,
+              mana: { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 }, storm: 0, tokens: [], tokenBg: null, bgUrl: null,
               claimed: false, claimedBy: null
           }));
 
@@ -4448,13 +4448,11 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           }
       };
 
-      // FUNZIONE SALVATAGGIO VITTORIA (AGGIORNATA CON NOME COMANDANTE REALE)
+      // FUNZIONE SALVATAGGIO VITTORIA
       const declareWinner = async (winnerPlayer) => {
           if (!window.confirm(`Dichiarare ${winnerPlayer.name} VINCITORE della partita e salvare le statistiche?`)) return;
           try {
               let winnerCommander = "Sconosciuto";
-              
-              // Se il giocatore ha impostato la sua carta Comandante dal tasto 👑, prendiamo il VERO nome!
               if (winnerPlayer.cmdrCard && winnerPlayer.cmdrCard.name) {
                   winnerCommander = winnerPlayer.cmdrCard.name; 
               }
@@ -4479,7 +4477,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
         let newPlayers = [];
         let maxPoison = (startLife === 30 || (startLife === 60 && teamMode)) ? 15 : 10; 
         
-        // Colori base assegnati automaticamente alla partenza (W, U, B, R, G, Selesnya)
         const startingColors = [
             'bg-stone-300', 'bg-blue-800', 'bg-zinc-800', 
             'bg-red-800', 'bg-emerald-800', 'bg-gradient-to-br from-stone-300 to-emerald-800'
@@ -4501,15 +4498,14 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
 
           newPlayers.push({ 
              id: `P${i}`, teamId: tId, name: `Player ${i}`, life: startLife, poison: 0, maxPoison: maxPoison, cmdCasts: 0, emblems: 0, immune: false, cmdDmg: cmdDmg, bgUrl: null, 
-             color: startingColors[i - 1] || 'bg-gray-900', mixBg: false, // <-- Colori Pre-assegnati
-             mana: {W:0, U:0, B:0, R:0, G:0, C:0},
+             color: startingColors[i - 1] || 'bg-gray-900', mixBg: false,
+             mana: {W:0, U:0, B:0, R:0, G:0, C:0}, storm: 0,
              rad: 0, energy: 0, exp: 0, ticket: 0, monarch: false, initiative: false, blessing: false, dayNight: 'none',
              tokens: [], tokenBg: null
           });
         }
         
         if (useTimer) {
-            // Seleziona un giocatore casuale da cui far partire il timer
             setActiveTurnIdx(Math.floor(Math.random() * numPlayers));
             setTimeRemaining(turnMinutes * 60);
             setIsTimerPaused(true);
@@ -4526,13 +4522,13 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           if (isConfirmed) {
               setArchenemy(prev => ({...prev, active: false, playerId: null, ongoing: [], currentScheme: null}));
               setPlanechase(prev => ({...prev, active: false, currentPlane: null}));
+              setVoting({ active: false, title: "", options: [], votes: {}, revealed: false });
               setPlayers(prev => prev.map(p => {
                   let resetDmg = {}; prev.forEach(op => { if(op.id !== p.id) resetDmg[`${op.id}`] = 0; });
-                  return { ...p, life: startLife, poison: 0, cmdCasts: 0, emblems: 0, rad: 0, energy: 0, exp: 0, ticket: 0, cmdDmg: resetDmg, monarch: false, initiative: false, blessing: false, dayNight: 'none', immune: false, mana: {W:0, U:0, B:0, R:0, G:0, C:0}, tokens: [] };
+                  return { ...p, life: startLife, poison: 0, cmdCasts: 0, emblems: 0, rad: 0, energy: 0, exp: 0, ticket: 0, cmdDmg: resetDmg, monarch: false, initiative: false, blessing: false, dayNight: 'none', immune: false, mana: {W:0, U:0, B:0, R:0, G:0, C:0}, storm: 0, tokens: [] };
               }));
               
               if (useTimer) {
-                  // Resetta partendo di nuovo da un giocatore a caso
                   setActiveTurnIdx(Math.floor(Math.random() * players.length));
                   setTimeRemaining(turnMinutes * 60);
                   setIsTimerPaused(true);
@@ -4548,7 +4544,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
               setView('game'); 
           } else {
               let lockMode = 'auto';
-              if (archenemy.showModal || planechase.showModal || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName'))) {
+              if (archenemy.showModal || planechase.showModal || showVoteSetup || voting.active || (activeModal && (activeModal.type === 'search' || activeModal.type === 'editName' || activeModal.type === 'cmdrSelect'))) {
                   lockMode = 'portrait';
               } else if (activeModal && activeModal.type === 'tokens') {
                   lockMode = 'landscape';
@@ -4567,6 +4563,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
               return { ...prev, currentScheme: next, schemes: newSchemes, ongoing: newOngoing };
           });
       };
+      
       const updateStat = (playerId, stat, amount, opponentId = null) => {
         setPlayers(prev => {
           const targetPlayer = prev.find(p => p.id === playerId);
@@ -4618,7 +4615,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       };
 
       if (view === 'game') return (
-        <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl shadow-lg border border-gray-600 mt-4 backdrop-blur-sm animate-fade">
+        <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl shadow-lg border border-gray-600 mt-4 backdrop-blur-sm animate-fade overflow-y-auto max-h-[90vh]">
           <h2 className="text-3xl font-black mb-4 text-center text-red-500 drop-shadow-md">Setup Partita</h2>
           
           <button onClick={() => setView('statistics')} className="w-full mb-6 bg-purple-700 hover:bg-purple-600 text-white font-black py-3 rounded-lg shadow-lg border border-purple-500 flex items-center justify-center gap-2 transition-all">
@@ -4795,6 +4792,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                       
                       <div className="w-px h-8 bg-gray-700"></div>
 
+                      {/* Tasto Dadi Cloud */}
                       <button onClick={() => setShowDice(true)} className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 w-12 h-12 rounded-xl shadow-lg border border-gray-600 transform transition-transform active:scale-90" title="Lancia Dadi">
                           <span className="text-2xl drop-shadow-md">🎲</span>
                       </button>
@@ -4818,29 +4816,24 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                      let rotDeg = 0; let rowStart = ""; let colStart = ""; let rowSpan = "";
                      
                      if (players.length <= 2) {
-                         // 0: Basso, 1: Alto
                          if (index === 0) { rowStart = "row-start-3"; colStart = "col-start-1"; rotDeg = 0; }
                          if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                      } else if (players.length === 3) {
-                         // Orario: Basso-Sx -> Alto-Sx -> Lato Destro
                          if (index === 0) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
                          if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                          if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rowSpan = "row-span-2"; rotDeg = -90; }
                      } else if (players.length === 4) {
-                         // Orario: Basso-Sx -> Alto-Sx -> Alto-Dx -> Basso-Dx
                          if (index === 0) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
                          if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                          if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-3"; rotDeg = 180; }
                          if (index === 3) { rowStart = "row-start-2"; colStart = "col-start-3"; rotDeg = 0; }
                      } else if (players.length === 5) {
-                         // Orario: Basso-Sx -> Alto-Sx -> Alto-Centro -> Lato Destro -> Basso-Centro
                          if (index === 0) { rowStart = "row-start-2"; colStart = "col-start-1"; rotDeg = 0; }
                          if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-1"; rotDeg = 180; }
                          if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
                          if (index === 3) { rowStart = "row-start-1"; colStart = "col-start-4"; rowSpan = "row-span-2"; rotDeg = -90; }
                          if (index === 4) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
                      } else if (players.length === 6) {
-                         // Orario: Basso-Sx -> Lato Sinistro -> Alto-Sx -> Alto-Dx -> Lato Destro -> Basso-Dx
                          if (index === 0) { rowStart = "row-start-2"; colStart = "col-start-2"; rotDeg = 0; }
                          if (index === 1) { rowStart = "row-start-1"; colStart = "col-start-1"; rowSpan = "row-span-2"; rotDeg = 90; }
                          if (index === 2) { rowStart = "row-start-1"; colStart = "col-start-2"; rotDeg = 180; }
@@ -4848,7 +4841,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                          if (index === 4) { rowStart = "row-start-1"; colStart = "col-start-5"; rowSpan = "row-span-2"; rotDeg = -90; }
                          if (index === 5) { rowStart = "row-start-2"; colStart = "col-start-4"; rotDeg = 0; }
                      }
-                 
+
                      const isSideways = rotDeg === 90 || rotDeg === -90;
                      return (
                          <div key={p.id} className={`${wrapperClass} ${rowStart} ${colStart} ${rowSpan}`} style={{ containerType: 'size' }}>
@@ -5139,18 +5132,18 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                       
                       {!voting.revealed ? (
                           <>
-                              <p className="text-amber-400 font-bold mb-6 animate-pulse">Voti raccolti in segreto: {Object.keys(voting.votes).length} / {players.length}</p>
+                              <p className="text-amber-400 font-bold mb-6 animate-pulse">Voti raccolti in segreto: {Object.keys(voting.votes || {}).length} / {players.length}</p>
                               
                               {isCloudMode ? (
-                                  voting.votes[myPlayerId] ? (
+                                  (voting.votes || {})[myPlayerId] ? (
                                       <div className="bg-gray-900 p-6 rounded-xl border border-gray-700 shadow-inner">
                                           <p className="text-emerald-400 font-black text-lg">Voto Registrato! 🤫</p>
                                           <p className="text-gray-400 text-sm mt-2">In attesa che votino tutti...</p>
                                       </div>
                                   ) : (
                                       <div className="flex flex-col gap-3 max-h-[40vh] overflow-y-auto pr-1">
-                                          {voting.options.map((opt, i) => (
-                                              <button key={i} onClick={() => handleSyncVoting({...voting, votes: {...voting.votes, [myPlayerId]: opt}})} className="bg-gray-700 hover:bg-amber-600 text-white font-black py-4 rounded-xl shadow border border-gray-500 hover:border-amber-400 transition-colors">
+                                          {(voting.options || []).map((opt, i) => (
+                                              <button key={i} onClick={() => handleSyncVoting({...voting, votes: {...(voting.votes || {}), [myPlayerId]: opt}})} className="bg-gray-700 hover:bg-amber-600 text-white font-black py-4 rounded-xl shadow border border-gray-500 hover:border-amber-400 transition-colors">
                                                   {opt}
                                               </button>
                                           ))}
@@ -5160,15 +5153,15 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                   <div className="flex flex-col gap-2 max-h-[40vh] overflow-y-auto pr-1">
                                       <p className="text-gray-300 text-sm mb-2">Passatevi il telefono e votate di nascosto!</p>
                                       {players.map(p => {
-                                          const voted = !!voting.votes[p.id];
+                                          const voted = !!(voting.votes || {})[p.id];
                                           return (
                                               <button key={p.id} disabled={voted} onClick={() => {
-                                                  const optList = voting.options.map((o,i)=> `${i+1}) ${o}`).join('\n');
+                                                  const optList = (voting.options || []).map((o,i)=> `${i+1}) ${o}`).join('\n');
                                                   const choice = window.prompt(`Sei ${p.name}. Scrivi il NUMERO dell'opzione che scegli:\n\n${optList}`);
                                                   if(choice) {
                                                       const idx = parseInt(choice) - 1;
-                                                      if(idx >= 0 && idx < voting.options.length) {
-                                                          handleSyncVoting({...voting, votes: {...voting.votes, [p.id]: voting.options[idx]}});
+                                                      if(idx >= 0 && idx < (voting.options || []).length) {
+                                                          handleSyncVoting({...voting, votes: {...(voting.votes || {}), [p.id]: (voting.options || [])[idx]}});
                                                       } else alert("Numero non valido. Riprova.");
                                                   }
                                               }} className={`font-black py-4 rounded-xl shadow transition-colors border text-sm ${voted ? 'bg-emerald-900/40 text-emerald-500 border-emerald-800' : 'bg-blue-700 hover:bg-blue-600 text-white border-blue-500 shadow-[0_0_10px_rgba(29,78,216,0.5)]'}`}>
@@ -5181,7 +5174,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
 
                               {(isHost || !isCloudMode) && (
                                   <div className="mt-8 pt-4 border-t border-gray-700 flex flex-col gap-2">
-                                      <button onClick={() => handleSyncVoting({ ...voting, revealed: true })} className={`font-black py-4 rounded-xl shadow transition-all ${Object.keys(voting.votes).length === players.length ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-[0_0_20px_rgba(217,119,6,0.6)] animate-bounce' : 'bg-gray-700 text-gray-400 border border-gray-600'}`}>
+                                      <button onClick={() => handleSyncVoting({ ...voting, revealed: true })} className={`font-black py-4 rounded-xl shadow transition-all ${Object.keys(voting.votes || {}).length === players.length ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-[0_0_20px_rgba(217,119,6,0.6)] animate-bounce' : 'bg-gray-700 text-gray-400 border border-gray-600'}`}>
                                           👁 RIVELA I RISULTATI 👁️
                                       </button>
                                       <button onClick={() => handleSyncVoting({ active: false, title: "", options: [], votes: {}, revealed: false })} className="text-red-500 font-bold text-sm py-2 underline mt-2">Annulla Votazione</button>
@@ -5192,9 +5185,9 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                           <div className="animate-fade w-full">
                               <h4 className="text-amber-400 font-black text-2xl mb-6 tracking-wider drop-shadow-md">ESITO DEL VOTO</h4>
                               <div className="space-y-4 mb-8 max-h-[40vh] overflow-y-auto pr-2">
-                                  {voting.options.map((opt, i) => {
-                                      const count = Object.values(voting.votes).filter(v => v === opt).length;
-                                      const perc = Object.keys(voting.votes).length > 0 ? (count / Object.keys(voting.votes).length) * 100 : 0;
+                                  {(voting.options || []).map((opt, i) => {
+                                      const count = Object.values(voting.votes || {}).filter(v => v === opt).length;
+                                      const perc = Object.keys(voting.votes || {}).length > 0 ? (count / Object.keys(voting.votes || {}).length) * 100 : 0;
                                       return (
                                           <div key={i} className="flex flex-col text-left">
                                               <div className="flex justify-between items-end mb-1">
