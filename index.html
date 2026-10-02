@@ -5059,26 +5059,28 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           , document.body)}
           
           {showDice && ReactDOM.createPortal(
-             <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 animate-fade" onClick={() => setShowDice(false)}>
-                <div className="bg-gray-900 border border-purple-500 rounded-2xl p-6 shadow-2xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
-                   <h3 className="text-xl font-black text-white mb-4 text-center">🎲 Lancia Dado</h3>
-                   <button onClick={rollForStart} className="w-full mb-4 bg-yellow-600 hover:bg-yellow-500 border border-yellow-400 rounded-xl py-4 font-black text-white shadow-[0_0_15px_rgba(202,138,4,0.5)] active:scale-95 text-xl transition-all flex items-center justify-center gap-2">
+             <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-2 sm:p-4 animate-fade" onClick={() => setShowDice(false)}>
+                <div className="bg-gray-900 border border-purple-500 rounded-2xl p-4 shadow-2xl max-w-sm w-full max-h-[95vh] overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}>
+                   <h3 className="text-xl font-black text-white mb-3 text-center shrink-0">🎲 Lancia Dado</h3>
+                   
+                   <button onClick={rollForStart} className="w-full mb-3 bg-yellow-600 hover:bg-yellow-500 border border-yellow-400 rounded-xl py-3 font-black text-white shadow-[0_0_15px_rgba(202,138,4,0.5)] active:scale-95 text-lg transition-all flex items-center justify-center gap-2 shrink-0">
                        🥇 SORTEGGIA CHI INIZIA 
                    </button>
-                   <div className="grid grid-cols-2 gap-4">
-                      <button onClick={() => rollDice(2)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl py-6 font-bold text-white shadow-lg active:scale-95 text-lg transition-all">🪙 Moneta (D2)</button>
-                      <button onClick={() => rollDice(6)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl py-6 font-bold text-white shadow-lg active:scale-95 text-lg transition-all">🎲 Dado (D6)</button>
-                      <button onClick={() => rollDice(20)} className="col-span-2 bg-purple-700 hover:bg-purple-600 border border-purple-500 rounded-xl py-6 font-black text-white shadow-[0_0_15px_rgba(168,85,247,0.5)] active:scale-95 text-2xl transition-all">✨ Dado Vita (D20)</button>
+                   
+                   <div className="grid grid-cols-2 gap-3 shrink-0">
+                      <button onClick={() => rollDice(2)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl py-3 font-bold text-white shadow-lg active:scale-95 text-sm sm:text-base transition-all">🪙 Moneta (D2)</button>
+                      <button onClick={() => rollDice(6)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-xl py-3 font-bold text-white shadow-lg active:scale-95 text-sm sm:text-base transition-all">🎲 Dado (D6)</button>
+                      <button onClick={() => rollDice(20)} className="col-span-2 bg-purple-700 hover:bg-purple-600 border border-purple-500 rounded-xl py-3 sm:py-4 font-black text-white shadow-[0_0_15px_rgba(168,85,247,0.5)] active:scale-95 text-xl transition-all">✨ Dado Vita (D20)</button>
                    </div>
                    
-                   {/* TASTO CONSIGLIO SEGRETO INIETTATO QUI */}
+                   {/* TASTO CONSIGLIO SEGRETO */}
                    {(isHost || !isCloudMode) && (
-                       <button onClick={() => { setShowDice(false); setShowVoteSetup(true); }} className={`w-full mt-4 py-4 rounded-xl text-white font-black shadow-[0_0_15px_rgba(217,119,6,0.5)] active:scale-95 text-lg transition-all flex items-center justify-center gap-2 border ${voting.active && !voting.revealed ? 'bg-amber-600 hover:bg-amber-500 border-amber-400 animate-pulse' : 'bg-gray-800 hover:bg-gray-700 border-gray-500'}`}>
+                       <button onClick={() => { setShowDice(false); setShowVoteSetup(true); }} className={`w-full mt-3 py-3 rounded-xl text-white font-black shadow-[0_0_15px_rgba(217,119,6,0.5)] active:scale-95 text-lg transition-all flex items-center justify-center gap-2 border shrink-0 ${voting.active && !voting.revealed ? 'bg-amber-600 hover:bg-amber-500 border-amber-400 animate-pulse' : 'bg-gray-800 hover:bg-gray-700 border-gray-500'}`}>
                            ⚖️ {voting.active ? 'VEDI VOTAZIONE' : 'CONSIGLIO SEGRETO'}
                        </button>
                    )}
 
-                   <button onClick={() => setShowDice(false)} className="w-full mt-4 bg-red-600 hover:bg-red-500 py-3 rounded-xl text-white font-bold transition-colors">Chiudi</button>
+                   <button onClick={() => setShowDice(false)} className="w-full mt-3 bg-red-600 hover:bg-red-500 py-3 rounded-xl text-white font-bold transition-colors shrink-0">Chiudi</button>
                 </div>
              </div>
           , document.body)}
