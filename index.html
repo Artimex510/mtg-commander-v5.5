@@ -4146,6 +4146,11 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const [showVoteSetup, setShowVoteSetup] = useState(false);
       const [voteTitleInput, setVoteTitleInput] = useState("");
       const [voteOptionsInput, setVoteOptionsInput] = useState("");
+
+      // --- STATI COMBAT LOG & UNDO ---
+      const [combatLog, setCombatLog] = useState([]);
+      const [playersHistory, setPlayersHistory] = useState([]);
+      const [showLogModal, setShowLogModal] = useState(false);
       
       // --- NUOVI STATI TIMER TURNI (MTG Chess Clock) ---
       const [useTimer, setUseTimer] = useState(false);
@@ -4571,7 +4576,19 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
         setPlayers(prev => {
           const targetPlayer = prev.find(p => p.id === playerId);
           if(!targetPlayer) return prev;
+
+          // 💾 SALVATAGGIO STATO PER LA MACCHINA DEL TEMPO (Conserva gli ultimi 30 step)
+          setPlayersHistory(h => [...h, prev].slice(-30));
           
+          // 📜 CREAZIONE COMBAT LOG
+          let statName = stat === 'life' ? 'Vita' : (stat === 'poison' ? 'Veleno' : (stat === 'cmdDmg' ? 'Danni Cmdr' : stat));
+          if (stat === 'life' || stat === 'poison' || stat === 'cmdDmg') {
+             const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+             let valBefore = stat === 'cmdDmg' ? (targetPlayer.cmdDmg[opponentId] || 0) : targetPlayer[stat];
+             let valAfter = Math.max(0, valBefore + amount);
+             setCombatLog(l => [{ time, msg: `${targetPlayer.name} ${statName}: ${valBefore} ➔ ${valAfter} (${amount > 0 ? '+'+amount : amount})` }, ...l].slice(0, 40));
+          }
+
           const sharedStats = ['life', 'poison', 'energy', 'ticket'];
           const isShared = sharedStats.includes(stat);
           let newState = [];
@@ -4609,6 +4626,25 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
         });
       };
 
+     const undoLastAction = () => {
+          setPlayersHistory(prevHistory => {
+              if (prevHistory.length === 0) {
+                  alert("Nessuna azione precedente da annullare.");
+                  return prevHistory;
+              }
+              const newHistory = [...prevHistory];
+              const previousState = newHistory.pop();
+              setPlayers(previousState);
+              if (inCloudRoom && roomCode) db.collection('matches').doc(roomCode).update({ players: previousState }).catch(function(){});
+              return newHistory;
+          });
+          setCombatLog(l => {
+              const newLog = [...l];
+              newLog.shift(); // Rimuove l'ultimo log testuale
+              return newLog;
+          });
+      };
+      
       const updatePlayerConfig = (id, key, val) => { 
           setPlayers(prev => { const n = prev.map(p => p.id === id ? { ...p, [key]: val } : p); syncToRoom('players', n); return n; }); 
       };
@@ -4808,6 +4844,9 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                               <span className="text-2xl drop-shadow-md">🌌</span>
                           </button>
                       )}
+                    <button onClick={() => setShowLogModal(true)} className="flex items-center justify-center w-12 h-12 rounded-xl shadow-lg border border-gray-600 bg-gray-800 hover:bg-gray-700 text-white transform transition-transform active:scale-90" title="Combat Log & Undo">
+                          <span className="text-2xl drop-shadow-md">📜</span>
+                      </button>
                   </div>
                </React.Fragment>
            ) : (
@@ -4903,6 +4942,9 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                     </button>
                     <button onClick={() => setPlanechase(prev => ({...prev, showModal: true}))} className={`flex items-center justify-center w-10 h-10 rounded-xl shadow-lg border transform transition-transform active:scale-90 ${planechase.active ? 'bg-indigo-800 border-indigo-500 animate-pulse' : 'bg-gray-800 border-gray-600 hover:bg-gray-700'}`} title="Planechase">
                         <span className="text-xl drop-shadow-md">🌌</span>
+                    </button>
+                   <button onClick={() => setShowLogModal(true)} className="flex items-center justify-center w-10 h-10 rounded-xl shadow-lg border border-gray-600 bg-gray-800 hover:bg-gray-700 text-white transform transition-transform active:scale-90" title="Combat Log & Undo">
+                        <span className="text-xl drop-shadow-md">📜</span>
                     </button>
                     <div className={players.length <= 2 ? "w-px h-4 bg-gray-700" : "w-4 h-px bg-gray-700"}></div>
                     
@@ -5221,6 +5263,34 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
               </div>
           , document.body)}
 
+{/* MODALE COMBAT LOG E UNDO */}
+          {showLogModal && ReactDOM.createPortal(
+             <div className="fixed inset-0 bg-gray-900/95 z-[9999] flex flex-col p-4 animate-fade justify-center">
+                <div className="bg-gray-800 border-2 border-blue-500 rounded-xl p-4 w-full max-w-md mx-auto shadow-2xl relative flex flex-col max-h-[80vh]">
+                    <button onClick={() => setShowLogModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
+                    <h3 className="text-xl font-black text-blue-400 mb-2">📜 Combat Log</h3>
+                    <p className="text-gray-300 text-xs font-bold mb-4">Cronologia delle variazioni di vita e danni inflitti.</p>
+                    
+                    <button onClick={undoLastAction} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl shadow-[0_0_15px_rgba(37,99,235,0.4)] mb-4 flex justify-center items-center gap-2 active:scale-95 transition-all">
+                        ↩️ UNDO (Annulla Ultima Azione)
+                    </button>
+
+                    <div className="flex-1 overflow-y-auto bg-black/50 rounded-lg p-2 border border-gray-700 space-y-2 h-64">
+                        {combatLog.length === 0 ? (
+                            <p className="text-center text-gray-500 text-sm py-4 font-bold">Nessun evento registrato finora.</p>
+                        ) : (
+                            combatLog.map((log, i) => (
+                                <div key={i} className={`text-sm p-2 rounded-lg border flex justify-between items-center shadow-sm ${i === 0 ? 'bg-blue-900/30 border-blue-500/50 text-white' : 'bg-gray-900 border-gray-700 text-gray-300'}`}>
+                                    <span className="font-bold flex-1 pr-2 leading-tight">{log.msg}</span>
+                                    <span className="text-gray-500 text-[10px] shrink-0 font-bold">{log.time}</span>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+             </div>
+          , document.body)}
+          
         </div>
       );
     };
