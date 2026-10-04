@@ -4876,9 +4876,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                     <button onClick={() => setShowLogModal(true)} className="flex items-center justify-center w-12 h-12 rounded-xl shadow-lg border border-gray-600 bg-gray-800 hover:bg-gray-700 text-white transform transition-transform active:scale-90" title="Combat Log & Undo">
                           <span className="text-2xl drop-shadow-md">📜</span>
                       </button>  
-                    <button onClick={() => setShowBountiesModal(true)} className="flex items-center justify-center w-12 h-12 rounded-xl shadow-[0_0_10px_rgba(202,138,4,0.4)] border border-yellow-500 bg-gray-800 hover:bg-gray-700 text-white transform transition-transform active:scale-90" title="Taglie della Taverna">
-                          <span className="text-2xl drop-shadow-md">💰</span>
-                      </button>
                   </div>
                </React.Fragment>
            ) : (
@@ -4977,9 +4974,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                     </button>
                    <button onClick={() => setShowLogModal(true)} className="flex items-center justify-center w-10 h-10 rounded-xl shadow-lg border border-gray-600 bg-gray-800 hover:bg-gray-700 text-white transform transition-transform active:scale-90" title="Combat Log & Undo">
                         <span className="text-xl drop-shadow-md">📜</span>
-                    </button>
-                   <button onClick={() => setShowBountiesModal(true)} className="flex items-center justify-center w-10 h-10 rounded-xl shadow-[0_0_10px_rgba(202,138,4,0.4)] border border-yellow-500 bg-gray-800 hover:bg-gray-700 text-white transform transition-transform active:scale-90" title="Taglie della Taverna">
-                        <span className="text-xl drop-shadow-md">💰</span>
                     </button>
                     <div className={players.length <= 2 ? "w-px h-4 bg-gray-700" : "w-4 h-px bg-gray-700"}></div>
                     
@@ -5150,12 +5144,18 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                       <button onClick={() => rollDice(20)} className="col-span-2 bg-purple-700 hover:bg-purple-600 border border-purple-500 rounded-xl py-3 sm:py-4 font-black text-white shadow-[0_0_15px_rgba(168,85,247,0.5)] active:scale-95 text-xl transition-all">✨ Dado Vita (D20)</button>
                    </div>
                    
-                   {/* TASTO CONSIGLIO SEGRETO */}
-                   {(isHost || !isCloudMode) && (
-                       <button onClick={() => { setShowDice(false); setShowVoteSetup(true); }} className={`w-full mt-3 py-3 rounded-xl text-white font-black shadow-[0_0_15px_rgba(217,119,6,0.5)] active:scale-95 text-lg transition-all flex items-center justify-center gap-2 border shrink-0 ${voting.active && !voting.revealed ? 'bg-amber-600 hover:bg-amber-500 border-amber-400 animate-pulse' : 'bg-gray-800 hover:bg-gray-700 border-gray-500'}`}>
-                           ⚖️ {voting.active ? 'VEDI VOTAZIONE' : 'CONSIGLIO SEGRETO'}
+                   {/* TASTI EXTRA: TAGLIE E CONSIGLIO SEGRETO */}
+                   <div className="flex flex-col gap-2 mt-3 shrink-0">
+                       <button onClick={() => { setShowDice(false); setShowBountiesModal(true); }} className="w-full py-3 rounded-xl text-white font-black shadow-[0_0_15px_rgba(202,138,4,0.4)] active:scale-95 text-lg transition-all flex items-center justify-center gap-2 border bg-yellow-600 hover:bg-yellow-500 border-yellow-500">
+                           💰 TAGLIE DELLA TAVERNA
                        </button>
-                   )}
+
+                       {(isHost || !isCloudMode) && (
+                           <button onClick={() => { setShowDice(false); setShowVoteSetup(true); }} className={`w-full py-3 rounded-xl text-white font-black shadow-[0_0_15px_rgba(217,119,6,0.5)] active:scale-95 text-lg transition-all flex items-center justify-center gap-2 border ${voting.active && !voting.revealed ? 'bg-amber-600 hover:bg-amber-500 border-amber-400 animate-pulse' : 'bg-gray-800 hover:bg-gray-700 border-gray-500'}`}>
+                               ⚖️ {voting.active ? 'VEDI VOTAZIONE' : 'CONSIGLIO SEGRETO'}
+                           </button>
+                       )}
+                   </div>
 
                    <button onClick={() => setShowDice(false)} className="w-full mt-3 bg-red-600 hover:bg-red-500 py-3 rounded-xl text-white font-bold transition-colors shrink-0">Chiudi</button>
                 </div>
