@@ -3632,7 +3632,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                             {/* Tasto Rapido +5 Floating Mana */}
                                             <button onClick={() => updateMana(player.id, m.id, 5)} className="absolute top-2 right-2 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold px-2 py-1 rounded-md text-[10px] shadow border border-gray-600 active:scale-90 transition-all">+5</button>
                                             
-                                            <span className={`w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center font-black text-lg md:text-2xl border-2 shadow-md mb-2 mt-2 ${m.color}`}>{m.label}</span>
+                                            <img src={`https://svgs.scryfall.io/card-symbols/${m.id}.svg`} alt={m.id} className="w-10 h-10 md:w-14 md:h-14 drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)] mb-2 mt-2 hover:scale-105 transition-transform" />
                                             
                                             <div className="flex w-full justify-between items-center gap-2 px-1">
                                                 <button onClick={() => updateMana(player.id, m.id, -1)} className="w-10 h-10 md:w-12 md:h-12 bg-red-900/80 active:bg-red-700 text-red-300 font-black text-2xl rounded-lg flex items-center justify-center shadow transition-transform active:scale-95">-</button>
