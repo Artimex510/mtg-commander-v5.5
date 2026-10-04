@@ -4151,6 +4151,10 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const [combatLog, setCombatLog] = useState([]);
       const [playersHistory, setPlayersHistory] = useState([]);
       const [showLogModal, setShowLogModal] = useState(false);
+
+      // --- STATI TAGLIE DELLA TAVERNA ---
+      const [bounties, setBounties] = useState([]);
+      const [showBountiesModal, setShowBountiesModal] = useState(false);
       
       // --- NUOVI STATI TIMER TURNI (MTG Chess Clock) ---
       const [useTimer, setUseTimer] = useState(false);
@@ -4222,6 +4226,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                       if (data.archenemy) setArchenemy(prev => ({ ...prev, active: data.archenemy.active, playerId: data.archenemy.playerId, schemes: data.archenemy.schemes, ongoing: data.archenemy.ongoing, currentScheme: data.archenemy.currentScheme }));
                       if (data.planechase) setPlanechase(prev => ({ ...prev, active: data.planechase.active, planes: data.planechase.planes, currentPlane: data.planechase.currentPlane }));
                       if (data.voting) setVoting(data.voting || { active: false, title: "", options: [], votes: {}, revealed: false });
+                      if (data.bounties) setBounties(data.bounties || []);
                   }
               });
               return () => unsubscribe();
@@ -4241,6 +4246,30 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const handleSyncVoting = (newState) => {
           setVoting(newState);
           if (inCloudRoom && roomCode) db.collection('matches').doc(roomCode).update({ voting: newState }).catch(function(){});
+      };
+      const handleSyncBounties = (newBounties) => {
+          setBounties(newBounties);
+          if (inCloudRoom && roomCode) db.collection('matches').doc(roomCode).update({ bounties: newBounties }).catch(function(){});
+      };
+
+      const BOUNTY_LIST = [
+          { title: "Primo Sangue", desc: "Infliggi il primo danno da combattimento della partita a un avversario.", points: 1 },
+          { title: "Misericordia", desc: "Salva un giocatore da morte certa (es. counter o rimozione letale).", points: 2 },
+          { title: "Cacciatore di Teste", desc: "Distruggi o esilia 3 Planeswalker controllati dagli avversari.", points: 2 },
+          { title: "Paciere", desc: "Passa 3 turni interi di fila senza mai attaccare o fare danni.", points: 1 },
+          { title: "Regicida", desc: "Uccidi il Comandante avversario che ha il maggior numero di lanci.", points: 2 },
+          { title: "Tradimento", desc: "Attacca o bersaglia negativamente il giocatore che ti ha aiutato nel turno precedente.", points: 1 },
+          { title: "Ricchezza Smodata", desc: "Arriva a controllare 10 o più pedine Tesoro contemporaneamente.", points: 1 },
+          { title: "Golia", desc: "Metti in gioco una creatura con forza 10 o superiore.", points: 1 },
+          { title: "Vendetta", desc: "Elimina dalla partita il giocatore che ha distrutto il tuo Comandante l'ultima volta.", points: 3 },
+          { title: "Archivista", desc: "Pesca 5 o più carte in un singolo turno.", points: 1 },
+          { title: "Tiranno", desc: "Controlla 5 o più artefatti stax o pezzi di tassazione.", points: 2 }
+      ];
+
+      const generateBounties = () => {
+          let shuffled = [...BOUNTY_LIST].sort(() => 0.5 - Math.random());
+          let selected = shuffled.slice(0, 3).map((b, i) => ({ id: 'bty-'+Date.now()+'-'+i, ...b, claimed: false, claimedBy: null }));
+          handleSyncBounties(selected);
       };
       useEffect(() => { stateRef.current = { numPlayers, archenemy, activeModal, planechase }; }, [numPlayers, archenemy, activeModal, planechase]);
 
@@ -4846,6 +4875,9 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                       )}
                     <button onClick={() => setShowLogModal(true)} className="flex items-center justify-center w-12 h-12 rounded-xl shadow-lg border border-gray-600 bg-gray-800 hover:bg-gray-700 text-white transform transition-transform active:scale-90" title="Combat Log & Undo">
                           <span className="text-2xl drop-shadow-md">📜</span>
+                      </button>  
+                    <button onClick={() => setShowBountiesModal(true)} className="flex items-center justify-center w-12 h-12 rounded-xl shadow-[0_0_10px_rgba(202,138,4,0.4)] border border-yellow-500 bg-gray-800 hover:bg-gray-700 text-white transform transition-transform active:scale-90" title="Taglie della Taverna">
+                          <span className="text-2xl drop-shadow-md">💰</span>
                       </button>
                   </div>
                </React.Fragment>
@@ -4945,6 +4977,9 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                     </button>
                    <button onClick={() => setShowLogModal(true)} className="flex items-center justify-center w-10 h-10 rounded-xl shadow-lg border border-gray-600 bg-gray-800 hover:bg-gray-700 text-white transform transition-transform active:scale-90" title="Combat Log & Undo">
                         <span className="text-xl drop-shadow-md">📜</span>
+                    </button>
+                   <button onClick={() => setShowBountiesModal(true)} className="flex items-center justify-center w-10 h-10 rounded-xl shadow-[0_0_10px_rgba(202,138,4,0.4)] border border-yellow-500 bg-gray-800 hover:bg-gray-700 text-white transform transition-transform active:scale-90" title="Taglie della Taverna">
+                        <span className="text-xl drop-shadow-md">💰</span>
                     </button>
                     <div className={players.length <= 2 ? "w-px h-4 bg-gray-700" : "w-4 h-px bg-gray-700"}></div>
                     
@@ -5287,6 +5322,65 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                             ))
                         )}
                     </div>
+                </div>
+             </div>
+          , document.body)}
+
+          {/* MODALE TAGLIE DELLA TAVERNA */}
+          {showBountiesModal && ReactDOM.createPortal(
+             <div className="fixed inset-0 bg-gray-900/95 z-[9999] flex flex-col p-4 animate-fade justify-center">
+                <div className="bg-gray-800 border-2 border-yellow-500 rounded-xl p-4 w-full max-w-md mx-auto shadow-2xl relative flex flex-col max-h-[85vh]">
+                    <button onClick={() => setShowBountiesModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
+                    <h3 className="text-xl font-black text-yellow-400 mb-2">💰 Taglie della Taverna</h3>
+                    <p className="text-gray-300 text-xs font-bold mb-4">Obiettivi globali: il primo che li completa vince i Ticket!</p>
+
+                    {(isHost || !isCloudMode) && bounties.length === 0 && (
+                        <button onClick={generateBounties} className="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-xl shadow-[0_0_15px_rgba(202,138,4,0.5)] transition-all animate-pulse mb-2">
+                            🎲 GENERA 3 TAGLIE
+                        </button>
+                    )}
+
+                    <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                        {bounties.map(b => (
+                            <div key={b.id} className={`p-3 rounded-lg border shadow-lg ${b.claimed ? 'bg-gray-900 border-gray-700 opacity-60' : 'bg-gray-800 border-yellow-600'}`}>
+                                <div className="flex justify-between items-start mb-1">
+                                    <h4 className={`font-black text-sm ${b.claimed ? 'text-gray-500' : 'text-yellow-400'}`}>{b.title}</h4>
+                                    <span className="bg-yellow-900/50 text-yellow-300 text-[10px] px-2 py-0.5 rounded border border-yellow-700 font-bold shrink-0">{b.points} Ticket</span>
+                                </div>
+                                <p className="text-xs text-white mb-3">{b.desc}</p>
+                                
+                                {b.claimed ? (
+                                    <div className="text-[10px] bg-green-900/40 text-green-400 font-bold px-2 py-1.5 rounded text-center border border-green-800">
+                                        ✓ Reclamata da: {players.find(p => p.id === b.claimedBy) ? players.find(p => p.id === b.claimedBy).name : 'Giocatore'}
+                                    </div>
+                                ) : (
+                                    <div className="flex gap-2 border-t border-gray-700 pt-3">
+                                        <select id={`claim-${b.id}`} className="flex-1 bg-gray-900 border border-gray-600 rounded text-xs text-white p-2 outline-none font-bold">
+                                            <option value="">Chi l'ha completata?</option>
+                                            {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
+                                        <button onClick={() => {
+                                            const sel = document.getElementById(`claim-${b.id}`);
+                                            if(sel && sel.value) {
+                                                const pId = sel.value;
+                                                updateStat(pId, 'ticket', b.points); // Assegna automaticamente i Ticket!
+                                                const newBounties = bounties.map(bx => bx.id === b.id ? { ...bx, claimed: true, claimedBy: pId } : bx);
+                                                handleSyncBounties(newBounties);
+                                            } else {
+                                                alert("Seleziona un giocatore dal menù a tendina per reclamare la taglia!");
+                                            }
+                                        }} className="bg-green-600 hover:bg-green-500 text-white font-bold text-xs px-4 py-2 rounded shadow transition-colors shrink-0">Reclama</button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {(isHost || !isCloudMode) && bounties.length > 0 && (
+                        <button onClick={() => { if(window.confirm("Vuoi annullare queste taglie e generarne 3 nuove?")) generateBounties(); }} className="w-full mt-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl border border-gray-500 text-xs transition-colors shrink-0">
+                            🔄 Sostituisci Taglie
+                        </button>
+                    )}
                 </div>
              </div>
           , document.body)}
