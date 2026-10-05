@@ -1541,59 +1541,32 @@
           }
       };
 
-      // -- MOTORE 2: GEMINI 3.1 FLASH IMAGE (La nuova AI nativa di Google per le immagini)
+      // -- MOTORE 2: FLUX POTENZIATO (Gratis, No API Key, Alta Qualità)
       const generateHqArt = async () => {
           if(!aiPromptHq.trim()) return alert("Scrivi cosa vuoi generare (HQ)!");
-          
-          let apiKey = localStorage.getItem('gemini_api_key');
-          if (!apiKey) {
-              apiKey = window.prompt("Inserisci la tua API Key Gemini:");
-              if (!apiKey) return;
-              localStorage.setItem('gemini_api_key', apiKey);
-          }
-          
           setIsGeneratingHq(true);
           try {
-              // Trucco: Aggiungiamo istruzioni invisibili per forzare lo stile MTG e il formato
-              const enhancedPrompt = aiPromptHq.trim() + ", magic the gathering card art style, fantasy illustration, masterpiece, highly detailed, vertical portrait orientation";
+              const seed = Math.floor(Math.random() * 1000000);
               
-              // Il nuovissimo endpoint unificato di Gemini 3.1 Flash Image
-              const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
+              // IL TRUCCO: Forziamo l'IA di base a rispettare l'anatomia e lo stile delle carte di Magic
+              const enhancedPrompt = aiPromptHq.trim() + ", official magic the gathering artwork, masterpiece, perfect proportions, anatomically correct, highly detailed, sharp focus";
               
-              const response = await fetch(url, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                      contents: [{ parts: [{ text: enhancedPrompt }] }],
-                      generationConfig: { 
-                          responseModalities: ["IMAGE"] 
-                      } 
-                  })
-              });
+              const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=768&height=1024&nologo=true&seed=${seed}&model=flux`;
               
-              const data = await response.json();
-              if(data.error) throw new Error(data.error.message);
+              const res = await fetch(url);
+              if (!res.ok) throw new Error("Errore API FLUX");
+              const blob = await res.blob();
               
-              // Estraiamo l'immagine codificata dalla nuova struttura della risposta
-              let foundImage = false;
-              if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
-                  for (let part of data.candidates[0].content.parts) {
-                      if (part.inlineData) {
-                          const base64Img = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-                          setCustomImg(base64Img);
-                          foundImage = true;
-                          break;
-                      }
-                  }
-              }
-              
-              if(!foundImage) {
-                   throw new Error("L'IA non ha generato l'immagine (forse il prompt conteneva parole bloccate dai filtri).");
-              }
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                  setCustomImg(reader.result); 
+                  setIsGeneratingHq(false);
+              };
+              reader.readAsDataURL(blob);
           } catch (err) {
-              alert("Errore Gemini Image: " + err.message);
+              alert("Errore durante la generazione con FLUX. Riprova.");
+              setIsGeneratingHq(false);
           }
-          setIsGeneratingHq(false);
       };
 
       const searchBase = () => {
@@ -1675,17 +1648,17 @@
                      </div>
                  </div>
 
-                 {/* LIVELLO 2: MASTERPIECE (GOOGLE IMAGEN 3) */}
+                 {/* LIVELLO 2: MASTERPIECE (FLUX) */}
                  <div className="bg-amber-950/30 p-3 rounded-lg border border-amber-500/40 relative">
-                     <span className="absolute -top-2.5 right-3 bg-amber-600 text-black font-black text-[9px] px-2 py-0.5 rounded-full shadow border border-black uppercase tracking-wider">Imagen 3</span>
+                     <span className="absolute -top-2.5 right-3 bg-amber-600 text-black font-black text-[9px] px-2 py-0.5 rounded-full shadow border border-black uppercase tracking-wider">Masterpiece Mode</span>
                      <p className="text-[10px] font-black text-amber-300 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                         🏆 Generatore High Quality <span className="text-gray-500">(Google AI)</span>
+                         🏆 Generatore High Quality <span className="text-gray-500">(Modello FLUX)</span>
                      </p>
                      <div className="flex flex-col gap-2">
-                         <input type="text" placeholder="es. A terrifying fire dragon perched on a volcano..." value={aiPromptHq} onChange={e => setAiPromptHq(e.target.value)} className="w-full bg-gray-800 border border-amber-600/50 rounded p-3 text-white text-sm outline-none focus:border-amber-500 shadow-inner" />
+                         <input type="text" placeholder="es. A massive red dragon with exactly four legs..." value={aiPromptHq} onChange={e => setAiPromptHq(e.target.value)} className="w-full bg-gray-800 border border-amber-600/50 rounded p-3 text-white text-sm outline-none focus:border-amber-500 shadow-inner" />
                          
                          <button onClick={generateHqArt} disabled={isGeneratingHq || isGeneratingAiArt || !aiPromptHq.trim()} className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-black font-black py-2 rounded shadow transition-colors flex justify-center items-center gap-2">
-                             {isGeneratingHq ? '⏳ CREAZIONE CAPOLAVORO...' : '💖 GENERA CON IMAGEN 3'}
+                             {isGeneratingHq ? '⏳ GENERAZIONE IN CORSO...' : '💖 GENERA CAPOLAVORO (FLUX)'}
                          </button>
                      </div>
                  </div>
