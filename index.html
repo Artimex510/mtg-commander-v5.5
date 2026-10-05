@@ -6125,6 +6125,14 @@ Scrivi un racconto epico, ricco e coinvolgente di circa 20 righe, diviso in 3-4 
             }
             setMatchLoading(false);
         };
+            const copyMatchmakerPrompt = () => {
+            if (!matchCards.trim()) return alert("Inserisci almeno un paio di carte!");
+            const prompt = `Sei un esperto Deckbuilder di Magic The Gathering. Ho queste carte che voglio assolutamente giocare insieme nello stesso mazzo Commander: ${matchCards}. Trova il MIGLIOR Comandante (uno solo, o una coppia di partner) che abbia una sinergia perfetta con TUTTE queste carte contemporaneamente e che ne copra l'identità di colore. Dimmi chi è, i suoi colori, e spiegami la strategia. Rispondi in italiano in modo discorsivo ma compatto.`;
+            navigator.clipboard.writeText(prompt).then(() => {
+                alert("🪄 Prompt copiato! Ti porto su Gemini. Incolla la richiesta per ricevere l'analisi.");
+                window.open('https://gemini.google.com/', '_blank');
+            }).catch(err => alert("Errore nel copiare il prompt."));
+        };
 
         const findCombosManual = () => {
             if (!manualDeckList.trim()) {
@@ -6268,9 +6276,14 @@ Scrivi un racconto epico, ricco e coinvolgente di circa 20 righe, diviso in 3-4 
                         onChange={(e) => setMatchCards(e.target.value)}
                     />
                     
-                    <button onClick={runMatchmaker} disabled={matchLoading || !matchCards.trim()} className="w-full bg-pink-700 hover:bg-pink-600 disabled:opacity-50 text-white font-black py-3 rounded-lg shadow-[0_0_15px_rgba(190,24,93,0.5)] flex items-center justify-center gap-2 transition-all">
-                        {matchLoading ? "RICERCA IN CORSO..." : "💘 TROVA IL COMANDANTE PERFETTO"}
-                    </button>
+                    <div className="flex flex-col gap-2">
+                        <button onClick={runMatchmaker} disabled={matchLoading || !matchCards.trim()} className="w-full bg-pink-700 hover:bg-pink-600 disabled:opacity-50 text-white font-black py-3 rounded-lg shadow-[0_0_15px_rgba(190,24,93,0.5)] flex items-center justify-center gap-2 transition-all">
+                            {matchLoading ? "RICERCA IN CORSO..." : "💘 TROVA IL COMANDANTE PERFETTO"}
+                        </button>
+                        <button onClick={copyMatchmakerPrompt} disabled={matchLoading || !matchCards.trim()} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg border border-gray-500 shadow transition-colors text-xs flex items-center justify-center gap-2">
+                            🤖 Oppure Copia Prompt e vai su Gemini Web
+                        </button>
+                    </div>
 
                     {matchResult && (
                         <div className="mt-6 bg-gray-900 p-4 rounded-xl border border-pink-500 shadow-inner animate-fade">
