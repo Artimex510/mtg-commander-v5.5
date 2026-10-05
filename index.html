@@ -4284,6 +4284,24 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const [timeRemaining, setTimeRemaining] = useState(0);
       const [isTimerPaused, setIsTimerPaused] = useState(true);
 
+      // --- STATI E LOGICA SOUNDBOARD MEME ---
+      const [showSoundboard, setShowSoundboard] = useState(false);
+
+      const playMemeSound = (url) => {
+          const audio = new Audio(url);
+          audio.volume = 0.7; // Volume bilanciato
+          audio.play().catch(err => console.log("Autoplay bloccato dal browser", err));
+      };
+
+      const soundboardMemes = [
+          { icon: "🎺", name: "Tromba", url: "https://www.myinstants.com/media/sounds/sadtrombone.swf.mp3" },
+          { icon: "🦗", name: "Grilli", url: "https://www.myinstants.com/media/sounds/crickets.mp3" },
+          { icon: "👏", name: "Applausi", url: "https://www.myinstants.com/media/sounds/applause.mp3" },
+          { icon: "😱", name: "NANI?!", url: "https://www.myinstants.com/media/sounds/nani_O6ZJ84S.mp3" },
+          { icon: "⏰", name: "Muoviti!", url: "https://www.myinstants.com/media/sounds/alarm-clock-short.mp3" },
+          { icon: "💀", name: "OOF", url: "https://www.myinstants.com/media/sounds/roblox-death-sound_1.mp3" }
+      ];
+
       const rollForStart = () => {
           if (players.length === 0) return;
           const randomIndex = Math.floor(Math.random() * players.length);
@@ -5564,6 +5582,35 @@ Scrivi un racconto epico, ricco e coinvolgente di circa 20 righe, diviso in 3-4 
                 </div>
              </div>
           , document.body)}
+
+          {/* 🎵 FLOATING MEME SOUNDBOARD 🎵 */}
+          {(view === 'game_active') && (
+              <div className="fixed bottom-24 sm:bottom-6 right-2 sm:right-6 flex flex-col items-end gap-3 z-[500] pointer-events-none">
+                  {showSoundboard && (
+                      <div className="bg-gray-900 border-2 border-pink-600 rounded-xl p-3 shadow-[0_0_20px_rgba(219,39,119,0.5)] grid grid-cols-2 gap-2 mb-2 animate-fade pointer-events-auto">
+                          {soundboardMemes.map((s, i) => (
+                              <button 
+                                  key={i} 
+                                  onClick={() => playMemeSound(s.url)} 
+                                  className="bg-gray-800 hover:bg-pink-900 text-white text-xs font-bold py-2 px-3 rounded shadow border border-gray-700 hover:border-pink-500 transition-all flex flex-col items-center gap-1 active:scale-95 w-20"
+                              >
+                                  <span className="text-xl">{s.icon}</span> 
+                                  <span className="text-[9px] uppercase tracking-wider text-center">{s.name}</span>
+                              </button>
+                          ))}
+                      </div>
+                  )}
+                  
+                  {/* Bottone Rotondo di attivazione */}
+                  <button 
+                      onClick={() => setShowSoundboard(!showSoundboard)} 
+                      className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center shadow-2xl border-2 transition-all hover:scale-110 active:scale-95 text-2xl pointer-events-auto ${showSoundboard ? 'bg-gray-700 border-gray-500' : 'bg-pink-600 border-pink-400'}`}
+                      title="Soundboard Meme"
+                  >
+                      {showSoundboard ? "❌" : "🎵"}
+                  </button>
+              </div>
+          )}
           
         </div>
       );
