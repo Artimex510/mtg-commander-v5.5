@@ -6094,6 +6094,38 @@ Scrivi un racconto epico, ricco e coinvolgente di circa 20 righe, diviso in 3-4 
         // STATO PER LA LISTA INCOLLATA MANUALMENTE
         const [manualDeckList, setManualDeckList] = useState("");
 
+      // --- STATI E LOGICA MATCHMAKER ---
+        const [matchCards, setMatchCards] = useState("");
+        const [matchResult, setMatchResult] = useState(null);
+        const [matchLoading, setMatchLoading] = useState(false);
+
+        const runMatchmaker = async () => {
+            if (!matchCards.trim()) return alert("Inserisci almeno un paio di carte!");
+            let apiKey = localStorage.getItem('gemini_api_key');
+            if (!apiKey) {
+                apiKey = window.prompt("Inserisci la tua API Key Gemini per usare il Matchmaker:");
+                if (!apiKey) return;
+                localStorage.setItem('gemini_api_key', apiKey);
+            }
+            setMatchLoading(true);
+            setMatchResult(null);
+
+            const prompt = `Sei un esperto Deckbuilder di Magic The Gathering. Ho queste carte che voglio assolutamente giocare insieme nello stesso mazzo Commander: ${matchCards}. Trova il MIGLIOR Comandante (uno solo, o una coppia di partner) che abbia una sinergia perfetta con TUTTE queste carte contemporaneamente e che ne copra l'identità di colore. Dimmi chi è, i suoi colori, e spiegami la strategia. Rispondi in italiano in modo discorsivo ma compatto.`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await response.json();
+                if(data.error) throw new Error(data.error.message);
+                setMatchResult(data.candidates[0].content.parts[0].text);
+            } catch (err) {
+                alert("Errore AI: " + err.message);
+            }
+            setMatchLoading(false);
+        };
+
         const findCombosManual = () => {
             if (!manualDeckList.trim()) {
                 alert("Incolla una lista di carte nel riquadro prima di cercare le combo!");
@@ -6220,6 +6252,36 @@ Scrivi un racconto epico, ricco e coinvolgente di circa 20 righe, diviso in 3-4 
                         </div>
                     )}
                 </div>
+
+                {/* SEZIONE 3: MATCHMAKER (Tinder per Carte) */}
+                <div className="bg-gray-800 rounded-xl p-5 border border-gray-600 shadow-lg mb-10">
+                    <div className="flex items-center gap-3 mb-3">
+                        <span className="text-3xl">🧩</span>
+                        <h3 className="text-xl font-black text-white">Il Matchmaker</h3>
+                    </div>
+                    <p className="text-gray-300 text-sm font-semibold mb-4">Hai 3 o 4 carte che adori e vuoi giocarle insieme, ma non sai chi è il Comandante giusto per loro? Inseriscile qui sotto (separate da virgola) e l'IA troverà l'anima gemella perfetta.</p>
+                    
+                    <textarea 
+                        className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white text-sm outline-none focus:border-pink-500 shadow-inner mb-4 resize-none h-24"
+                        placeholder="es. Doubling Season, Purphoros God of the Forge, Impact Tremors..."
+                        value={matchCards}
+                        onChange={(e) => setMatchCards(e.target.value)}
+                    />
+                    
+                    <button onClick={runMatchmaker} disabled={matchLoading || !matchCards.trim()} className="w-full bg-pink-700 hover:bg-pink-600 disabled:opacity-50 text-white font-black py-3 rounded-lg shadow-[0_0_15px_rgba(190,24,93,0.5)] flex items-center justify-center gap-2 transition-all">
+                        {matchLoading ? "RICERCA IN CORSO..." : "💘 TROVA IL COMANDANTE PERFETTO"}
+                    </button>
+
+                    {matchResult && (
+                        <div className="mt-6 bg-gray-900 p-4 rounded-xl border border-pink-500 shadow-inner animate-fade">
+                            <h4 className="text-pink-400 font-black mb-2 border-b border-gray-700 pb-2">L'Anima Gemella Trovata:</h4>
+                            <div className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed">
+                                {matchResult.replace(/\*/g, '')}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
             </div>
         );
     }
