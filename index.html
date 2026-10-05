@@ -1541,33 +1541,32 @@
           }
       };
 
-      // -- MOTORE 2: GOOGLE IMAGEN 3 (Alta Qualità Masterpiece, usa la tua chiave Gemini)
+      // -- MOTORE 2: GEMINI 3.1 FLASH IMAGE (La nuova AI nativa di Google per le immagini)
       const generateHqArt = async () => {
           if(!aiPromptHq.trim()) return alert("Scrivi cosa vuoi generare (HQ)!");
           
           let apiKey = localStorage.getItem('gemini_api_key');
           if (!apiKey) {
-              apiKey = window.prompt("Inserisci la tua API Key Gemini per usare Imagen 3:");
+              apiKey = window.prompt("Inserisci la tua API Key Gemini:");
               if (!apiKey) return;
               localStorage.setItem('gemini_api_key', apiKey);
           }
           
           setIsGeneratingHq(true);
           try {
-              // Trucco: Aggiungiamo istruzioni per stile MTG
-              const enhancedPrompt = aiPromptHq.trim() + ", magic the gathering card art style, fantasy illustration, masterpiece, highly detailed, sharp focus";
+              // Trucco: Aggiungiamo istruzioni invisibili per forzare lo stile MTG e il formato
+              const enhancedPrompt = aiPromptHq.trim() + ", magic the gathering card art style, fantasy illustration, masterpiece, highly detailed, vertical portrait orientation";
               
-              // 👇 MODIFICA QUI: Abbiamo aggiornato il modello a '002' 👇
-              const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+              // Il nuovissimo endpoint unificato di Gemini 3.1 Flash Image
+              const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
               
               const response = await fetch(url, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
-                      instances: [{ prompt: enhancedPrompt }],
-                      parameters: { 
-                          sampleCount: 1, 
-                          aspectRatio: "3:4" 
+                      contents: [{ parts: [{ text: enhancedPrompt }] }],
+                      generationConfig: { 
+                          responseModalities: ["IMAGE"] 
                       } 
                   })
               });
@@ -1575,14 +1574,24 @@
               const data = await response.json();
               if(data.error) throw new Error(data.error.message);
               
-              if(data.predictions && data.predictions[0]) {
-                  const base64Img = `data:${data.predictions[0].mimeType};base64,${data.predictions[0].bytesBase64Encoded}`;
-                  setCustomImg(base64Img);
-              } else {
-                   throw new Error("Nessuna immagine restituita.");
+              // Estraiamo l'immagine codificata dalla nuova struttura della risposta
+              let foundImage = false;
+              if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
+                  for (let part of data.candidates[0].content.parts) {
+                      if (part.inlineData) {
+                          const base64Img = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                          setCustomImg(base64Img);
+                          foundImage = true;
+                          break;
+                      }
+                  }
+              }
+              
+              if(!foundImage) {
+                   throw new Error("L'IA non ha generato l'immagine (forse il prompt conteneva parole bloccate dai filtri).");
               }
           } catch (err) {
-              alert("Errore Imagen 3: " + err.message + "\n(Nota: Evita parole troppo violente o nomi di persone reali, i filtri di Google sono severi!)");
+              alert("Errore Gemini Image: " + err.message);
           }
           setIsGeneratingHq(false);
       };
