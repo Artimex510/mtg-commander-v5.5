@@ -4273,6 +4273,10 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const [playersHistory, setPlayersHistory] = useState([]);
       const [showLogModal, setShowLogModal] = useState(false);
 
+      // NUOVI STATI PER IL REPORT DI FINE PARTITA
+      const [showReportModal, setShowReportModal] = useState(false);
+      const [reportData, setReportData] = useState({ winnerId: "", winType: "combat", eliminations: {} });
+
       // --- STATI TAGLIE DELLA TAVERNA ---
       const [bounties, setBounties] = useState([]);
       const [showBountiesModal, setShowBountiesModal] = useState(false);
@@ -4626,28 +4630,37 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           }
       };
 
-     // FUNZIONE SALVATAGGIO VITTORIA (CON CANTASTORIE IA PROCEDURALE)
-      const declareWinner = async (winnerPlayer) => {
-          if (!window.confirm(`Dichiarare ${winnerPlayer.name} VINCITORE della partita e salvare le statistiche?`)) return;
+     // --- NUOVA FUNZIONE SALVATAGGIO VITTORIA (CON MATCH REPORT DETTAGLIATO E CANTASTORIE IA) ---
+      const submitMatchReport = async () => {
+          const winnerPlayer = players.find(p => p.id === reportData.winnerId);
+          if (!winnerPlayer) return alert("Devi selezionare un vincitore!");
+
+          if (!window.confirm(`Dichiarare ${winnerPlayer.name} VINCITORE e chiudere la partita?`)) return;
           
           let story = null;
           let apiKey = localStorage.getItem('gemini_api_key');
-          
-          let winnerCommander = "Sconosciuto";
-          if (winnerPlayer.cmdrCard && winnerPlayer.cmdrCard.name) {
-              winnerCommander = winnerPlayer.cmdrCard.name; 
-          }
+          let winnerCommander = (winnerPlayer.cmdrCard && winnerPlayer.cmdrCard.name) ? winnerPlayer.cmdrCard.name : "Sconosciuto";
 
-          // Se c'è un log di combattimento, generiamo l'Epica
+          // Costruiamo i dettagli delle uccisioni per il Bardo
+          let killLog = "";
+          players.forEach(p => {
+              if (p.id !== winnerPlayer.id) {
+                  const killerId = reportData.eliminations[p.id];
+                  const killer = players.find(k => k.id === killerId);
+                  const killerName = killer ? killer.name : "Se Stesso / Danni Collaterali / Regole";
+                  killLog += `- ${p.name} è caduto per mano di: ${killerName}.\n`;
+              }
+          });
+          const winTypeStr = reportData.winType === 'objective' ? "VITTORIA PER OBIETTIVO/COMBO SPECIALE (La partita è finita improvvisamente per l'effetto di una carta speciale o combo)" : "VITTORIA PER DANNI/COMBATTIMENTO";
+
           if (combatLog && combatLog.length > 0) {
               if (!apiKey) {
-                  apiKey = window.prompt("Vuoi che il Cantastorie scriva l'epica della partita?\nInserisci la tua API Key Gemini (o annulla per salvare solo le statistiche normali):");
+                  apiKey = window.prompt("Vuoi che il Cantastorie scriva l'epica della partita?\nInserisci la tua API Key Gemini (o annulla per salvare solo le statistiche):");
                   if (apiKey) localStorage.setItem('gemini_api_key', apiKey);
               }
               
               if (apiKey) {
                   try {
-                      // 1. Leggiamo l'ultima storia dal database per fare il sequel!
                       let lastStory = "";
                       if (auth.currentUser || inCloudRoom) {
                           try {
@@ -4655,41 +4668,33 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                               if (!lastMatchSnap.empty && lastMatchSnap.docs[0].data().story) {
                                   lastStory = lastMatchSnap.docs[0].data().story;
                               }
-                          } catch(e) { console.log("Nessuna storia precedente trovata."); }
+                          } catch(e) {}
                       }
 
-                      // 2. Prepariamo i dati dei generali in campo
                       const logText = combatLog.slice().reverse().map(l => l.msg).join('\n');
-                      const participants = players.map(p => {
-                          const cmdr = (p.cmdrCard && p.cmdrCard.name) ? p.cmdrCard.name : "un esercito senza nome";
-                          return `${p.name} (alla guida di ${cmdr})`;
-                      }).join(", ");
+                      const participants = players.map(p => `${p.name} (usa ${p.cmdrCard?.name || "un esercito ignoto"})`).join(", ");
 
-                      // 3. Prompt Procedurale
-                      let prompt = `Sei un bardo fantasy in una taverna, incaricato di narrare una saga epica e continua. Hai appena assistito a una battaglia di Magic The Gathering.\n\n`;
-                      
-                      if (lastStory) {
-                          prompt += `Ecco il capitolo precedente della saga:\n"${lastStory}"\n\nOra, scrivi il PROSSIMO CAPITOLO di questa storia continua, basandoti sull'esito della nuova battaglia.\n\n`;
-                      } else {
-                          prompt += `Questo è il PRIMO CAPITOLO di una nuova grande saga.\n\n`;
-                      }
+                      let prompt = `Sei un bardo fantasy che narra una saga epica continua di battaglie Magic The Gathering.\n\n`;
+                      if (lastStory) prompt += `Capitolo precedente della saga:\n"${lastStory}"\n\nScrivi il PROSSIMO CAPITOLO in base a questa nuova battaglia.\n\n`;
+                      else prompt += `Questo è il PRIMO CAPITOLO di una nuova saga.\n\n`;
 
                       prompt += `DETTAGLI DELLA BATTAGLIA ODIERNA:
 - Partecipanti: ${participants}.
 - Vincitore Assoluto: ${winnerPlayer.name} al comando di ${winnerCommander}.
-- Eventi salienti (Combat Log cronologico):
+- TIPO DI VITTORIA: ${winTypeStr}.
+- RESOCONTO MORTI:
+${killLog}
+- Eventi (Combat Log):
 ${logText}
 
-Scrivi un racconto epico, ricco e coinvolgente di circa 20 righe, diviso in 3-4 paragrafi ben strutturati. Usa un tono solenne, romanza i danni, le cure e gli eventi del log trasformandoli in azioni eroiche o spietate. Nomina i comandanti come veri generali sul campo di battaglia. Non usare formattazioni strane (niente asterischi), solo testo semplice e ritorni a capo. Termina lasciando presagire cosa potrebbe accadere in futuro.`;
+Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gli eventi. Se la vittoria è per OBIETTIVO SPECIALE, inventa che il vincitore ha completato un rituale oscuro o assemblato un artefatto del destino anziché vincere di pura violenza. Menziona esplicitamente chi ha dato il colpo di grazia a chi (guarda il RESOCONTO MORTI). Non usare formattazioni con asterischi.`;
                       
                       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
                           method: 'POST', headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                       });
                       const data = await response.json();
-                      if(!data.error && data.candidates) {
-                          story = data.candidates[0].content.parts[0].text;
-                      }
+                      if(!data.error && data.candidates) story = data.candidates[0].content.parts[0].text;
                   } catch (e) { console.log("Errore bardo:", e); }
               }
           }
@@ -4702,10 +4707,13 @@ Scrivi un racconto epico, ricco e coinvolgente di circa 20 righe, diviso in 3-4 
                   winnerName: winnerPlayer.name,
                   winnerCommander: winnerCommander,
                   teamMode: teamMode,
-                  story: story, // <- SALVIAMO IL SEQUEL SUL CLOUD!
+                  winType: reportData.winType, // Salviamo come ha vinto!
+                  kills: reportData.eliminations, // Salviamo gli omicidi specifici!
+                  story: story,
                   savedBy: auth.currentUser ? auth.currentUser.uid : 'locale'
               });
-              alert("🏆 Vittoria ed Epica registrate nelle statistiche!");
+              alert("🏆 Vittoria, Uccisioni ed Epica registrate nelle statistiche!");
+              setShowReportModal(false);
               resetGame();
           } catch (err) { 
               alert("⚠️ Errore Firebase: " + err.message); 
@@ -5182,17 +5190,8 @@ Scrivi un racconto epico, ricco e coinvolgente di circa 20 righe, diviso in 3-4 
                     
                     {/* BLOCCO VITTORIA E RESET OTTIMIZZATO */}
                     <div className={players.length <= 2 ? "flex flex-row items-center gap-3" : "flex flex-col items-center gap-3"}>
-                        <button onClick={() => {
-                            const winnerName = window.prompt("Chi ha vinto? Inserisci il NOME ESATTO del giocatore (es. Player 1):");
-                            if(winnerName) {
-                                const foundPlayer = players.find(p => p.name.toLowerCase() === winnerName.trim().toLowerCase());
-                                if (foundPlayer) {
-                                    declareWinner(foundPlayer);
-                                } else {
-                                    declareWinner({ id: 'manual', name: winnerName }); 
-                                }
-                            }
-                        }} className="flex flex-col items-center gap-1 text-yellow-500 font-bold hover:text-yellow-400 transition-colors" title="Dichiara Vincitore">
+                        {/* NUOVO TASTO VITTORIA CHE APRE IL MATCH REPORT MODAL */}
+                        <button onClick={() => setShowReportModal(true)} className="flex flex-col items-center gap-1 text-yellow-500 font-bold hover:text-yellow-400 transition-colors active:scale-90" title="Dichiara Vincitore">
                             <span className="text-lg leading-none">🏆</span> <span className="text-[8px] uppercase leading-none">Vittoria</span>
                         </button>
                         <div className={players.length <= 2 ? "w-px h-5 bg-gray-700" : "w-5 h-px bg-gray-700"}></div>
@@ -5588,6 +5587,69 @@ Scrivi un racconto epico, ricco e coinvolgente di circa 20 righe, diviso in 3-4 
              </div>
           , document.body)}
 
+          {/* MODALE MATCH REPORT (VINCITORE E UCCISIONI) */}
+          {showReportModal && ReactDOM.createPortal(
+             <div className="fixed inset-0 bg-black/95 z-[10000] flex flex-col p-4 animate-fade justify-center overflow-y-auto">
+                <div className="bg-gray-800 border-2 border-yellow-500 rounded-xl p-6 w-full max-w-md mx-auto shadow-2xl relative my-auto">
+                    <button onClick={() => setShowReportModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
+                    <h3 className="text-2xl font-black text-yellow-400 mb-2 text-center drop-shadow-md">🏆 Resoconto Partita</h3>
+                    <p className="text-gray-300 text-xs font-bold mb-6 text-center">Registra come è finita la partita per generare una saga accurata!</p>
+
+                    <div className="space-y-6">
+                        {/* 1. SELEZIONE VINCITORE */}
+                        <div className="bg-gray-900 p-3 rounded-lg border border-gray-700 shadow-inner">
+                            <label className="text-white font-black text-sm block mb-2 uppercase tracking-wide">1. Chi ha vinto?</label>
+                            <select value={reportData.winnerId} onChange={e => setReportData({...reportData, winnerId: e.target.value})} className="w-full bg-gray-800 border border-yellow-600 text-white rounded p-3 outline-none font-bold focus:ring-2 ring-yellow-500">
+                                <option value="">Seleziona il Vincitore...</option>
+                                {players.map(p => <option key={p.id} value={p.id}>{p.name} {p.cmdrCard ? `(${p.cmdrCard.name})` : ''}</option>)}
+                            </select>
+                        </div>
+
+                        {/* 2. TIPO DI VITTORIA */}
+                        <div className="bg-gray-900 p-3 rounded-lg border border-gray-700 shadow-inner">
+                            <label className="text-white font-black text-sm block mb-2 uppercase tracking-wide">2. Come ha vinto?</label>
+                            <div className="flex gap-2">
+                                <button onClick={() => setReportData({...reportData, winType: 'combat'})} className={`flex-1 p-2 rounded-lg font-bold text-xs flex flex-col items-center gap-1 border transition-all ${reportData.winType === 'combat' ? 'bg-red-600 text-white border-red-400 shadow-[0_0_10px_rgba(220,38,38,0.5)]' : 'bg-gray-800 text-gray-400 border-gray-600'}`}>
+                                    <span className="text-xl">⚔️</span> Danni / Combat
+                                </button>
+                                <button onClick={() => setReportData({...reportData, winType: 'objective'})} className={`flex-1 p-2 rounded-lg font-bold text-xs flex flex-col items-center gap-1 border transition-all ${reportData.winType === 'objective' ? 'bg-indigo-600 text-white border-indigo-400 shadow-[0_0_10px_rgba(79,70,229,0.5)]' : 'bg-gray-800 text-gray-400 border-gray-600'}`}>
+                                    <span className="text-xl">🧩</span> Carta Obiettivo
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 3. LOG ELIMINAZIONI */}
+                        {reportData.winnerId && players.length > 1 && (
+                            <div className="bg-gray-900 p-3 rounded-lg border border-gray-700 shadow-inner animate-fade">
+                                <label className="text-red-400 font-black text-sm block mb-2 uppercase tracking-wide">3. Chi ha ucciso chi?</label>
+                                <div className="space-y-3">
+                                    {players.filter(p => p.id !== reportData.winnerId).map(loser => (
+                                        <div key={loser.id} className="flex flex-col bg-gray-800 p-2 rounded border border-gray-600">
+                                            <span className="text-xs text-white font-bold mb-1">Chi ha eliminato <span className="text-red-400">{loser.name}</span>?</span>
+                                            <select 
+                                                value={reportData.eliminations[loser.id] || ""} 
+                                                onChange={e => setReportData(prev => ({...prev, eliminations: {...prev.eliminations, [loser.id]: e.target.value}}))}
+                                                className="w-full bg-gray-900 border border-gray-500 text-white rounded p-2 outline-none text-xs"
+                                            >
+                                                <option value="">Se Stesso / Sconosciuto</option>
+                                                {players.filter(k => k.id !== loser.id).map(k => (
+                                                    <option key={k.id} value={k.id}>🔪 È stato {k.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <button onClick={submitMatchReport} className="w-full mt-6 bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-xl shadow-[0_0_15px_rgba(202,138,4,0.6)] transition-all text-lg flex items-center justify-center gap-2 active:scale-95">
+                        💾 SALVA PARTITA
+                    </button>
+                </div>
+             </div>
+          , document.body)}
+          
           {/* 🎵 FLOATING MEME SOUNDBOARD 🎵 */}
           {(view === 'game_active') && (
               <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 flex flex-col items-end gap-3 z-[500] pointer-events-none">
