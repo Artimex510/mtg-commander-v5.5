@@ -1541,14 +1541,18 @@
           }
       };
 
-      // -- MOTORE 2: FLUX (Alta Qualità Masterpiece, GRATIS, NO CORS)
+      // -- MOTORE 2: FLUX POTENZIATO (Alta Qualità Masterpiece, GRATIS)
       const generateHqArt = async () => {
           if(!aiPromptHq.trim()) return alert("Scrivi cosa vuoi generare (HQ)!");
           setIsGeneratingHq(true);
           try {
               const seed = Math.floor(Math.random() * 1000000);
-              // Aggiungiamo "&model=flux" alla fine dell'URL. È una magia!
-              const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(aiPromptHq.trim())}?width=800&height=1100&nologo=true&seed=${seed}&model=flux`;
+              
+              // 1. Trucco: Aggiungiamo tag di massima qualità in automatico al tuo prompt
+              const enhancedPrompt = aiPromptHq.trim() + ", masterpiece, best quality, highly detailed, sharp focus, 8k resolution, stunning digital art";
+              
+              // 2. Trucco: Usiamo model=flux-realism e risoluzione nativa 768x1024
+              const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=768&height=1024&nologo=true&seed=${seed}&model=flux-realism`;
               
               const res = await fetch(url);
               if (!res.ok) throw new Error("Errore API FLUX");
