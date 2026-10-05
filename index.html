@@ -4630,7 +4630,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           }
       };
 
-     // --- NUOVA FUNZIONE SALVATAGGIO VITTORIA (CON MATCH REPORT DETTAGLIATO E CANTASTORIE IA) ---
+     // --- NUOVA FUNZIONE SALVATAGGIO VITTORIA (PULITA DA ERRORI BABEL) ---
       const submitMatchReport = async () => {
           const winnerPlayer = players.find(p => p.id === reportData.winnerId);
           if (!winnerPlayer) return alert("Devi selezionare un vincitore!");
@@ -4672,7 +4672,9 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                       }
 
                       const logText = combatLog.slice().reverse().map(l => l.msg).join('\n');
-                      const participants = players.map(p => `${p.name} (usa ${p.cmdrCard?.name || "un esercito ignoto"})`).join(", ");
+                      
+                      // RIGA CORRETTA: Rimosso il punto interrogativo non supportato da Babel
+                      const participants = players.map(p => `${p.name} (usa ${(p.cmdrCard && p.cmdrCard.name) ? p.cmdrCard.name : "un esercito ignoto"})`).join(", ");
 
                       let prompt = `Sei un bardo fantasy che narra una saga epica continua di battaglie Magic The Gathering.\n\n`;
                       if (lastStory) prompt += `Capitolo precedente della saga:\n"${lastStory}"\n\nScrivi il PROSSIMO CAPITOLO in base a questa nuova battaglia.\n\n`;
@@ -4707,8 +4709,8 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                   winnerName: winnerPlayer.name,
                   winnerCommander: winnerCommander,
                   teamMode: teamMode,
-                  winType: reportData.winType, // Salviamo come ha vinto!
-                  kills: reportData.eliminations, // Salviamo gli omicidi specifici!
+                  winType: reportData.winType, 
+                  kills: reportData.eliminations, 
                   story: story,
                   savedBy: auth.currentUser ? auth.currentUser.uid : 'locale'
               });
@@ -4716,7 +4718,7 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
               setShowReportModal(false);
               resetGame();
           } catch (err) { 
-              alert("⚠️ Errore Firebase: " + err.message); 
+              alert("⚠️️ Errore Firebase: " + err.message); 
           }
       };
  
