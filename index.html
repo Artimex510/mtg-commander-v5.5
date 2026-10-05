@@ -1541,33 +1541,50 @@
           }
       };
 
-      // -- MOTORE 2: FLUX POTENZIATO (Alta Qualità Masterpiece, GRATIS)
+      // -- MOTORE 2: GOOGLE IMAGEN 3 (Alta Qualità Masterpiece, usa la tua chiave Gemini)
       const generateHqArt = async () => {
           if(!aiPromptHq.trim()) return alert("Scrivi cosa vuoi generare (HQ)!");
+          
+          let apiKey = localStorage.getItem('gemini_api_key');
+          if (!apiKey) {
+              apiKey = window.prompt("Inserisci la tua API Key Gemini per usare Imagen 3:");
+              if (!apiKey) return;
+              localStorage.setItem('gemini_api_key', apiKey);
+          }
+          
           setIsGeneratingHq(true);
           try {
-              const seed = Math.floor(Math.random() * 1000000);
+              // Trucco: Aggiungiamo istruzioni per stile MTG
+              const enhancedPrompt = aiPromptHq.trim() + ", magic the gathering card art style, fantasy illustration, masterpiece, highly detailed, sharp focus";
               
-              // 1. Trucco: Aggiungiamo tag di massima qualità in automatico al tuo prompt
-              const enhancedPrompt = aiPromptHq.trim() + ", masterpiece, best quality, highly detailed, sharp focus, 8k resolution, stunning digital art";
+              const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`;
               
-              // 2. Trucco: Usiamo model=flux-realism e risoluzione nativa 768x1024
-              const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=768&height=1024&nologo=true&seed=${seed}&model=flux-realism`;
+              const response = await fetch(url, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                      instances: [{ prompt: enhancedPrompt }],
+                      parameters: { 
+                          sampleCount: 1, 
+                          aspectRatio: "3:4" // Il formato perfetto per le carte!
+                      } 
+                  })
+              });
               
-              const res = await fetch(url);
-              if (!res.ok) throw new Error("Errore API FLUX");
-              const blob = await res.blob();
+              const data = await response.json();
+              if(data.error) throw new Error(data.error.message);
               
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                  setCustomImg(reader.result); 
-                  setIsGeneratingHq(false);
-              };
-              reader.readAsDataURL(blob);
+              if(data.predictions && data.predictions[0]) {
+                  // Google ci restituisce l'immagine direttamente codificata, pronta da usare!
+                  const base64Img = `data:${data.predictions[0].mimeType};base64,${data.predictions[0].bytesBase64Encoded}`;
+                  setCustomImg(base64Img);
+              } else {
+                   throw new Error("Nessuna immagine restituita.");
+              }
           } catch (err) {
-              alert("Errore durante la generazione HQ (FLUX). Riprova.");
-              setIsGeneratingHq(false);
+              alert("Errore Imagen 3: " + err.message + "\n(Nota: Evita parole troppo violente o nomi di persone reali, i filtri di Google sono severi!)");
           }
+          setIsGeneratingHq(false);
       };
 
       const searchBase = () => {
@@ -1649,17 +1666,17 @@
                      </div>
                  </div>
 
-                 {/* LIVELLO 2: MASTERPIECE (FLUX) */}
+                 {/* LIVELLO 2: MASTERPIECE (GOOGLE IMAGEN 3) */}
                  <div className="bg-amber-950/30 p-3 rounded-lg border border-amber-500/40 relative">
-                     <span className="absolute -top-2.5 right-3 bg-amber-600 text-black font-black text-[9px] px-2 py-0.5 rounded-full shadow border border-black uppercase tracking-wider">Masterpiece Mode</span>
+                     <span className="absolute -top-2.5 right-3 bg-amber-600 text-black font-black text-[9px] px-2 py-0.5 rounded-full shadow border border-black uppercase tracking-wider">Imagen 3</span>
                      <p className="text-[10px] font-black text-amber-300 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                         🏆 Generatore High Quality <span className="text-gray-500">(Modello FLUX)</span>
+                         🏆 Generatore High Quality <span className="text-gray-500">(Google AI)</span>
                      </p>
                      <div className="flex flex-col gap-2">
-                         <input type="text" placeholder="es. masterpiece, highly detailed sol ring, volcano forge..." value={aiPromptHq} onChange={e => setAiPromptHq(e.target.value)} className="w-full bg-gray-800 border border-amber-600/50 rounded p-3 text-white text-sm outline-none focus:border-amber-500 shadow-inner" />
+                         <input type="text" placeholder="es. A terrifying fire dragon perched on a volcano..." value={aiPromptHq} onChange={e => setAiPromptHq(e.target.value)} className="w-full bg-gray-800 border border-amber-600/50 rounded p-3 text-white text-sm outline-none focus:border-amber-500 shadow-inner" />
                          
                          <button onClick={generateHqArt} disabled={isGeneratingHq || isGeneratingAiArt || !aiPromptHq.trim()} className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-black font-black py-2 rounded shadow transition-colors flex justify-center items-center gap-2">
-                             {isGeneratingHq ? '⏳ GENERAZIONE IN CORSO...' : '💖 GENERA CAPOLAVORO'}
+                             {isGeneratingHq ? '⏳ CREAZIONE CAPOLAVORO...' : '💖 GENERA CON IMAGEN 3'}
                          </button>
                      </div>
                  </div>
