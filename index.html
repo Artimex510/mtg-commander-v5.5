@@ -1557,7 +1557,8 @@
               // Trucco: Aggiungiamo istruzioni per stile MTG
               const enhancedPrompt = aiPromptHq.trim() + ", magic the gathering card art style, fantasy illustration, masterpiece, highly detailed, sharp focus";
               
-              const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`;
+              // 👇 MODIFICA QUI: Abbiamo aggiornato il modello a '002' 👇
+              const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
               
               const response = await fetch(url, {
                   method: 'POST',
@@ -1566,7 +1567,7 @@
                       instances: [{ prompt: enhancedPrompt }],
                       parameters: { 
                           sampleCount: 1, 
-                          aspectRatio: "3:4" // Il formato perfetto per le carte!
+                          aspectRatio: "3:4" 
                       } 
                   })
               });
@@ -1575,7 +1576,6 @@
               if(data.error) throw new Error(data.error.message);
               
               if(data.predictions && data.predictions[0]) {
-                  // Google ci restituisce l'immagine direttamente codificata, pronta da usare!
                   const base64Img = `data:${data.predictions[0].mimeType};base64,${data.predictions[0].bytesBase64Encoded}`;
                   setCustomImg(base64Img);
               } else {
