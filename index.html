@@ -1516,107 +1516,52 @@
       const [maskLeft, setMaskLeft] = useState(8.2); const [maskWidth, setMaskWidth] = useState(83.6);
       const [isGenerating, setIsGenerating] = useState(false);
 
-      // --- STATI E LOGICA AI ART GENERATOR (DUE LIVELLI) ---
+      // --- STATI E LOGICA AI ART GENERATOR (DUE LIVELLI: BASE vs FLUX) ---
       const [aiPrompt, setAiPrompt] = useState("");
       const [aiPromptHq, setAiPromptHq] = useState("");
       
       const [isGeneratingAiArt, setIsGeneratingAiArt] = useState(false);
       const [isGeneratingHq, setIsGeneratingHq] = useState(false);
-      
-      // Memorizziamo la chiave Replicate solo sul browser locale (LocalStorage)
-      const [replicateKey, setReplicateKey] = useState(localStorage.getItem('mtg_replicate_key') || "");
 
-      // -- MOTORE 1: Pollinations (Gratis, Veloce, Qualità Media)
+      // -- MOTORE 1: Pollinations Base (Veloce)
       const generateAiArt = async () => {
           if(!aiPrompt.trim()) return alert("Scrivi cosa vuoi generare!");
           setIsGeneratingAiArt(true);
           try {
               const seed = Math.floor(Math.random() * 1000000);
-              // Pollinations non è il massimo, ma è gratis. Usiamolo come bozza.
               const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(aiPrompt.trim())}?width=800&height=1100&nologo=true&seed=${seed}`;
-              
               const res = await fetch(url);
-              if (!res.ok) throw new Error("Errore Pollinations API");
+              if (!res.ok) throw new Error("Errore API");
               const blob = await res.blob();
-              
               const reader = new FileReader();
-              reader.onloadend = () => {
-                  setCustomImg(reader.result); 
-                  setIsGeneratingAiArt(false);
-              };
+              reader.onloadend = () => { setCustomImg(reader.result); setIsGeneratingAiArt(false); };
               reader.readAsDataURL(blob);
           } catch (err) {
-              alert("Errore durante la generazione (Pollinations). Riprova.");
-              setIsGeneratingAiArt(false);
+              alert("Errore generazione base."); setIsGeneratingAiArt(false);
           }
       };
 
-      // -- MOTORE 2: Replicate/SDXL (A pagamento, Alta Qualità)
+      // -- MOTORE 2: FLUX (Alta Qualità Masterpiece, GRATIS, NO CORS)
       const generateHqArt = async () => {
           if(!aiPromptHq.trim()) return alert("Scrivi cosa vuoi generare (HQ)!");
-          if(!replicateKey.trim()) {
-              const key = window.prompt("Inserisci la tua API Key di Replicate per sbloccare l'ALTA QUALITÀ (SDXL):\nLa chiave sarà memorizzata solo sul tuo dispositivo locale.");
-              if(key && key.trim()) {
-                  localStorage.setItem('mtg_replicate_key', key.trim());
-                  setReplicateKey(key.trim());
-              } else return; 
-          }
-          
           setIsGeneratingHq(true);
           try {
-              // 1. CHIAMIAMO REPLICATE (Modello SDXL - Qualità Masterpiece)
-              // Nota: Per sicurezza client-side, Replicate richiede un CORS Proxy.
-              // Usiamo uno publico per semplicità di test, ma per uso vero serve un proprio backend.
-              const corsProxy = "https://cors-anywhere.herokuapp.com/"; 
-              const replicateUrl = "https://api.replicate.com/v1/predictions";
+              const seed = Math.floor(Math.random() * 1000000);
+              // Aggiungiamo "&model=flux" alla fine dell'URL. È una magia!
+              const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(aiPromptHq.trim())}?width=800&height=1100&nologo=true&seed=${seed}&model=flux`;
               
-              const startResponse = await fetch(corsProxy + replicateUrl, {
-                  method: 'POST',
-                  headers: {
-                      'Authorization': `Token ${replicateKey}`,
-                      'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                      version: "ac732df83ded7c632f4033773d71d377b640051b3b491f1a1894a89680c61c32", // SDXL Lightning (super veloce)
-                      input: { prompt: aiPromptHq.trim(), width: 768, height: 1024, scheduler: "K_EULER", num_inference_steps: 4, guidance_scale: 0 }
-                  })
-              });
+              const res = await fetch(url);
+              if (!res.ok) throw new Error("Errore API FLUX");
+              const blob = await res.blob();
               
-              const data = await startResponse.json();
-              if(data.error) throw new Error(data.error);
-
-              // 2. REPLICATE È ASINCRONO: DOBBIAMO CONTROLLARE LO STATO (POLLING)
-              const predictionId = data.id;
-              let imageUrl = null;
-              
-              // Controllo ogni 1.5 secondi (massimo 10 tentativi per evitare loop)
-              for (let i = 0; i < 10; i++) {
-                  await new Promise(resolve => setTimeout(resolve, 1500));
-                  const checkResponse = await fetch(corsProxy + replicateUrl + "/" + predictionId, {
-                      headers: { 'Authorization': `Token ${replicateKey}` }
-                  });
-                  const checkData = await checkResponse.json();
-                  if (checkData.status === "succeeded") {
-                      imageUrl = checkData.output[0];
-                      break;
-                  }
-                  if (checkData.status === "failed") throw new Error("Generazione HQ fallita su Replicate.");
-              }
-
-              if(!imageUrl) throw new Error("Tempo scaduto per la generazione HQ.");
-
-              // 3. SCARICHIAMO L'IMMAGINE HQ CAPOLAVORO!
-              const imageRes = await fetch(corsProxy + imageUrl);
-              const blob = await imageRes.blob();
               const reader = new FileReader();
               reader.onloadend = () => {
                   setCustomImg(reader.result); 
                   setIsGeneratingHq(false);
               };
               reader.readAsDataURL(blob);
-              
           } catch (err) {
-              alert("Errore durante la generazione HQ (Replicate):\nVerifica la tua API Key e il credito.\nNota: Assicurati di aver sbloccato 'cors-anywhere' se lo usi.");
+              alert("Errore durante la generazione HQ (FLUX). Riprova.");
               setIsGeneratingHq(false);
           }
       };
@@ -1687,10 +1632,10 @@
            <div className="animate-fade space-y-3">
              <input type="text" placeholder="Nuovo Titolo (Opzionale)" value={customName} onChange={e => setCustomName(e.target.value)} className="w-full bg-gray-900 border border-gray-600 p-2 rounded text-white font-bold outline-none" />
              <div className="flex flex-col gap-4 p-4 bg-gray-900 border-2 border-purple-600 rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.3)]">
-                 {/* LIVELLO 1: VELOCE E GRATIS (Bozze) */}
+                 {/* LIVELLO 1: VELOCE (Bozze) */}
                  <div className="bg-purple-950/30 p-3 rounded-lg border border-purple-500/40">
                      <p className="text-[10px] font-bold text-purple-300 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                         ✨ Generatore Quick & Free <span className="text-gray-500">(Qualità Media)</span>
+                         ✨ Generatore Base <span className="text-gray-500">(Veloce)</span>
                      </p>
                      <div className="flex gap-2 mb-1">
                          <input type="text" placeholder="es. Un goblin pirata stile Ghibli..." value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} className="flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-white text-sm outline-none focus:border-purple-500" />
@@ -1700,29 +1645,24 @@
                      </div>
                  </div>
 
-                 {/* LIVELLO 2: MASTERPIECE (Replicate/A pagamento) */}
+                 {/* LIVELLO 2: MASTERPIECE (FLUX) */}
                  <div className="bg-amber-950/30 p-3 rounded-lg border border-amber-500/40 relative">
                      <span className="absolute -top-2.5 right-3 bg-amber-600 text-black font-black text-[9px] px-2 py-0.5 rounded-full shadow border border-black uppercase tracking-wider">Masterpiece Mode</span>
                      <p className="text-[10px] font-black text-amber-300 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                         🏆 Generatore High Quality SDXL <span className="text-gray-500">(API Key Req.)</span>
+                         🏆 Generatore High Quality <span className="text-gray-500">(Modello FLUX)</span>
                      </p>
                      <div className="flex flex-col gap-2">
                          <input type="text" placeholder="es. masterpiece, highly detailed sol ring, volcano forge..." value={aiPromptHq} onChange={e => setAiPromptHq(e.target.value)} className="w-full bg-gray-800 border border-amber-600/50 rounded p-3 text-white text-sm outline-none focus:border-amber-500 shadow-inner" />
                          
-                         <div className="flex gap-2">
-                             <button onClick={generateHqArt} disabled={isGeneratingHq || isGeneratingAiArt || !aiPromptHq.trim()} className="flex-1 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-black font-black py-2 rounded shadow transition-colors flex justify-center items-center gap-2">
-                                 {isGeneratingHq ? '⏳ GENERAZIONE IN CORSO...' : '💖 GENERA CAPOLAVORO (SDXL)'}
-                             </button>
-                             {replicateKey && (
-                                 <button onClick={() => { localStorage.removeItem('mtg_replicate_key'); setReplicateKey(""); alert("API Key Replicate rimossa."); }} className="text-red-400 font-bold text-[10px] hover:text-red-300 underline" title="Rimuovi chiave Replicate memorizzata">Cancella Chiave</button>
-                             )}
-                         </div>
+                         <button onClick={generateHqArt} disabled={isGeneratingHq || isGeneratingAiArt || !aiPromptHq.trim()} className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-black font-black py-2 rounded shadow transition-colors flex justify-center items-center gap-2">
+                             {isGeneratingHq ? '⏳ GENERAZIONE IN CORSO...' : '💖 GENERA CAPOLAVORO'}
+                         </button>
                      </div>
                  </div>
                  
                  <div className="flex items-center gap-2 mt-1 mb-1">
                      <div className="h-px bg-gray-700 flex-1"></div>
-                     <span className="text-gray-500 text-[10px] font-bold uppercase">Oppure Carica Manualmente</span>
+                     <span className="text-gray-500 text-[10px] font-bold uppercase">Oppure</span>
                      <div className="h-px bg-gray-700 flex-1"></div>
                  </div>
                  
