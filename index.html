@@ -759,6 +759,16 @@
         // Calcolo Nemesi (Giocatore con più vittorie in assoluto)
         const nemesis = sortedPlayers.length > 0 ? sortedPlayers[0][0] : "Nessuno";
         const nemesisWins = sortedPlayers.length > 0 ? sortedPlayers[0][1] : 0;
+        const deleteMatch = async (matchId) => {
+            if(window.confirm("Vuoi davvero eliminare questa partita dalla Hall of Fame? (L'azione non può essere annullata)")) {
+                try {
+                    await db.collection('match_history').doc(matchId).delete();
+                    setHistory(prev => prev.filter(m => m.id !== matchId));
+                } catch(err) {
+                    alert("Errore durante l'eliminazione: " + err.message);
+                }
+            }
+        };
 
         return (
             <div className="max-w-4xl mx-auto space-y-4 p-4 animate-fade pb-20">
@@ -840,11 +850,14 @@
                                                     <span className="text-white font-bold text-sm">Vittoria di <span className="text-yellow-400">{m.winnerName}</span></span>
                                                     <span className="text-gray-400 text-[10px]">{new Date(m.date).toLocaleString('it-IT')} • {m.playerCount} Giocatori {m.teamMode ? '(2HG)' : ''}</span>
                                                 </div>
-                                                {m.winnerCommander && m.winnerCommander !== "Sconosciuto" && (
-                                                    <span className="bg-blue-900/50 text-blue-300 px-3 py-1.5 rounded-lg text-xs font-bold border border-blue-800 truncate max-w-[200px] text-center" title={m.winnerCommander}>
-                                                        👑 {m.winnerCommander}
-                                                    </span>
-                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    {m.winnerCommander && m.winnerCommander !== "Sconosciuto" && (
+                                                        <span className="bg-blue-900/50 text-blue-300 px-3 py-1.5 rounded-lg text-xs font-bold border border-blue-800 truncate max-w-[200px] text-center" title={m.winnerCommander}>
+                                                            👑 {m.winnerCommander}
+                                                        </span>
+                                                    )}
+                                                    <button onClick={() => deleteMatch(m.id)} className="bg-red-900/50 hover:bg-red-700 text-red-400 hover:text-white px-2 py-1.5 rounded-lg border border-red-800 transition-colors shadow active:scale-95" title="Elimina Partita">🗑️</button>
+                                                </div>
                                             </div>
                                             
                                             {/* IL CANTASTORIE SCENDE IN CAMPO (Design a Pergamena scrollabile) */}
