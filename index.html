@@ -908,6 +908,29 @@
       const [activeDeck, setActiveDeck] = useState(null);
       const videoRef = useRef(null);
 
+      // --- STATI JUKEBOX GLOBALE (MENU) ---
+      const [globalBgm, setGlobalBgm] = useState("");
+      const globalAudioRef = useRef(null);
+      const [showGlobalJukebox, setShowGlobalJukebox] = useState(false);
+      
+      const playGlobalBgm = (url) => {
+          if (globalAudioRef.current) globalAudioRef.current.pause();
+          if (!url) { setGlobalBgm(""); return; }
+          const audio = new Audio(url);
+          audio.loop = true;
+          audio.volume = 0.3; // Basso perché siamo nel menu
+          audio.play().catch(()=>{});
+          globalAudioRef.current = audio;
+          setGlobalBgm(url);
+      };
+      
+      // Qui aggiungerai i tuoi file mp3 di background (tipo bgm_taverna.mp3)
+      const GlobalTracks = [
+          { name: "Deckbuilding Chill", url: "bgm_chill.mp3" },
+          { name: "Scansione / Ricerca", url: "bgm_search.mp3" },
+          { name: "Taverna (Menu)", url: "bgm_taverna.mp3" }
+      ];
+
       // --- STATI STAMPA E COLLEZIONE ---
       const [printQueue, setPrintQueue] = useState([]);
       const [collection, setCollection] = useState([]);
@@ -1151,6 +1174,25 @@
                 {view === 'protools' && <ProTools navigate={navigate} activeDeck={activeDeck} />}
               </main>
             </div>
+          )}
+          {/* 🎸 JUKEBOX FLUTTUANTE GLOBALE (IN BASSO A SINISTRA) */}
+          {(view !== 'game_active' && introState === 'finished') && (
+              <div className="fixed bottom-4 left-4 z-[9999] flex flex-col items-start gap-2">
+                  {showGlobalJukebox && (
+                      <div className="bg-gray-900 border-2 border-indigo-500 p-3 rounded-xl shadow-2xl flex flex-col gap-2 w-56 animate-fade">
+                          <p className="text-indigo-400 font-black text-[10px] uppercase tracking-widest border-b border-gray-700 pb-1 mb-1">📻 App Radio</p>
+                          {GlobalTracks.map((t, i) => (
+                              <button key={i} onClick={() => playGlobalBgm(globalBgm === t.url ? "" : t.url)} className={`text-xs font-bold p-2 rounded-lg flex justify-between items-center border transition-all active:scale-95 ${globalBgm === t.url ? 'bg-indigo-600 text-white border-indigo-400 shadow' : 'bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700'}`}>
+                                  <span className="truncate pr-2">{t.name}</span>
+                                  <span>{globalBgm === t.url ? '⏸' : '▶'}</span>
+                              </button>
+                          ))}
+                      </div>
+                  )}
+                  <button onClick={() => setShowGlobalJukebox(!showGlobalJukebox)} className={`rounded-full w-12 h-12 flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.8)] border-2 transition-all hover:scale-110 active:scale-95 text-xl ${showGlobalJukebox ? 'bg-gray-700 border-gray-500' : (globalBgm ? 'bg-indigo-600 border-indigo-400 animate-pulse' : 'bg-gray-800 border-indigo-500')}`} title="App Radio">
+                      {globalBgm && !showGlobalJukebox ? "🎶" : "📻"}
+                  </button>
+              </div>
           )}
         </div>
       );
@@ -4378,7 +4420,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const [timeRemaining, setTimeRemaining] = useState(0);
       const [isTimerPaused, setIsTimerPaused] = useState(true);
 
-      // --- STATI E LOGICA AUDIO, MEME E JUKEBOX ---
+     // --- STATI E LOGICA AUDIO, MEME E JUKEBOX ---
       const [showSoundboard, setShowSoundboard] = useState(false);
       const [soundTab, setSoundTab] = useState('meme'); // 'meme' o 'music'
       
@@ -4387,20 +4429,23 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const [currentBgm, setCurrentBgm] = useState("");
       const [bgmVolume, setBgmVolume] = useState(0.4);
 
-      // --- LE TUE MUSICHE (SOSTITUISCI I FILE QUANDO LI CREI) ---
+      // --- LE TUE MUSICHE DI SOTTOFONDO ---
+      // (Se crei altri file per il loop continuo di sottofondo, mettili qui come hai fatto con le altre)
       const JukeboxTracks = [
           { name: "Taverna (Tranquilla)", url: "bgm_taverna.mp3" },
           { name: "Battaglia (Epica)", url: "bgm_battaglia.mp3" },
           { name: "Tensione (Cupa)", url: "bgm_tensione.mp3" }
       ];
 
+      // --- EFFETTI SONORI AUTOMATICI (I TUOI FILE GITHUB!) ---
       const SFX = {
-          damage: "https://www.myinstants.com/media/sounds/minecraft-damage-ooff.mp3", // Sostituisci con tuo suono
-          heal: "https://www.myinstants.com/media/sounds/1-up.mp3", // Sostituisci con tuo suono
-          lowLife: "music_lowlife_15s.mp3", // La tua traccia drammatica
-          cmdrDefault: "music_cmdr_epic_15s.mp3"
+          damage: "https://www.myinstants.com/media/sounds/minecraft-damage-ooff.mp3", // Tieni questo o cambialo con un tuo mp3 corto
+          heal: "https://www.myinstants.com/media/sounds/1-up.mp3", // Idem
+          lowLife: "music_lowlife_15s.mp3", // IL TUO FILE!
+          cmdrDefault: "music_cmdr_epic_15s.mp3" // IL TUO FILE!
       };
 
+      // LEGGE I TUOI FILE IN BASE AL TIPO DI CREATURA!
       const getCommanderTheme = (typeLine) => {
           const t = (typeLine || "").toLowerCase();
           if (t.includes("angel")) return "music_angel.mp3";
@@ -4434,32 +4479,36 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       }, [view]);
 
       const playShortSfx = (type) => {
-          const a = new Audio(SFX[type] ? SFX[type] : type); // Accetta chiave o URL diretto
+          const actualUrl = SFX[type] ? SFX[type] : type; 
+          const a = new Audio(actualUrl);
           a.volume = 0.5;
           a.play().catch(()=>console.log("Sfx bloccato"));
       };
 
-      const playEpicEvent = (url) => {
+      const playEpicEvent = (keyOrUrl) => {
           if (eventAudioRef.current) eventAudioRef.current.pause(); 
-          if (bgmRef.current) bgmRef.current.volume = bgmVolume * 0.2; // Abbassa la musica di fondo
+          if (bgmRef.current) bgmRef.current.volume = bgmVolume * 0.2; // Abbassa la musica di fondo!
 
-          const a = new Audio(url);
+          const actualUrl = SFX[keyOrUrl] ? SFX[keyOrUrl] : keyOrUrl;
+          if (!actualUrl) return;
+
+          const a = new Audio(actualUrl);
           a.volume = 0.8;
-          a.play().catch(()=>console.log("Epic Event bloccato"));
+          a.play().catch(()=>console.log("Epic Event bloccato o file mancante"));
           eventAudioRef.current = a;
 
           setTimeout(() => {
               if (bgmRef.current && bgmRef.current.volume < bgmVolume) {
-                  bgmRef.current.volume = bgmVolume; // Riaza la musica di fondo
+                  bgmRef.current.volume = bgmVolume; // Ristabilisce il volume
               }
               if (eventAudioRef.current === a) {
                   a.pause();
               }
-          }, 15000); // Ferma la traccia epica dopo 15 secondi
+          }, 15000); // 15 secondi esatti
       };
 
       const playMemeSound = (url) => playShortSfx(url);
-
+      
       // La tua libreria di suoni pronti all'uso (Aggiungine quanti ne vuoi copiando la riga!)
       const soundboardMemes = [
           { icon: "🎺", name: "Tromba", url: "https://www.myinstants.com/media/sounds/sadtrombone.swf.mp3" },
@@ -4474,6 +4523,49 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           { icon: "💨", name: "Prt...", url: "https://www.myinstants.com/media/sounds/fart-with-reverb.mp3" }
       ];
 
+      // --- ASSISTENTE VOCALE BGM (MICROFONO VOICE DJ) ---
+      const [voiceActive, setVoiceActive] = useState(false);
+
+      useEffect(() => {
+          if (!voiceActive) return;
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          
+          if (!SpeechRecognition) { 
+              alert("Il Riconoscimento Vocale non è supportato in questo browser (Usa Chrome o Safari aggiornati)."); 
+              setVoiceActive(false); 
+              return; 
+          }
+          
+          const recognition = new SpeechRecognition();
+          recognition.lang = 'it-IT';
+          recognition.continuous = true;
+          recognition.interimResults = false; // Aspetta che finisci di parlare
+
+          recognition.onresult = (event) => {
+              const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
+              console.log("🎙️ Vocale captato:", transcript);
+              
+              // Se capta parole aggressive -> Musica Battaglia
+              if (transcript.includes("attacc") || transcript.includes("combattiment") || transcript.includes("dichiar") || transcript.includes("picchio")) {
+                  playBgm("bgm_battaglia.mp3");
+              } 
+              // Se capta parole rilassate -> Musica Taverna
+              else if (transcript.includes("passo") || transcript.includes("fine turno") || transcript.includes("main") || transcript.includes("tranquillo")) {
+                  playBgm("bgm_taverna.mp3");
+              }
+              // Se capta parole tese -> Musica Tensione
+              else if (transcript.includes("pensa") || transcript.includes("rispost") || transcript.includes("fermo")) {
+                  playBgm("bgm_tensione.mp3");
+              }
+          };
+
+          recognition.onerror = (e) => { console.log("Microfono in pausa o errore:", e); };
+          recognition.onend = () => { if (voiceActive) recognition.start(); }; // Riavvio automatico per restare sempre in ascolto
+
+          recognition.start();
+          return () => recognition.stop();
+      }, [voiceActive]);
+      
       const rollForStart = () => {
           if (players.length === 0) return;
           const randomIndex = Math.floor(Math.random() * players.length);
@@ -5010,7 +5102,18 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
           const targetPlayer = prev.find(p => p.id === playerId);
           if(!targetPlayer) return prev;
 
-          // 💾 SALVATAGGIO STATO PER LA MACCHINA DEL TEMPO (Conserva gli ultimi 30 step)
+          // --- TRIGGER AUDIO AUTOMATICI (VELENO ED ENERGIA) ---
+          if (stat === 'poison' && amount > 0) {
+              const newPoison = targetPlayer.poison + amount;
+              if (targetPlayer.poison < 8 && newPoison >= 8 && typeof playEpicEvent !== 'undefined') {
+                  playEpicEvent('lowLife'); // Parte la tua canzone drammatica!
+              }
+          }
+          if (stat === 'energy' && amount > 0 && typeof playShortSfx !== 'undefined') {
+              playShortSfx('https://www.myinstants.com/media/sounds/electric-zap.mp3'); // ZAP Elettrico rapido!
+          }
+
+          // 💾 SALVATAGGIO STATO PER LA MACCHINA DEL TEMPO
           setPlayersHistory(h => [...h, prev].slice(-30));
           
           // 📜 CREAZIONE COMBAT LOG
@@ -5432,6 +5535,8 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                                 <button onClick={() => setIsTimerPaused(!isTimerPaused)} className="text-[10px] bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded text-white font-bold active:scale-90" title="Play/Pausa">{isTimerPaused ? '▶' : '⏸️'}</button>
                                 <button onClick={passTurn} className="text-[10px] bg-gray-600 hover:bg-gray-500 px-2 py-1 rounded text-white font-bold active:scale-90" title="Passa Turno">⏭</button>
                                 <button onClick={() => setShowDice(true)} className="text-[10px] bg-indigo-600 hover:bg-indigo-500 px-2 py-1 rounded text-white font-bold active:scale-90" title="Lancia Dadi / Sorteggia">🎲</button>
+                            {/* NUOVO TASTO MICROFONO */}
+                                <button onClick={() => setVoiceActive(!voiceActive)} className={`text-[10px] px-2 py-1 rounded text-white font-bold active:scale-90 ${voiceActive ? 'bg-red-600 animate-pulse border border-white' : 'bg-gray-700 hover:bg-gray-600'}`} title="Voice DJ">🎙️</button>
                             </div>
                         </div>
                     )}
@@ -5440,6 +5545,11 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                         <button onClick={() => setShowDice(true)} className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 w-12 h-12 rounded-xl shadow-lg border border-gray-600 transform transition-transform active:scale-90" title="Lancia Dadi">
                             <span className="text-2xl drop-shadow-md">🎲</span>
                         </button>
+                 {/* NUOVO TASTO MICROFONO NO-TIMER */}
+                            <button onClick={() => setVoiceActive(!voiceActive)} className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-lg border transform transition-transform active:scale-90 ${voiceActive ? 'bg-red-600 border-red-400 animate-pulse' : 'bg-gray-800 border-gray-600 hover:bg-gray-700'}`} title="Voice DJ">
+                                <span className="text-xl drop-shadow-md">🎙️</span>
+                            </button>
+                        </div>
                     )}
 
                     <div className={players.length <= 2 ? "w-px h-4 bg-gray-700" : "w-4 h-px bg-gray-700"}></div>
