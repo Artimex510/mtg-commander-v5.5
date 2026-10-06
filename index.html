@@ -5161,8 +5161,48 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                       VAI ALLA TUA PLANCIA!
                    </button>
                 )}
+              </div>
+           )}
+
+          {/* MODALE ROSTER TAVERNA */}
+          {showRosterModal && ReactDOM.createPortal(
+             <div className="fixed inset-0 bg-black/95 z-[10000] flex flex-col p-4 animate-fade justify-center overflow-y-auto">
+                <div className="bg-gray-800 border-2 border-emerald-500 rounded-xl p-4 sm:p-6 w-full max-w-md mx-auto shadow-2xl relative my-auto">
+                    <button onClick={() => setShowRosterModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
+                    <h3 className="text-xl sm:text-2xl font-black text-emerald-400 mb-2 flex items-center gap-2"><span className="text-3xl">🍻</span> Il Roster</h3>
+                    <p className="text-gray-300 text-xs font-bold mb-4 border-b border-gray-700 pb-3">Tocca i profili dei giocatori presenti al tavolo ({selectedProfiles.length}/6).</p>
+                    
+                    <div className="flex flex-wrap gap-2 mb-6 max-h-[40vh] overflow-y-auto pr-1">
+                        {roster.map(prof => {
+                            const isSelected = selectedProfiles.find(p => p.id === prof.id);
+                            return (
+                                <div 
+                                    key={prof.id} 
+                                    onClick={() => toggleProfileSelection(prof)}
+                                    className={`relative cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg border transition-all active:scale-95 ${isSelected ? 'bg-emerald-700/80 border-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)] scale-105' : 'bg-gray-900 border-gray-600 hover:bg-gray-700 opacity-80'}`}
+                                >
+                                    <span className="text-xl">{prof.avatar}</span>
+                                    <span className="text-white font-bold text-sm pr-2">{prof.name}</span>
+                                    {!isSelected && (
+                                        <button onClick={(e) => deleteProfile(prof.id, e)} className="absolute -top-2 -right-2 bg-red-600 border border-black text-white w-5 h-5 rounded-full text-[10px] font-black opacity-80 hover:opacity-100 flex items-center justify-center shadow-lg transition-opacity">X</button>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+
+                    <div className="flex gap-2 border-t border-gray-700 pt-4">
+                        <input type="text" placeholder="Aggiungi nuovo amico..." value={newProfileName} onChange={e=>setNewProfileName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addProfile()} className="flex-1 bg-gray-900 border border-gray-600 text-white rounded-lg p-2 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
+                        <button onClick={addProfile} className="bg-gray-700 hover:bg-emerald-600 text-white font-black px-4 rounded-lg text-sm transition-colors shadow">AGGIUNGI</button>
+                    </div>
+                    
+                    <button onClick={() => setShowRosterModal(false)} className="w-full mt-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl shadow-lg transition-all active:scale-95">
+                        CONFERMA GIOCATORI
+                    </button>
+                </div>
              </div>
-          )}
+          , document.body)}
+
         </div>
       );
 
@@ -5717,45 +5757,6 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
              </div>
           , document.body)}
 
-          {/* MODALE ROSTER TAVERNA */}
-          {showRosterModal && ReactDOM.createPortal(
-             <div className="fixed inset-0 bg-black/95 z-[10000] flex flex-col p-4 animate-fade justify-center overflow-y-auto">
-                <div className="bg-gray-800 border-2 border-emerald-500 rounded-xl p-4 sm:p-6 w-full max-w-md mx-auto shadow-2xl relative my-auto">
-                    <button onClick={() => setShowRosterModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
-                    <h3 className="text-xl sm:text-2xl font-black text-emerald-400 mb-2 flex items-center gap-2"><span className="text-3xl">🍻</span> Il Roster</h3>
-                    <p className="text-gray-300 text-xs font-bold mb-4 border-b border-gray-700 pb-3">Tocca i profili dei giocatori presenti al tavolo ({selectedProfiles.length}/6).</p>
-                    
-                    <div className="flex flex-wrap gap-2 mb-6 max-h-[40vh] overflow-y-auto pr-1">
-                        {roster.map(prof => {
-                            const isSelected = selectedProfiles.find(p => p.id === prof.id);
-                            return (
-                                <div 
-                                    key={prof.id} 
-                                    onClick={() => toggleProfileSelection(prof)}
-                                    className={`relative cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg border transition-all active:scale-95 ${isSelected ? 'bg-emerald-700/80 border-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)] scale-105' : 'bg-gray-900 border-gray-600 hover:bg-gray-700 opacity-80'}`}
-                                >
-                                    <span className="text-xl">{prof.avatar}</span>
-                                    <span className="text-white font-bold text-sm pr-2">{prof.name}</span>
-                                    {!isSelected && (
-                                        <button onClick={(e) => deleteProfile(prof.id, e)} className="absolute -top-2 -right-2 bg-red-600 border border-black text-white w-5 h-5 rounded-full text-[10px] font-black opacity-80 hover:opacity-100 flex items-center justify-center shadow-lg transition-opacity">X</button>
-                                    )}
-                                </div>
-                            )
-                        })}
-                    </div>
-
-                    <div className="flex gap-2 border-t border-gray-700 pt-4">
-                        <input type="text" placeholder="Aggiungi nuovo amico..." value={newProfileName} onChange={e=>setNewProfileName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addProfile()} className="flex-1 bg-gray-900 border border-gray-600 text-white rounded-lg p-2 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
-                        <button onClick={addProfile} className="bg-gray-700 hover:bg-emerald-600 text-white font-black px-4 rounded-lg text-sm transition-colors shadow">AGGIUNGI</button>
-                    </div>
-                    
-                    <button onClick={() => setShowRosterModal(false)} className="w-full mt-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl shadow-lg transition-all active:scale-95">
-                        CONFERMA GIOCATORI
-                    </button>
-                </div>
-             </div>
-          , document.body)}
-          
           {/* MODALE MATCH REPORT (VINCITORE E UCCISIONI) */}
           {showReportModal && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-black/95 z-[10000] flex flex-col p-2 sm:p-4 animate-fade items-center justify-center">
