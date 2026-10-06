@@ -63,10 +63,16 @@
         try { rawDecks = JSON.parse(localStorage.getItem('mtg_decks')) || []; } catch(e){}
         if (!Array.isArray(rawDecks)) rawDecks = [];
 
-        // Filtro sicuro per togliere il peso dalle proxy senza errori
+        // Filtro SUPER DIETA per aggirare il limite di 1MB di Firebase
         const cleanCard = (c) => { 
             if (!c) return c;
             let newC = { ...c };
+            
+            // 1. Zavorra inutile: questi pesano tantissimo e li riscarichiamo live solo quando apri la carta!
+            delete newC.legalities;
+            delete newC.printsUrl;
+            
+            // 2. Filtro Base64 (impedisce alle immagini pesanti di finire nel cloud)
             if (newC.isCustom || 
                (typeof newC.proxyImage === 'string' && newC.proxyImage.startsWith('data:image')) || 
                (typeof newC.image === 'string' && newC.image.startsWith('data:image')) ||
@@ -78,7 +84,19 @@
             return newC; 
         };
         
-        const decksToCloud = rawDecks.map(deck => ({ ...deck, cards: (deck.cards || []).map(cleanCard) }));
+        const decksToCloud = rawDecks.map(deck => {
+            let d = { ...deck, cards: (deck.cards || []).map(cleanCard) };
+            // Pulizia pesante anche sui Token generati!
+            if (d.generatedTokens) {
+                d.generatedTokens = d.generatedTokens.map(t => {
+                   let nt = {...t};
+                   if (typeof nt.img === 'string' && nt.img.startsWith('data:image')) nt.img = "";
+                   if (typeof nt.imgBack === 'string' && nt.imgBack.startsWith('data:image')) nt.imgBack = "";
+                   return nt;
+                });
+            }
+            return d;
+        });
         
         let rawCart = { singles: [], decks: [], lastUpdated: Date.now() };
         try { 
@@ -92,7 +110,7 @@
             decks: (rawCart.decks || []).map(d => ({ ...d, cards: (d.cards || []).map(cleanCard) })) 
         };
 
-        // SALVATAGGIO IMMEDIATO DI MAZZI E CARRELLO (Niente più blocco Storage!)
+        // SALVATAGGIO CLOUD ALLEGGERITO
         await db.collection('users').doc(uid).set({ 
             decks: decksToCloud, 
             cart: cartToCloud, 
@@ -101,7 +119,7 @@
 
       } catch (err) { 
           console.error("Errore salvataggio Firebase:", err);
-          alert("Firebase ha bloccato il salvataggio!\nMotivo: " + err.message); 
+          alert("Firebase ha bloccato il salvataggio!\nMotivo: Il tuo account ha superato 1MB di dati. Rimuovi qualche mazzo o usa il Backup Offline."); 
       }
     };
 
