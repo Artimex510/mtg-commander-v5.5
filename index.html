@@ -4259,7 +4259,10 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const [teamMode, setTeamMode] = useState(false);
       const [players, setPlayers] = useState([]);
 
-      // --- NUOVI STATI: ROSTER TAVERNA PERMANENTE ---
+      // --- NUOVI STATI: ROSTER TAVERNA E OPZIONI LOBBY ---
+      const [localGameType, setLocalGameType] = useState('quick'); // 'quick' o 'roster'
+      const [showRosterModal, setShowRosterModal] = useState(false);
+      
       const [roster, setRoster] = useState([]);
       const [selectedProfiles, setSelectedProfiles] = useState([]);
       const [newProfileName, setNewProfileName] = useState("");
@@ -4792,10 +4795,19 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
       };
  
       const startGame = () => {
-        let actualPlayersCount = lobbyMode === 'local' ? selectedProfiles.length : numPlayers;
-        
-        if (lobbyMode === 'local' && actualPlayersCount === 0) {
-            return alert("Tocca almeno un giocatore dal Roster per aggiungerlo al tavolo!");
+        let actualPlayersCount = numPlayers;
+        let usingRoster = false;
+
+        if (lobbyMode === 'local') {
+            if (localGameType === 'roster') {
+                if (selectedProfiles.length === 0) return alert("Devi selezionare almeno 1 giocatore dal Roster!");
+                actualPlayersCount = selectedProfiles.length;
+                usingRoster = true;
+            } else {
+                actualPlayersCount = numPlayers;
+            }
+        } else {
+            actualPlayersCount = numPlayers; 
         }
 
         let newPlayers = [];
@@ -4810,7 +4822,7 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
           let cmdDmg = {}; 
           for(let j=1; j<=actualPlayersCount; j++) { 
               if(i!==j) {
-                  const targetId = (lobbyMode === 'local' && selectedProfiles.length > 0) ? selectedProfiles[j-1].id : `P${j}`;
+                  const targetId = usingRoster ? selectedProfiles[j-1].id : `P${j}`;
                   cmdDmg[targetId] = 0; 
               }
           }
@@ -4826,8 +4838,8 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
               }
           }
 
-          const pId = (lobbyMode === 'local' && selectedProfiles.length > 0) ? selectedProfiles[i-1].id : `P${i}`;
-          const pName = (lobbyMode === 'local' && selectedProfiles.length > 0) ? `${selectedProfiles[i-1].avatar} ${selectedProfiles[i-1].name}` : `Player ${i}`;
+          const pId = usingRoster ? selectedProfiles[i-1].id : `P${i}`;
+          const pName = usingRoster ? `${selectedProfiles[i-1].avatar} ${selectedProfiles[i-1].name}` : `Player ${i}`;
 
           newPlayers.push({ 
              id: pId, teamId: tId, name: pName, life: startLife, poison: 0, maxPoison: maxPoison, cmdCasts: 0, emblems: 0, immune: false, cmdDmg: cmdDmg, bgUrl: null, 
@@ -4997,37 +5009,43 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                    <p className="text-blue-200 text-sm font-bold uppercase tracking-wider mb-2">Posizione del Telefono:</p>
                    <p className="text-white text-xs font-semibold">2 Giocatori ➡️ Tieni in Verticale<br/>3 - 6 Giocatori ➡️ Tieni in Orizzontale al centro</p>
                 </div>
-                <div className="mb-6 bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner">
-                    <h3 className="text-white font-black mb-2 flex justify-between items-center">
-                        <span>🍻 Roster Taverna</span>
-                        <span className="text-xs text-emerald-400">{selectedProfiles.length}/6 In Partita</span>
-                    </h3>
-                    <p className="text-gray-400 text-xs font-bold mb-3">Tocca chi gioca oggi per aggiungerlo al tavolo:</p>
-                    
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {roster.map(prof => {
-                            const isSelected = selectedProfiles.find(p => p.id === prof.id);
-                            return (
-                                <div 
-                                    key={prof.id} 
-                                    onClick={() => toggleProfileSelection(prof)}
-                                    className={`relative cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg border transition-all active:scale-95 ${isSelected ? 'bg-emerald-700/80 border-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)] scale-105' : 'bg-gray-800 border-gray-600 hover:bg-gray-700 opacity-60'}`}
-                                >
-                                    <span className="text-lg">{prof.avatar}</span>
-                                    <span className="text-white font-bold text-sm pr-2">{prof.name}</span>
-                                    {!isSelected && (
-                                        <button onClick={(e) => deleteProfile(prof.id, e)} className="absolute -top-2 -right-2 bg-red-600 border border-black text-white w-5 h-5 rounded-full text-[10px] font-black opacity-80 hover:opacity-100 flex items-center justify-center shadow-lg transition-opacity">X</button>
-                                    )}
-                                </div>
-                            )
-                        })}
-                    </div>
-
-                    <div className="flex gap-2">
-                        <input type="text" placeholder="Aggiungi nuovo amico..." value={newProfileName} onChange={e=>setNewProfileName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addProfile()} className="flex-1 bg-gray-800 border border-gray-600 text-white rounded-lg p-2 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
-                        <button onClick={addProfile} className="bg-gray-700 hover:bg-emerald-600 text-white font-black px-4 rounded-lg text-sm transition-colors shadow">AGGIUNGI</button>
-                    </div>
+                {/* TABS PER LA MODALITÀ DI SELEZIONE GIOCATORI */}
+                <div className="flex gap-2 mb-4 bg-gray-900 p-1 rounded-lg border border-gray-700 shadow-inner">
+                     <button onClick={()=>setLocalGameType('quick')} className={`flex-1 font-bold py-2 rounded transition-colors text-sm ${localGameType==='quick'?'bg-blue-600 text-white shadow':'text-gray-400 hover:text-white'}`}>⚡ Partita Rapida</button>
+                     <button onClick={()=>setLocalGameType('roster')} className={`flex-1 font-bold py-2 rounded transition-colors text-sm ${localGameType==='roster'?'bg-emerald-600 text-white shadow':'text-gray-400 hover:text-white'}`}>🍻 Usa Roster</button>
                 </div>
+
+                {localGameType === 'quick' && (
+                    <div className="mb-4 bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner animate-fade">
+                      <label className="block text-gray-300 font-bold mb-3 text-center">Quanti siete al tavolo?</label>
+                      <div className="flex items-center justify-between bg-gray-800 p-2 rounded-lg border border-gray-600">
+                          <button onClick={() => setNumPlayers(Math.max(1, numPlayers - 1))} className="w-14 h-14 bg-red-600 hover:bg-red-500 rounded-lg font-black text-3xl text-white shadow transition-transform active:scale-90">-</button>
+                          <span className="text-4xl font-black text-white">{numPlayers}</span>
+                          <button onClick={() => setNumPlayers(Math.min(6, numPlayers + 1))} className="w-14 h-14 bg-green-600 hover:bg-green-500 rounded-lg font-black text-3xl text-white shadow transition-transform active:scale-90">+</button>
+                      </div>
+                    </div>
+                )}
+
+                {localGameType === 'roster' && (
+                    <div className="mb-4 bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-inner animate-fade flex flex-col items-center">
+                        <p className="text-gray-300 text-sm font-bold mb-3">Giocatori Selezionati: <span className="text-emerald-400 text-lg">{selectedProfiles.length}/6</span></p>
+                        
+                        {selectedProfiles.length > 0 ? (
+                            <div className="flex flex-wrap justify-center gap-2 mb-4">
+                                {selectedProfiles.map(p => (
+                                    <span key={p.id} className="bg-emerald-700 text-white px-2 py-1 rounded text-xs font-bold shadow">{p.avatar} {p.name}</span>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 text-xs mb-4">Nessuno selezionato.</p>
+                        )}
+                        
+                        <button onClick={() => setShowRosterModal(true)} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-lg shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center justify-center gap-2 transition-all active:scale-95">
+                            👥 APRI ROSTER TAVERNA
+                        </button>
+                    </div>
+                )}
+              
                 <div className="mb-4">
                   <label className="block text-gray-300 font-bold mb-2">Punti Vita Iniziali</label>
                   <select value={startLife} onChange={e => setStartLife(parseInt(e.target.value))} className="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white text-center text-xl font-bold outline-none">
@@ -5699,6 +5717,45 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
              </div>
           , document.body)}
 
+          {/* MODALE ROSTER TAVERNA */}
+          {showRosterModal && ReactDOM.createPortal(
+             <div className="fixed inset-0 bg-black/95 z-[10000] flex flex-col p-4 animate-fade justify-center overflow-y-auto">
+                <div className="bg-gray-800 border-2 border-emerald-500 rounded-xl p-4 sm:p-6 w-full max-w-md mx-auto shadow-2xl relative my-auto">
+                    <button onClick={() => setShowRosterModal(false)} className="absolute top-2 right-3 text-gray-400 hover:text-white text-xl font-black">✕</button>
+                    <h3 className="text-xl sm:text-2xl font-black text-emerald-400 mb-2 flex items-center gap-2"><span className="text-3xl">🍻</span> Il Roster</h3>
+                    <p className="text-gray-300 text-xs font-bold mb-4 border-b border-gray-700 pb-3">Tocca i profili dei giocatori presenti al tavolo ({selectedProfiles.length}/6).</p>
+                    
+                    <div className="flex flex-wrap gap-2 mb-6 max-h-[40vh] overflow-y-auto pr-1">
+                        {roster.map(prof => {
+                            const isSelected = selectedProfiles.find(p => p.id === prof.id);
+                            return (
+                                <div 
+                                    key={prof.id} 
+                                    onClick={() => toggleProfileSelection(prof)}
+                                    className={`relative cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg border transition-all active:scale-95 ${isSelected ? 'bg-emerald-700/80 border-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)] scale-105' : 'bg-gray-900 border-gray-600 hover:bg-gray-700 opacity-80'}`}
+                                >
+                                    <span className="text-xl">{prof.avatar}</span>
+                                    <span className="text-white font-bold text-sm pr-2">{prof.name}</span>
+                                    {!isSelected && (
+                                        <button onClick={(e) => deleteProfile(prof.id, e)} className="absolute -top-2 -right-2 bg-red-600 border border-black text-white w-5 h-5 rounded-full text-[10px] font-black opacity-80 hover:opacity-100 flex items-center justify-center shadow-lg transition-opacity">X</button>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+
+                    <div className="flex gap-2 border-t border-gray-700 pt-4">
+                        <input type="text" placeholder="Aggiungi nuovo amico..." value={newProfileName} onChange={e=>setNewProfileName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addProfile()} className="flex-1 bg-gray-900 border border-gray-600 text-white rounded-lg p-2 outline-none font-bold text-sm focus:border-emerald-500 shadow-inner" />
+                        <button onClick={addProfile} className="bg-gray-700 hover:bg-emerald-600 text-white font-black px-4 rounded-lg text-sm transition-colors shadow">AGGIUNGI</button>
+                    </div>
+                    
+                    <button onClick={() => setShowRosterModal(false)} className="w-full mt-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl shadow-lg transition-all active:scale-95">
+                        CONFERMA GIOCATORI
+                    </button>
+                </div>
+             </div>
+          , document.body)}
+          
           {/* MODALE MATCH REPORT (VINCITORE E UCCISIONI) */}
           {showReportModal && ReactDOM.createPortal(
              <div className="fixed inset-0 bg-black/95 z-[10000] flex flex-col p-2 sm:p-4 animate-fade items-center justify-center">
