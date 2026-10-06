@@ -3497,8 +3497,8 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       </div>
     );
 
-    // --- COMPONENTE MODALI A TUTTO SCHERMO ---
-    const PlayerModals = ({ type, player, opponents, onClose, updateStat, updateMana, toggleImmunity, updatePlayerConfig, rotation }) => {
+      // --- COMPONENTE MODALI A TUTTO SCHERMO ---
+        const PlayerModals = ({ type, player, opponents, onClose, updateStat, updateMana, toggleImmunity, updatePlayerConfig, rotation, playEpicEvent }) => {
         // Tab Unificati
         const [currentTab, setCurrentTab] = useState(type);
         useEffect(() => { setCurrentTab(type); }, [type]);
@@ -4075,7 +4075,13 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                 </div>
                             </div>
 
-                            <button onClick={() => updateStat(player.id, 'cmdCasts', 1)} className="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-xl shadow-[0_0_15px_rgba(202,138,4,0.5)] transition-all text-lg mb-4 active:scale-95">
+                            <button onClick={() => {
+                                updateStat(player.id, 'cmdCasts', 1);
+                                if (playEpicEvent) {
+                                    const cardType = (player.cmdrCard && player.cmdrCard.type) ? player.cmdrCard.type : "";
+                                    playEpicEvent(getCommanderTheme(cardType));
+                                }
+                            }} className="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-xl shadow-[0_0_15px_rgba(202,138,4,0.5)] transition-all text-lg mb-4 active:scale-95">
                                 ⚔️ LANCIA COMANDANTE
                             </button>
                             
@@ -4117,15 +4123,27 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
     };
     
     // --- CARTELLA GIOCATORE ---
-    const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig, isArchenemy, opponents, isCloud, isStartingPlayer }) => {
+    const PlayerCard = ({ player, updateStat, onOpenModal, updatePlayerConfig, isArchenemy, opponents, isCloud, isStartingPlayer, playShortSfx, playEpicEvent }) => {
       const [showOpponents, setShowOpponents] = useState(false);
       
       const [lifeDiff, setLifeDiff] = useState(0);
       const diffTimer = useRef(null);
 
       const handleLifeChange = (amount) => {
+          const oldLife = player.life;
+          const newLife = Math.max(0, oldLife + amount);
+          
           updateStat(player.id, 'life', amount);
           setLifeDiff(prev => prev + amount);
+
+          // Suoni brevi per danni e cure
+          if (amount > 0 && playShortSfx) playShortSfx('heal');
+          if (amount < 0 && playShortSfx) playShortSfx('damage');
+
+          // Musica drammatica se si scende SOTTO i 15 punti vita
+          if (oldLife >= 15 && newLife < 15 && playEpicEvent) {
+              playEpicEvent('lowLife');
+          }
       };
 
       useEffect(() => {
@@ -4360,14 +4378,87 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const [timeRemaining, setTimeRemaining] = useState(0);
       const [isTimerPaused, setIsTimerPaused] = useState(true);
 
-      // --- STATI E LOGICA SOUNDBOARD MEME ---
+      // --- STATI E LOGICA AUDIO, MEME E JUKEBOX ---
       const [showSoundboard, setShowSoundboard] = useState(false);
+      const [soundTab, setSoundTab] = useState('meme'); // 'meme' o 'music'
+      
+      const bgmRef = useRef(null);
+      const eventAudioRef = useRef(null);
+      const [currentBgm, setCurrentBgm] = useState("");
+      const [bgmVolume, setBgmVolume] = useState(0.4);
 
-      const playMemeSound = (url) => {
-          const audio = new Audio(url);
-          audio.volume = 0.7; // Volume bilanciato
-          audio.play().catch(err => console.log("Autoplay bloccato dal browser", err));
+      // --- LE TUE MUSICHE (SOSTITUISCI I FILE QUANDO LI CREI) ---
+      const JukeboxTracks = [
+          { name: "Taverna (Tranquilla)", url: "bgm_taverna.mp3" },
+          { name: "Battaglia (Epica)", url: "bgm_battaglia.mp3" },
+          { name: "Tensione (Cupa)", url: "bgm_tensione.mp3" }
+      ];
+
+      const SFX = {
+          damage: "https://www.myinstants.com/media/sounds/minecraft-damage-ooff.mp3", // Sostituisci con tuo suono
+          heal: "https://www.myinstants.com/media/sounds/1-up.mp3", // Sostituisci con tuo suono
+          lowLife: "music_lowlife_15s.mp3", // La tua traccia drammatica
+          cmdrDefault: "music_cmdr_epic_15s.mp3"
       };
+
+      const getCommanderTheme = (typeLine) => {
+          const t = (typeLine || "").toLowerCase();
+          if (t.includes("angel")) return "music_angel.mp3";
+          if (t.includes("horror") || t.includes("demon") || t.includes("zombie")) return "music_horror.mp3";
+          if (t.includes("dragon")) return "music_dragon.mp3";
+          if (t.includes("goblin")) return "music_goblin.mp3";
+          if (t.includes("elf")) return "music_elf.mp3";
+          return SFX.cmdrDefault;
+      };
+
+      const playBgm = (url) => {
+          if (bgmRef.current) { bgmRef.current.pause(); }
+          if (!url) { setCurrentBgm(""); return; }
+          const audio = new Audio(url);
+          audio.loop = true;
+          audio.volume = bgmVolume;
+          audio.play().catch(()=>console.log("Autoplay bloccato"));
+          bgmRef.current = audio;
+          setCurrentBgm(url);
+      };
+
+      useEffect(() => {
+          if (bgmRef.current) bgmRef.current.volume = bgmVolume;
+      }, [bgmVolume]);
+
+      useEffect(() => {
+          if (view !== 'game_active' && bgmRef.current) {
+              bgmRef.current.pause();
+              setCurrentBgm("");
+          }
+      }, [view]);
+
+      const playShortSfx = (type) => {
+          const a = new Audio(SFX[type] ? SFX[type] : type); // Accetta chiave o URL diretto
+          a.volume = 0.5;
+          a.play().catch(()=>console.log("Sfx bloccato"));
+      };
+
+      const playEpicEvent = (url) => {
+          if (eventAudioRef.current) eventAudioRef.current.pause(); 
+          if (bgmRef.current) bgmRef.current.volume = bgmVolume * 0.2; // Abbassa la musica di fondo
+
+          const a = new Audio(url);
+          a.volume = 0.8;
+          a.play().catch(()=>console.log("Epic Event bloccato"));
+          eventAudioRef.current = a;
+
+          setTimeout(() => {
+              if (bgmRef.current && bgmRef.current.volume < bgmVolume) {
+                  bgmRef.current.volume = bgmVolume; // Riaza la musica di fondo
+              }
+              if (eventAudioRef.current === a) {
+                  a.pause();
+              }
+          }, 15000); // Ferma la traccia epica dopo 15 secondi
+      };
+
+      const playMemeSound = (url) => playShortSfx(url);
 
       // La tua libreria di suoni pronti all'uso (Aggiungine quanti ne vuoi copiando la riga!)
       const soundboardMemes = [
@@ -5230,7 +5321,7 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                // --- PLANCIA PERSONALE CLOUD ---
                <React.Fragment>
                   <div className="flex-1 w-full relative overflow-hidden bg-gray-900 shadow-xl">
-                      <PlayerCard isCloud={true} player={myPlayer} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={0} isArchenemy={archenemy.playerId === myPlayer.id} isStartingPlayer={startingPlayerId === myPlayer.id} opponents={players.filter(p => p.id !== myPlayerId)} onOpenModal={(type) => setActiveModal({type, playerId: myPlayer.id, rotation: 0})} />
+                   <PlayerCard isCloud={true} player={myPlayer} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={0} isArchenemy={archenemy.playerId === myPlayer.id} isStartingPlayer={startingPlayerId === myPlayer.id} opponents={players.filter(p => p.id !== myPlayerId)} onOpenModal={(type) => setActiveModal({type, playerId: myPlayer.id, rotation: 0})} playShortSfx={playShortSfx} playEpicEvent={playEpicEvent} />   
                   </div>
                   
                   <div className="h-[75px] bg-gray-950 border-t border-gray-700 flex flex-row items-center justify-around shadow-2xl z-[120] py-2 px-4 w-full shrink-0">
@@ -5314,7 +5405,7 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                                      <div className="absolute inset-0 border-4 border-purple-500 shadow-[inset_0_0_40px_rgba(168,85,247,0.6)] animate-pulse pointer-events-none z-[60] rounded-xl"></div>
                                  )}
 
-                                 <PlayerCard player={p} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={rotDeg} isArchenemy={archenemy.playerId === p.id} isStartingPlayer={startingPlayerId === p.id} opponents={players.filter(op => op.id !== p.id)} onOpenModal={(type) => setActiveModal({type, playerId: p.id, rotation: rotDeg})} />
+                                 <PlayerCard player={p} updateStat={updateStat} updatePlayerConfig={updatePlayerConfig} rotation={rotDeg} isArchenemy={archenemy.playerId === p.id} isStartingPlayer={startingPlayerId === p.id} opponents={players.filter(op => op.id !== p.id)} onOpenModal={(type) => setActiveModal({type, playerId: p.id, rotation: rotDeg})} playShortSfx={playShortSfx} playEpicEvent={playEpicEvent} />
                              </div>
                          </div>
                      );
@@ -5380,7 +5471,7 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
 
           {/* RENDER MODALI GLOBALI (In comune per Local e Cloud) */}
           {activeModal && ReactDOM.createPortal(
-              <PlayerModals type={activeModal.type} player={players.find(p => p.id === activeModal.playerId)} opponents={players.filter(p => p.id !== activeModal.playerId)} onClose={() => setActiveModal(null)} updateStat={updateStat} updateMana={updateMana} toggleImmunity={toggleImmunity} updatePlayerConfig={updatePlayerConfig} rotation={activeModal.rotation} />
+              <PlayerModals type={activeModal.type} player={players.find(p => p.id === activeModal.playerId)} opponents={players.filter(p => p.id !== activeModal.playerId)} onClose={() => setActiveModal(null)} updateStat={updateStat} updateMana={updateMana} toggleImmunity={toggleImmunity} updatePlayerConfig={updatePlayerConfig} rotation={activeModal.rotation} playEpicEvent={playEpicEvent} />
           , document.body)}
 
           {/* MODALE ARCHENEMY */}
@@ -5839,31 +5930,54 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
              </div>
           , document.body)}
           
-          {/* 🎵 FLOATING MEME SOUNDBOARD 🎵 */}
+          {/* 🎵 FLOATING JUKEBOX E MEME SOUNDBOARD 🎵 */}
           {(view === 'game_active') && (
               <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 flex flex-col items-end gap-3 z-[500] pointer-events-none">
                   {showSoundboard && (
-                      <div className="bg-gray-900 border-2 border-pink-600 rounded-xl p-3 shadow-[0_0_20px_rgba(219,39,119,0.5)] grid grid-cols-2 gap-2 mb-1 animate-fade pointer-events-auto max-h-[35vh] overflow-y-auto scrollbar-hide">
-                          {soundboardMemes.map((s, i) => (
-                              <button 
-                                  key={i} 
-                                  onClick={() => playMemeSound(s.url)} 
-                                  className="bg-gray-800 hover:bg-pink-900 text-white text-xs font-bold py-2 px-3 rounded shadow border border-gray-700 hover:border-pink-500 transition-all flex flex-col items-center gap-1 active:scale-95 w-20 shrink-0"
-                              >
-                                  <span className="text-xl">{s.icon}</span> 
-                                  <span className="text-[9px] uppercase tracking-wider text-center">{s.name}</span>
-                              </button>
-                          ))}
+                      <div className="bg-gray-900 border-2 border-pink-600 rounded-xl p-3 shadow-[0_0_20px_rgba(219,39,119,0.5)] flex flex-col mb-1 animate-fade pointer-events-auto w-64 max-h-[50vh] overflow-hidden">
+                         {/* TABS JUKEBOX / MEME */}
+                         <div className="flex gap-1 mb-3 shrink-0">
+                             <button onClick={()=>setSoundTab('meme')} className={`flex-1 text-[10px] font-black py-2 rounded transition-colors ${soundTab==='meme'?'bg-pink-600 text-white':'bg-gray-800 text-gray-400 hover:text-white'}`}>📢 MEME</button>
+                             <button onClick={()=>setSoundTab('music')} className={`flex-1 text-[10px] font-black py-2 rounded transition-colors ${soundTab==='music'?'bg-blue-600 text-white':'bg-gray-800 text-gray-400 hover:text-white'}`}>🎸 JUKEBOX</button>
+                         </div>
+                         
+                         {/* TAB 1: MEME GRID */}
+                         {soundTab === 'meme' && (
+                             <div className="grid grid-cols-2 gap-2 overflow-y-auto pr-1">
+                                 {soundboardMemes.map((s, i) => (
+                                     <button key={i} onClick={() => playMemeSound(s.url)} className="bg-gray-800 hover:bg-pink-900 text-white text-xs font-bold py-2 px-3 rounded shadow border border-gray-700 hover:border-pink-500 transition-all flex flex-col items-center gap-1 active:scale-95 shrink-0">
+                                         <span className="text-xl">{s.icon}</span> 
+                                         <span className="text-[9px] uppercase tracking-wider text-center">{s.name}</span>
+                                     </button>
+                                 ))}
+                             </div>
+                         )}
+
+                         {/* TAB 2: JUKEBOX MUSICALE */}
+                         {soundTab === 'music' && (
+                             <div className="flex flex-col gap-2 overflow-y-auto pr-1">
+                                 {JukeboxTracks.map((t, i) => (
+                                     <button key={i} onClick={() => playBgm(currentBgm === t.url ? "" : t.url)} className={`text-xs font-bold p-3 rounded-lg flex justify-between items-center border transition-all active:scale-95 ${currentBgm === t.url ? 'bg-blue-600 text-white border-blue-400 shadow-lg' : 'bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700'}`}>
+                                         <span>{t.name}</span>
+                                         <span className="text-lg">{currentBgm === t.url ? '⏸' : '▶'}</span>
+                                     </button>
+                                 ))}
+                                 <div className="mt-3 pt-3 border-t border-gray-700 shrink-0">
+                                     <label className="text-[10px] text-gray-400 font-bold flex justify-between">Volume BGM: <span>{Math.round(bgmVolume * 100)}%</span></label>
+                                     <input type="range" min="0" max="1" step="0.05" value={bgmVolume} onChange={e=>setBgmVolume(parseFloat(e.target.value))} className="w-full accent-blue-500 mt-1" />
+                                 </div>
+                             </div>
+                         )}
                       </div>
                   )}
                   
-                  {/* Bottone Rotondo Rimpicciolito e schiacciato nell'angolo */}
+                  {/* Bottone Rotondo Rimpicciolito */}
                   <button 
                       onClick={() => setShowSoundboard(!showSoundboard)} 
-                      className={`rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-2xl border-2 transition-all hover:scale-110 active:scale-95 text-lg pointer-events-auto ${showSoundboard ? 'bg-gray-700 border-gray-500' : 'bg-pink-600 border-pink-400'}`}
-                      title="Soundboard Meme"
+                      className={`rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shadow-2xl border-2 transition-all hover:scale-110 active:scale-95 text-lg pointer-events-auto ${showSoundboard ? 'bg-gray-700 border-gray-500' : (currentBgm ? 'bg-blue-600 border-blue-300 animate-pulse' : 'bg-pink-600 border-pink-400')}`}
+                      title="Audio & Jukebox"
                   >
-                      {showSoundboard ? "✖" : "🎵"}
+                      {showSoundboard ? "✖" : (currentBgm ? "🎵" : "🎸")}
                   </button>
               </div>
           )}
