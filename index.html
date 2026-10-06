@@ -4829,10 +4829,15 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
           
           let tId = i;
           if (teamMode) {
-              if (actualPlayersCount === 6) {
+              if (actualPlayersCount === 4) {
+                  // In 4 giocatori: riga sopra (2 e 3) vs riga sotto (1 e 4)
+                  if (i === 2 || i === 3) tId = 1;      
+                  else if (i === 1 || i === 4) tId = 2; 
+              } else if (actualPlayersCount === 6) {
+                  // In 6 giocatori: Lato sx (1 e 2), Riga Sopra (3 e 4), Lato dx/Sotto (5 e 6)
                   if (i === 1 || i === 2) tId = 1;      
-                  else if (i === 3 || i === 6) tId = 2; 
-                  else if (i === 4 || i === 5) tId = 3; 
+                  else if (i === 3 || i === 4) tId = 2; 
+                  else if (i === 5 || i === 6) tId = 3; 
               } else {
                   tId = Math.ceil(i/2);
               }
