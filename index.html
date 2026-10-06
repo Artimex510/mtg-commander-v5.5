@@ -5542,13 +5542,17 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                     )}
 
                     {!useTimer && (
-                        <button onClick={() => setShowDice(true)} className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 w-12 h-12 rounded-xl shadow-lg border border-gray-600 transform transition-transform active:scale-90" title="Lancia Dadi">
-                            <span className="text-2xl drop-shadow-md">🎲</span>
-                        </button>
-                 {/* NUOVO TASTO MICROFONO NO-TIMER */}
+                        <div className={`flex ${players.length <= 2 ? 'flex-row' : 'flex-col'} gap-1`}>
+                            
+                            <button onClick={() => setShowDice(true)} className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 w-12 h-12 rounded-xl shadow-lg border border-gray-600 transform transition-transform active:scale-90" title="Lancia Dadi">
+                                <span className="text-2xl drop-shadow-md">🎲</span>
+                            </button>
+                            
+                            {/* NUOVO TASTO MICROFONO NO-TIMER */}
                             <button onClick={() => setVoiceActive(!voiceActive)} className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-lg border transform transition-transform active:scale-90 ${voiceActive ? 'bg-red-600 border-red-400 animate-pulse' : 'bg-gray-800 border-gray-600 hover:bg-gray-700'}`} title="Voice DJ">
                                 <span className="text-xl drop-shadow-md">🎙️</span>
                             </button>
+                            
                         </div>
                     )}
 
