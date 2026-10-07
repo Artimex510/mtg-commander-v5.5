@@ -3574,7 +3574,8 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                             if (c.card_faces[0].image_uris && c.card_faces[0].image_uris.art_crop) imgUrl = c.card_faces[0].image_uris.art_crop;
                             if (!mCost) mCost = c.card_faces[0].mana_cost || "";
                         }
-                        return { id: c.id, name: c.name, img: imgUrl, mana_cost: mCost, cmc: c.cmc || 0 };
+                        // ORA SALVA ANCHE IL TIPO DI CARTA (es. Angelo)!
+                        return { id: c.id, name: c.name, img: imgUrl, mana_cost: mCost, cmc: c.cmc || 0, type: c.type_line || "" };
                     }).filter(c => c.img);
                     setCmdResults(results);
                  } else { alert("Nessun comandante trovato."); }
@@ -4141,7 +4142,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                             <div className="flex-1 overflow-y-auto min-h-0 grid grid-cols-2 gap-4 content-start pb-10 pr-2">
                                 {cmdResults.map(c => (
                                     <div key={c.id} className="relative rounded-xl overflow-hidden cursor-pointer border-2 border-transparent hover:border-yellow-500 shadow-xl active:scale-95 transition-all bg-black h-36" 
-                                         onClick={() => { updatePlayerConfig(player.id, 'cmdrCard', { name: c.name, img: c.img, mana_cost: c.mana_cost, cmc: c.cmc }); setCmdQuery(""); setCmdResults([]); }}>
+                                         onClick={() => { updatePlayerConfig(player.id, 'cmdrCard', { name: c.name, img: c.img, mana_cost: c.mana_cost, cmc: c.cmc, type: c.type }); setCmdQuery(""); setCmdResults([]); }}>
                                         <img src={c.img} className="absolute inset-0 w-full h-full object-cover opacity-90 hover:opacity-100" />
                                         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/90 to-transparent p-2 pt-6 text-center flex flex-col justify-end h-full">
                                             <span className="text-white text-[10px] md:text-xs font-bold drop-shadow-md leading-tight">{c.name}</span>
@@ -4457,6 +4458,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       };
 
       const playBgm = (url) => {
+          if (currentBgm === url && bgmRef.current) return; // NON riavviare se è già in riproduzione!
           if (bgmRef.current) { bgmRef.current.pause(); }
           if (!url) { setCurrentBgm(""); return; }
           const audio = new Audio(url);
@@ -4523,50 +4525,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           { icon: "💨", name: "Prt...", url: "https://www.myinstants.com/media/sounds/fart-with-reverb.mp3" }
       ];
 
-      // --- ASSISTENTE VOCALE BGM (MICROFONO VOICE DJ) ---
-      const [voiceActive, setVoiceActive] = useState(false);
-
-      useEffect(() => {
-          if (!voiceActive) return;
-          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-          
-          if (!SpeechRecognition) { 
-              alert("Il Riconoscimento Vocale non è supportato in questo browser (Usa Chrome o Safari aggiornati)."); 
-              setVoiceActive(false); 
-              return; 
-          }
-          
-          const recognition = new SpeechRecognition();
-          recognition.lang = 'it-IT';
-          recognition.continuous = true;
-          recognition.interimResults = false; // Aspetta che finisci di parlare
-
-          recognition.onresult = (event) => {
-              const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
-              console.log("🎙️ Vocale captato:", transcript);
-              
-              // Se capta parole aggressive -> Musica Battaglia
-              if (transcript.includes("attacc") || transcript.includes("combattiment") || transcript.includes("dichiar") || transcript.includes("picchio")) {
-                  playBgm("bgm_battaglia.mp3");
-              } 
-              // Se capta parole rilassate -> Musica Taverna
-              else if (transcript.includes("passo") || transcript.includes("fine turno") || transcript.includes("main") || transcript.includes("tranquillo")) {
-                  playBgm("bgm_taverna.mp3");
-              }
-              // Se capta parole tese -> Musica Tensione
-              else if (transcript.includes("pensa") || transcript.includes("rispost") || transcript.includes("fermo")) {
-                  playBgm("bgm_tensione.mp3");
-              }
-          };
-
-          recognition.onerror = (e) => { console.log("Microfono in pausa o errore:", e); };
-          recognition.onend = () => { if (voiceActive) recognition.start(); }; // Riavvio automatico per restare sempre in ascolto
-
-          recognition.start();
-          return () => recognition.stop();
-      }, [voiceActive]);
-      
-      const rollForStart = () => {
+     const rollForStart = () => {
           if (players.length === 0) return;
           const randomIndex = Math.floor(Math.random() * players.length);
           const randomPlayer = players[randomIndex];
@@ -4613,10 +4572,10 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           setTimeRemaining(turnMinutes * 60);
       };
 
-      const formatTime = (secs) => {
-          const m = Math.floor(secs / 60);
-          const s = secs % 60;
-          return `${m}:${s < 10 ? '0' : ''}${s}`;
+     const passTurn = () => {
+          setActiveTurnIdx(prev => (prev + 1) % players.length);
+          setTimeRemaining(turnMinutes * 60);
+          playBgm("bgm_taverna.mp3"); // A fine turno torna la calma!
       };
 
       // --- 🛰️ IL RADAR FIREBASE ---
@@ -5102,15 +5061,40 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
           const targetPlayer = prev.find(p => p.id === playerId);
           if(!targetPlayer) return prev;
 
-          // --- TRIGGER AUDIO AUTOMATICI (VELENO ED ENERGIA) ---
+          // --- TRIGGER AUDIO AUTOMATICI ---
+          // 1. Danni subiti (Vita scende)
+          if (stat === 'life' && amount < 0) {
+              if (typeof playShortSfx !== 'undefined') playShortSfx('damage');
+              if (typeof playBgm !== 'undefined') playBgm('bgm_battaglia.mp3'); // Cambia in Battle Mode
+          }
+          // 2. Cure
+          if (stat === 'life' && amount > 0) {
+              if (typeof playShortSfx !== 'undefined') playShortSfx('heal');
+          }
+          // 3. Danni da Comandante (Aumentano)
+          if (stat === 'cmdDmg' && amount > 0) {
+              if (typeof playShortSfx !== 'undefined') playShortSfx('damage');
+              if (typeof playBgm !== 'undefined') playBgm('bgm_battaglia.mp3'); // Cambia in Battle Mode
+          }
+          // 4. Veleno (a 8+ scatta l'allarme)
           if (stat === 'poison' && amount > 0) {
               const newPoison = targetPlayer.poison + amount;
               if (targetPlayer.poison < 8 && newPoison >= 8 && typeof playEpicEvent !== 'undefined') {
-                  playEpicEvent('lowLife'); // Parte la tua canzone drammatica!
+                  playEpicEvent('lowLife');
               }
           }
+          // 5. Energia (ZAP)
           if (stat === 'energy' && amount > 0 && typeof playShortSfx !== 'undefined') {
-              playShortSfx('https://www.myinstants.com/media/sounds/electric-zap.mp3'); // ZAP Elettrico rapido!
+              playShortSfx('https://www.myinstants.com/media/sounds/electric-zap.mp3');
+          }
+
+          // 6. Vita Bassa (Sotto 15)
+          if (stat === 'life') {
+              const oldLife = targetPlayer.life;
+              const newLife = Math.max(0, oldLife + amount);
+              if (oldLife >= 15 && newLife < 15 && typeof playEpicEvent !== 'undefined') {
+                  playEpicEvent('lowLife');
+              }
           }
 
           // 💾 SALVATAGGIO STATO PER LA MACCHINA DEL TEMPO
@@ -5149,7 +5133,6 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
           return newState;
         });
       };
-
       const updateMana = (playerId, color, amount) => {
         setPlayers(prev => {
             const newState = prev.map(p => {
@@ -5535,25 +5518,15 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                                 <button onClick={() => setIsTimerPaused(!isTimerPaused)} className="text-[10px] bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded text-white font-bold active:scale-90" title="Play/Pausa">{isTimerPaused ? '▶' : '⏸️'}</button>
                                 <button onClick={passTurn} className="text-[10px] bg-gray-600 hover:bg-gray-500 px-2 py-1 rounded text-white font-bold active:scale-90" title="Passa Turno">⏭</button>
                                 <button onClick={() => setShowDice(true)} className="text-[10px] bg-indigo-600 hover:bg-indigo-500 px-2 py-1 rounded text-white font-bold active:scale-90" title="Lancia Dadi / Sorteggia">🎲</button>
-                            {/* NUOVO TASTO MICROFONO */}
-                                <button onClick={() => setVoiceActive(!voiceActive)} className={`text-[10px] px-2 py-1 rounded text-white font-bold active:scale-90 ${voiceActive ? 'bg-red-600 animate-pulse border border-white' : 'bg-gray-700 hover:bg-gray-600'}`} title="Voice DJ">🎙️</button>
                             </div>
                         </div>
                     )}
 
                     {!useTimer && (
-                        <div className={`flex ${players.length <= 2 ? 'flex-row' : 'flex-col'} gap-1`}>
-                            
+                        <div className={`flex ${players.length <= 2 ? 'flex-row' : 'flex-col'} gap-1`}>     
                             <button onClick={() => setShowDice(true)} className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 w-12 h-12 rounded-xl shadow-lg border border-gray-600 transform transition-transform active:scale-90" title="Lancia Dadi">
                                 <span className="text-2xl drop-shadow-md">🎲</span>
                             </button>
-                            
-                            {/* NUOVO TASTO MICROFONO NO-TIMER */}
-                            <button onClick={() => setVoiceActive(!voiceActive)} className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-lg border transform transition-transform active:scale-90 ${voiceActive ? 'bg-red-600 border-red-400 animate-pulse' : 'bg-gray-800 border-gray-600 hover:bg-gray-700'}`} title="Voice DJ">
-                                <span className="text-xl drop-shadow-md">🎙️</span>
-                            </button>
-                            
-                        </div>
                     )}
 
                     <div className={players.length <= 2 ? "w-px h-4 bg-gray-700" : "w-4 h-px bg-gray-700"}></div>
