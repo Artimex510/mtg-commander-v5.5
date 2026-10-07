@@ -4172,21 +4172,9 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const [lifeDiff, setLifeDiff] = useState(0);
       const diffTimer = useRef(null);
 
-      const handleLifeChange = (amount) => {
-          const oldLife = player.life;
-          const newLife = Math.max(0, oldLife + amount);
-          
+     const handleLifeChange = (amount) => {
           updateStat(player.id, 'life', amount);
           setLifeDiff(prev => prev + amount);
-
-          // Suoni brevi per danni e cure
-          if (amount > 0 && playShortSfx) playShortSfx('heal');
-          if (amount < 0 && playShortSfx) playShortSfx('damage');
-
-          // Musica drammatica se si scende SOTTO i 15 punti vita
-          if (oldLife >= 15 && newLife < 15 && playEpicEvent) {
-              playEpicEvent('lowLife');
-          }
       };
 
       useEffect(() => {
@@ -4448,14 +4436,14 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
 
       // LEGGE I TUOI FILE IN BASE AL TIPO DI CREATURA!
       const getCommanderTheme = (typeLine) => {
-          const t = (typeLine || "").toLowerCase();
-          if (t.includes("angel")) return "music_angel.mp3";
-          if (t.includes("horror") || t.includes("demon") || t.includes("zombie")) return "music_horror.mp3";
-          if (t.includes("dragon")) return "music_dragon.mp3";
-          if (t.includes("goblin")) return "music_goblin.mp3";
-          if (t.includes("elf")) return "music_elf.mp3";
-          return SFX.cmdrDefault;
-      };
+            const t = (typeLine || "").toLowerCase();
+            if (t.includes("angel")) return "music_angel.mp3";
+            if (t.includes("horror") || t.includes("demon") || t.includes("zombie")) return "music_horror.mp3";
+            if (t.includes("dragon")) return "music_dragon.mp3";
+            if (t.includes("goblin")) return "music_goblin.mp3";
+            if (t.includes("elf")) return "music_elf.mp3";
+            return "music_cmdr_epic_15s.mp3"; 
+        };
 
       const playBgm = (url) => {
           if (currentBgm === url && bgmRef.current) return; // NON riavviare se è già in riproduzione!
