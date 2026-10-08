@@ -4458,15 +4458,21 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           "⏳ OROLOGIO DELL'APOCALISSE: Alla fine del ciclo di turni, chi ha più Punti Vita li dimezza."
       ];
 
-      const activateSuddenDeath = () => {
-          if (!window.confirm("🚨 ATTENZIONE! Attivare la Sudden Death? Le regole del tavolo cambieranno drasticamente!")) return;
-          const rule = SUDDEN_DEATH_RULES[Math.floor(Math.random() * SUDDEN_DEATH_RULES.length)];
-          handleSyncSuddenDeath(rule);
-          setShowDice(false);
-          
-          // Spegne la Taverna/Battaglia e fa partire la musica da Boss Finale a ripetizione!
-          if (typeof playBgm !== 'undefined') {
-              playBgm('music_apocalypse.mp3');
+      const toggleSuddenDeath = () => {
+          if (suddenDeath) {
+              // 🛑 SPEGNIMENTO: Se è già attiva, chiede conferma per disattivarla
+              if (window.confirm("Vuoi davvero fermare l'Apocalisse e tornare alla normalità?")) {
+                  handleSyncSuddenDeath(null);
+                  setShowDice(false);
+                  if (typeof playBgm !== 'undefined') playBgm('bgm_taverna.mp3'); // Torna la Taverna
+              }
+          } else {
+              // ⚠️ ACCENSIONE: Attiva la Sudden Death
+              if (!window.confirm("🚨 ATTENZIONE! Attivare la Sudden Death? Le regole del tavolo cambieranno drasticamente!")) return;
+              const rule = SUDDEN_DEATH_RULES[Math.floor(Math.random() * SUDDEN_DEATH_RULES.length)];
+              handleSyncSuddenDeath(rule);
+              setShowDice(false);
+              if (typeof playBgm !== 'undefined') playBgm('music_apocalypse.mp3');
           }
       };
       
@@ -5822,9 +5828,9 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                    {/* TASTI EXTRA: TAGLIE E CONSIGLIO SEGRETO */}
                    <div className="flex flex-col gap-2 mt-3 shrink-0">
                      
-                    {/* NUOVO TASTO SUDDEN DEATH */}
-                       <button onClick={activateSuddenDeath} className="w-full py-3 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.5)] active:scale-95 text-lg transition-all flex items-center justify-center gap-2 border bg-red-700 hover:bg-red-600 border-red-500 animate-pulse">
-                           ⚠️ SUDDEN DEATH ⚠️
+                    {/* TASTO SUDDEN DEATH (TOGGLE) */}
+                       <button onClick={toggleSuddenDeath} className={`w-full py-3 rounded-xl text-white font-black active:scale-95 text-lg transition-all flex items-center justify-center gap-2 border ${suddenDeath ? 'bg-gray-800 hover:bg-gray-700 border-gray-500 shadow-md' : 'bg-red-700 hover:bg-red-600 border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.5)] animate-pulse'}`}>
+                           {suddenDeath ? '🛑 FERMA SUDDEN DEATH' : '⚠️ SUDDEN DEATH ⚠️'}
                        </button>
                        <button onClick={() => { setShowDice(false); setShowBountiesModal(true); }} className="w-full py-3 rounded-xl text-white font-black shadow-[0_0_15px_rgba(202,138,4,0.4)] active:scale-95 text-lg transition-all flex items-center justify-center gap-2 border bg-yellow-600 hover:bg-yellow-500 border-yellow-500">
                            💰 TAGLIE DELLA TAVERNA
