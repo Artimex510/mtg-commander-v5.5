@@ -4518,8 +4518,8 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           a.play().catch(()=>{});
       };
 
-      // IL MOTORE DI SFUMATURA (CROSSFADE)
-      const playEpicEvent = (keyOrUrl) => {
+      // IL MOTORE DI SFUMATURA (CROSSFADE) CON DURATA PERSONALIZZABILE
+      const playEpicEvent = (keyOrUrl, durationSec = 10) => {
           const actualUrl = SFX[keyOrUrl] ? SFX[keyOrUrl] : keyOrUrl;
           if (!actualUrl) return;
 
@@ -4533,9 +4533,9 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           a.play().catch(()=>console.log("Epic Event bloccato"));
           eventAudioRef.current = a;
 
-          // Suona alta per 10 secondi, poi sfuma per 5 secondi
+          // Suona alta per i secondi scelti, poi sfuma morbidamente per 5 secondi
           setTimeout(() => {
-              if (eventAudioRef.current !== a) return; // Ignora se è partita un'altra canzone
+              if (eventAudioRef.current !== a) return; // Ignora se è partita un'altra canzone nel frattempo
 
               let fadeSteps = 50; // 50 scatti da 100 millisecondi (Totale 5 Secondi)
               let currentStep = 0;
@@ -4560,7 +4560,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
               }, 100);
               
               fadeIntervalRef.current = fade;
-          }, 10000); // Inizia a sfumare dopo 10 secondi
+          }, durationSec * 1000); // Moltiplica i secondi in millisecondi
       };
 
       const playMemeSound = (url) => playShortSfx(url);
@@ -5127,47 +5127,46 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
               if (isDamage) {
                   if (typeof playShortSfx !== 'undefined') playShortSfx('damage');
 
-                  // SOGLIA 0: Sconfitta / Funerale (0 o meno)
+                  // SOGLIA 0: Sconfitta / Funerale
                   if (newLife <= 0 && typeof playEpicEvent !== 'undefined') {
-                      playEpicEvent('defeat');
+                      playEpicEvent('defeat', 25); // 25 secondi pieni + 5 di sfumata
                   }
                   // SOGLIA 10: Tra 1 e 10 Punti Vita (Riparte ad ogni colpo!)
                   else if (newLife > 0 && newLife <= 10 && typeof playEpicEvent !== 'undefined') {
-                      playEpicEvent('criticalLife');
+                      playEpicEvent('criticalLife', 20); // 20 secondi pieni + 5 di sfumata
                   }
                   // SOGLIA 15: Tra 11 e 15 Punti Vita (Riparte ad ogni colpo!)
                   else if (newLife > 10 && newLife <= 15 && typeof playEpicEvent !== 'undefined') {
-                      playEpicEvent('lowLife');
+                      playEpicEvent('lowLife', 20); // 20 secondi pieni + 5 di sfumata
                   } 
                   // NORMALE: Sopra i 15 (Battaglia)
                   else if (newLife > 15 && typeof playEpicEvent !== 'undefined') {
-                      playEpicEvent('bgm_battaglia.mp3');
+                      playEpicEvent('bgm_battaglia.mp3', 10); // 10 secondi pieni + 5 di sfumata
                   }
               }
           }
 
-          // 2. Lancio del Comandante (Intercetta OGNI lancio, da qualsiasi tasto!)
+          // 2. Lancio del Comandante (Intercetta OGNI lancio)
           if (stat === 'cmdCasts' && amount > 0) {
               const cardType = (targetPlayer.cmdrCard && targetPlayer.cmdrCard.type) ? targetPlayer.cmdrCard.type : "";
               if (typeof getCommanderTheme !== 'undefined' && typeof playEpicEvent !== 'undefined') {
-                  playEpicEvent(getCommanderTheme(cardType));
+                  playEpicEvent(getCommanderTheme(cardType), 15); // Coro epico: 15 sec + 5 di sfumata
               }
           }
 
-          // 3. Veleno (a 8+ scatta l'allarme disperato)
+          // 3. Veleno (a 8+ scatta l'allarme)
           if (stat === 'poison' && amount > 0) {
-              // Suono OOF per ogni segnalino veleno!
               if (typeof playShortSfx !== 'undefined') playShortSfx('oof'); 
 
               const newPoison = targetPlayer.poison + amount;
               if (targetPlayer.poison < 8 && newPoison >= 8 && typeof playEpicEvent !== 'undefined') {
-                  playEpicEvent('lowLife');
+                  playEpicEvent('lowLife', 20); // 20 sec + 5 di sfumata
               }
           }
 
           // 4. Energia (ZAP)
           if (stat === 'energy' && amount > 0 && typeof playShortSfx !== 'undefined') {
-              playShortSfx('zap'); // Usa il nuovo link riparato!
+              playShortSfx('zap');
           }
 
           // 💾 SALVATAGGIO STATO PER LA MACCHINA DEL TEMPO
