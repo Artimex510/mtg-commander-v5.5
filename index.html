@@ -913,23 +913,43 @@
       const globalAudioRef = useRef(null);
       const [showGlobalJukebox, setShowGlobalJukebox] = useState(false);
       
+      const GlobalTracks = [
+          { name: "1. Deckbuilding Chill", url: "bgm_chill.mp3" },
+          { name: "2. Taverna (Base)", url: "bgm_taverna.mp3" },
+          { name: "3. Battaglia", url: "bgm_battaglia.mp3" },
+          { name: "4. Tensione", url: "bgm_tensione.mp3" },
+          { name: "5. Comandante Base", url: "music_cmdr_epic_15s.mp3" },
+          { name: "6. Comandante Angelo", url: "music_angel.mp3" },
+          { name: "7. Comandante Drago", url: "music_dragon.mp3" },
+          { name: "8. Comandante Goblin", url: "music_goblin.mp3" },
+          { name: "9. Comandante Orrore", url: "music_horror.mp3" },
+          { name: "10. Comandante Elfo", url: "music_elf.mp3" },
+          { name: "11. Vita < 15 (Tensione)", url: "music_lowlife_15s.mp3" },
+          { name: "12. Vita < 10 (Critica)", url: "music_critical_10s.mp3" }
+      ];
+
       const playGlobalBgm = (url) => {
-          if (globalAudioRef.current) globalAudioRef.current.pause();
+          if (globalAudioRef.current) {
+              globalAudioRef.current.pause();
+              globalAudioRef.current.onended = null; // Stacca il vecchio listener
+          }
           if (!url) { setGlobalBgm(""); return; }
+          
           const audio = new Audio(url);
-          audio.loop = true;
           audio.volume = 0.3; // Basso perché siamo nel menu
+          
+          // AUTOPLAY: Quando finisce, passa alla canzone successiva!
+          audio.onended = () => {
+              const currentIndex = GlobalTracks.findIndex(t => t.url === url);
+              let nextIndex = currentIndex + 1;
+              if (nextIndex >= GlobalTracks.length) nextIndex = 0; // Se è l'ultima, riparte dalla prima
+              playGlobalBgm(GlobalTracks[nextIndex].url);
+          };
+
           audio.play().catch(()=>{});
           globalAudioRef.current = audio;
           setGlobalBgm(url);
       };
-      
-      // Qui aggiungerai i tuoi file mp3 di background (tipo bgm_taverna.mp3)
-      const GlobalTracks = [
-          { name: "Deckbuilding Chill", url: "bgm_chill.mp3" },
-          { name: "Scansione / Ricerca", url: "bgm_search.mp3" },
-          { name: "Taverna (Menu)", url: "bgm_taverna.mp3" }
-      ];
 
       // --- STATI STAMPA E COLLEZIONE ---
       const [printQueue, setPrintQueue] = useState([]);
@@ -1179,7 +1199,7 @@
           {(view !== 'game_active' && introState === 'finished') && (
               <div className="fixed bottom-4 left-4 z-[9999] flex flex-col items-start gap-2">
                   {showGlobalJukebox && (
-                      <div className="bg-gray-900 border-2 border-indigo-500 p-3 rounded-xl shadow-2xl flex flex-col gap-2 w-56 animate-fade">
+                      <div className="bg-gray-900 border-2 border-indigo-500 p-3 rounded-xl shadow-2xl flex flex-col gap-2 w-56 animate-fade max-h-[60vh] overflow-y-auto">
                           <p className="text-indigo-400 font-black text-[10px] uppercase tracking-widest border-b border-gray-700 pb-1 mb-1">📻 App Radio</p>
                           {GlobalTracks.map((t, i) => (
                               <button key={i} onClick={() => playGlobalBgm(globalBgm === t.url ? "" : t.url)} className={`text-xs font-bold p-2 rounded-lg flex justify-between items-center border transition-all active:scale-95 ${globalBgm === t.url ? 'bg-indigo-600 text-white border-indigo-400 shadow' : 'bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700'}`}>
@@ -4409,38 +4429,38 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       
       const bgmRef = useRef(null);
       const eventAudioRef = useRef(null);
+      const fadeIntervalRef = useRef(null); // GESTISCE LE DISSOLVENZE
       const [currentBgm, setCurrentBgm] = useState("");
       const [bgmVolume, setBgmVolume] = useState(0.4);
 
       // --- LE TUE MUSICHE DI SOTTOFONDO ---
-      // (Se crei altri file per il loop continuo di sottofondo, mettili qui come hai fatto con le altre)
       const JukeboxTracks = [
           { name: "Taverna (Tranquilla)", url: "bgm_taverna.mp3" },
           { name: "Battaglia (Epica)", url: "bgm_battaglia.mp3" },
           { name: "Tensione (Cupa)", url: "bgm_tensione.mp3" }
       ];
 
-      // --- EFFETTI SONORI AUTOMATICI (I TUOI FILE GITHUB!) ---
+      // --- EFFETTI SONORI AUTOMATICI ---
       const SFX = {
-          damage: "https://www.myinstants.com/media/sounds/minecraft-damage-ooff.mp3", // Tieni questo o cambialo con un tuo mp3 corto
-          heal: "https://www.myinstants.com/media/sounds/1-up.mp3", // Idem
-          lowLife: "music_lowlife_15s.mp3", // IL TUO FILE!
-          cmdrDefault: "music_cmdr_epic_15s.mp3" // IL TUO FILE!
+          damage: "https://www.myinstants.com/media/sounds/minecraft-damage-ooff.mp3", 
+          heal: "https://www.myinstants.com/media/sounds/1-up.mp3", 
+          lowLife: "music_lowlife_15s.mp3", 
+          criticalLife: "music_critical_10s.mp3", // NUOVA! SOTTO I 10 PV
+          cmdrDefault: "music_cmdr_epic_15s.mp3" 
       };
 
-      // LEGGE I TUOI FILE IN BASE AL TIPO DI CREATURA!
       const getCommanderTheme = (typeLine) => {
-            const t = (typeLine || "").toLowerCase();
-            if (t.includes("angel")) return "music_angel.mp3";
-            if (t.includes("horror") || t.includes("demon") || t.includes("zombie")) return "music_horror.mp3";
-            if (t.includes("dragon")) return "music_dragon.mp3";
-            if (t.includes("goblin")) return "music_goblin.mp3";
-            if (t.includes("elf")) return "music_elf.mp3";
-            return "music_cmdr_epic_15s.mp3"; 
-        };
+          const t = (typeLine || "").toLowerCase();
+          if (t.includes("angel")) return "music_angel.mp3";
+          if (t.includes("horror") || t.includes("demon") || t.includes("zombie")) return "music_horror.mp3";
+          if (t.includes("dragon")) return "music_dragon.mp3";
+          if (t.includes("goblin")) return "music_goblin.mp3";
+          if (t.includes("elf")) return "music_elf.mp3";
+          return SFX.cmdrDefault;
+      };
 
       const playBgm = (url) => {
-          if (currentBgm === url && bgmRef.current) return; // NON riavviare se è già in riproduzione!
+          if (currentBgm === url && bgmRef.current) return; 
           if (bgmRef.current) { bgmRef.current.pause(); }
           if (!url) { setCurrentBgm(""); return; }
           const audio = new Audio(url);
@@ -4451,13 +4471,10 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           setCurrentBgm(url);
       };
 
-      useEffect(() => {
-          if (bgmRef.current) bgmRef.current.volume = bgmVolume;
-      }, [bgmVolume]);
+      useEffect(() => { if (bgmRef.current) bgmRef.current.volume = bgmVolume; }, [bgmVolume]);
 
       useEffect(() => {
           if (view === 'game_active') {
-              // Appena si entra al tavolo, parte la Taverna come sottofondo fisso!
               setTimeout(() => playBgm("bgm_taverna.mp3"), 500);
           } else if (bgmRef.current) {
               bgmRef.current.pause();
@@ -4469,29 +4486,52 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           const actualUrl = SFX[type] ? SFX[type] : type; 
           const a = new Audio(actualUrl);
           a.volume = 0.5;
-          a.play().catch(()=>console.log("Sfx bloccato"));
+          a.play().catch(()=>{});
       };
 
+      // IL MOTORE DI SFUMATURA (CROSSFADE)
       const playEpicEvent = (keyOrUrl) => {
-          if (eventAudioRef.current) eventAudioRef.current.pause(); 
-          if (bgmRef.current) bgmRef.current.volume = bgmVolume * 0.2; // Abbassa la musica di fondo!
-
           const actualUrl = SFX[keyOrUrl] ? SFX[keyOrUrl] : keyOrUrl;
           if (!actualUrl) return;
 
+          if (eventAudioRef.current) eventAudioRef.current.pause(); 
+          if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current); // Ferma sfumature in corso
+
+          if (bgmRef.current) bgmRef.current.volume = bgmVolume * 0.1; // Abbassa la Taverna a livello bassissimo
+
           const a = new Audio(actualUrl);
           a.volume = 0.8;
-          a.play().catch(()=>console.log("Epic Event bloccato o file mancante"));
+          a.play().catch(()=>console.log("Epic Event bloccato"));
           eventAudioRef.current = a;
 
+          // Suona alta per 10 secondi, poi sfuma per 5 secondi
           setTimeout(() => {
-              if (bgmRef.current && bgmRef.current.volume < bgmVolume) {
-                  bgmRef.current.volume = bgmVolume; // Ristabilisce il volume
-              }
-              if (eventAudioRef.current === a) {
-                  a.pause();
-              }
-          }, 15000); // 15 secondi esatti
+              if (eventAudioRef.current !== a) return; // Ignora se è partita un'altra canzone
+
+              let fadeSteps = 50; // 50 scatti da 100 millisecondi (Totale 5 Secondi)
+              let currentStep = 0;
+              
+              const fade = setInterval(() => {
+                  currentStep++;
+                  // Abbassa gradualmente l'evento epico
+                  if (a.volume > 0.05) {
+                      a.volume = Math.max(0, 0.8 - (0.8 * (currentStep / fadeSteps)));
+                  }
+                  // Alza gradualmente la Taverna al suo volume originale
+                  if (bgmRef.current && bgmRef.current.volume < bgmVolume) {
+                      bgmRef.current.volume = Math.min(bgmVolume, (bgmVolume * 0.1) + ((bgmVolume * 0.9) * (currentStep / fadeSteps)));
+                  }
+                  
+                  // Fine della sfumatura
+                  if (currentStep >= fadeSteps) {
+                      clearInterval(fade);
+                      a.pause();
+                      if (bgmRef.current) bgmRef.current.volume = bgmVolume; // Assicuriamoci che torni perfetta
+                  }
+              }, 100);
+              
+              fadeIntervalRef.current = fade;
+          }, 10000); // Inizia a sfumare dopo 10 secondi
       };
 
       const playMemeSound = (url) => playShortSfx(url);
@@ -5058,11 +5098,15 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
               if (isDamage) {
                   if (typeof playShortSfx !== 'undefined') playShortSfx('damage');
 
-                  // Se cadiamo a 15 o meno, parte la canzone disperata!
-                  if (newLife <= 15 && oldLife > 15 && typeof playEpicEvent !== 'undefined') {
+                  // SOGLIA 10: Se cadiamo a 10 o meno, parte la canzone critica!
+                  if (newLife <= 10 && oldLife > 10 && typeof playEpicEvent !== 'undefined') {
+                      playEpicEvent('criticalLife');
+                  }
+                  // SOGLIA 15: Se cadiamo tra 11 e 15, parte la canzone disperata!
+                  else if (newLife <= 15 && newLife > 10 && oldLife > 15 && typeof playEpicEvent !== 'undefined') {
                       playEpicEvent('lowLife');
                   } 
-                  // Se prendiamo danno ma restiamo a 16 o più, la BATTAGLIA dura 15 sec!
+                  // NORMALE: Se prendiamo danno ma restiamo sopra i 15, Battaglia di 15 secondi!
                   else if (newLife > 15 && typeof playEpicEvent !== 'undefined') {
                       playEpicEvent('bgm_battaglia.mp3');
                   }
