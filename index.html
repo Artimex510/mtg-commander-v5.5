@@ -4463,7 +4463,11 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           const rule = SUDDEN_DEATH_RULES[Math.floor(Math.random() * SUDDEN_DEATH_RULES.length)];
           handleSyncSuddenDeath(rule);
           setShowDice(false);
-          if (typeof playEpicEvent !== 'undefined') playEpicEvent('alarm', 10); // Spara la sirena per 10 secondi!
+          
+          // Spegne la Taverna/Battaglia e fa partire la musica da Boss Finale a ripetizione!
+          if (typeof playBgm !== 'undefined') {
+              playBgm('music_apocalypse.mp3');
+          }
       };
       
       // --- NUOVI STATI TIMER TURNI (MTG Chess Clock) ---
@@ -4650,7 +4654,11 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const passTurn = () => {
           setActiveTurnIdx(prev => (prev + 1) % players.length);
           setTimeRemaining(turnMinutes * 60);
-          playBgm("bgm_taverna.mp3"); // A fine turno torna la calma!
+          
+          // A fine turno torna la calma... a meno che non ci sia la Sudden Death!
+          if (!suddenDeath) {
+              playBgm("bgm_taverna.mp3"); 
+          }
       };
 
       // --- 🛰️ IL RADAR FIREBASE ---
@@ -5506,7 +5514,7 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
 
           {/* BANNER SUDDEN DEATH (Fluttua al centro-alto dello schermo) */}
           {suddenDeath && (
-              <div className="absolute top-[12%] inset-x-0 z-[150] pointer-events-none animate-pulse px-4">
+              <div className="absolute top-[50%] -translate-y-1/2 inset-x-0 z-[150] pointer-events-none animate-pulse px-4">
                   <div className="max-w-2xl mx-auto bg-red-800/95 border-4 border-red-400 p-4 rounded-2xl shadow-[0_0_60px_rgba(220,38,38,1)] flex flex-col items-center justify-center backdrop-blur-md">
                       <p className="text-white font-black text-xl md:text-3xl tracking-widest uppercase mb-2 drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">⚠️ SUDDEN DEATH ⚠️</p>
                       <p className="text-yellow-300 font-bold text-sm md:text-xl text-center drop-shadow-md">{suddenDeath}</p>
