@@ -4445,8 +4445,10 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           damage: "https://www.myinstants.com/media/sounds/minecraft-damage-ooff.mp3", 
           heal: "https://www.myinstants.com/media/sounds/1-up.mp3", 
           lowLife: "music_lowlife_15s.mp3", 
-          criticalLife: "music_critical_10s.mp3", // NUOVA! SOTTO I 10 PV
-          cmdrDefault: "music_cmdr_epic_15s.mp3" 
+          criticalLife: "music_critical_10s.mp3", 
+          cmdrDefault: "music_cmdr_epic_15s.mp3",
+          oof: "https://www.myinstants.com/media/sounds/roblox-death-sound_1.mp3", // Il suono OOF dei meme
+          zap: "https://www.myinstants.com/media/sounds/zap.mp3" // Link riparato per l'energia
       };
 
       const getCommanderTheme = (typeLine) => {
@@ -4542,7 +4544,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           { icon: "🦗", name: "Grilli", url: "https://www.myinstants.com/media/sounds/crickets.mp3" },
           { icon: "👏", name: "Applausi", url: "https://www.myinstants.com/media/sounds/applause.mp3" },
           { icon: "😱", name: "NANI?!", url: "https://www.myinstants.com/media/sounds/omae-wa-mou-shindeiru.mp3" },
-          { icon: "⏳", name: "Muoviti", url: "https://www.myinstants.com/media/sounds/jeopardy-theme_1.mp3" },
+          { icon: "⏳", name: "Muoviti", url: "https://www.myinstants.com/media/sounds/jeopardy.mp3" },
           { icon: "💀", name: "OOF", url: "https://www.myinstants.com/media/sounds/roblox-death-sound_1.mp3" },
           { icon: "📣", name: "Airhorn", url: "https://www.myinstants.com/media/sounds/mlg-airhorn.mp3" },
           { icon: "🤦", name: "Bruh", url: "https://www.myinstants.com/media/sounds/movie_1.mp3" },
@@ -5121,8 +5123,11 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
               }
           }
 
-          // 3. Veleno (a 8+ scatta l'allarme)
+          // 3. Veleno (a 8+ scatta l'allarme disperato)
           if (stat === 'poison' && amount > 0) {
+              // Suono OOF per ogni segnalino veleno!
+              if (typeof playShortSfx !== 'undefined') playShortSfx('oof'); 
+
               const newPoison = targetPlayer.poison + amount;
               if (targetPlayer.poison < 8 && newPoison >= 8 && typeof playEpicEvent !== 'undefined') {
                   playEpicEvent('lowLife');
@@ -5131,7 +5136,7 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
 
           // 4. Energia (ZAP)
           if (stat === 'energy' && amount > 0 && typeof playShortSfx !== 'undefined') {
-              playShortSfx('https://www.myinstants.com/media/sounds/electric-zap.mp3');
+              playShortSfx('zap'); // Usa il nuovo link riparato!
           }
 
           // 💾 SALVATAGGIO STATO PER LA MACCHINA DEL TEMPO
