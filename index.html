@@ -4209,7 +4209,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           if (player.life <= 15 && player.life > 10) {
               setShowWarning(true);
               if (warningTimer.current) clearTimeout(warningTimer.current);
-              warningTimer.current = setTimeout(() => setShowWarning(false), 10000); // 10 secondi esatti
+              warningTimer.current = setTimeout(() => setShowWarning(false), 15000); // 15 secondi esatti
           } else {
               // Se la vita torna sopra 15 (cura) o scende sotto 10 (critico), ferma questo timer temporaneo
               setShowWarning(false);
