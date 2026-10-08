@@ -4462,7 +4462,10 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       }, [bgmVolume]);
 
       useEffect(() => {
-          if (view !== 'game_active' && bgmRef.current) {
+          if (view === 'game_active') {
+              // Appena si entra al tavolo, parte la Taverna come sottofondo fisso!
+              setTimeout(() => playBgm("bgm_taverna.mp3"), 500);
+          } else if (bgmRef.current) {
               bgmRef.current.pause();
               setCurrentBgm("");
           }
@@ -5067,9 +5070,9 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                   if (newLife <= 15 && oldLife > 15 && typeof playEpicEvent !== 'undefined') {
                       playEpicEvent('lowLife');
                   } 
-                  // Se prendiamo danno ma restiamo a 16 o più, parte la battaglia!
-                  else if (newLife > 15 && typeof playBgm !== 'undefined') {
-                      playBgm('bgm_battaglia.mp3');
+                  // Se prendiamo danno ma restiamo a 16 o più, la BATTAGLIA dura 15 secondi e poi torna la Taverna!
+                  else if (newLife > 15 && typeof playEpicEvent !== 'undefined') {
+                      playEpicEvent('bgm_battaglia.mp3');
                   }
               }
           }
