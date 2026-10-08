@@ -5045,39 +5045,46 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
           if(!targetPlayer) return prev;
 
           // --- TRIGGER AUDIO AUTOMATICI ---
-          // 1. Danni subiti (Vita scende)
-          if (stat === 'life' && amount < 0) {
-              if (typeof playShortSfx !== 'undefined') playShortSfx('damage');
-              if (typeof playBgm !== 'undefined') playBgm('bgm_battaglia.mp3'); // Cambia in Battle Mode
+          // 1. Gestione Vita e Danni Comandante
+          if (stat === 'life' || stat === 'cmdDmg') {
+              const isDamage = (stat === 'life' && amount < 0) || (stat === 'cmdDmg' && amount > 0);
+              const isHeal = (stat === 'life' && amount > 0);
+              
+              const oldLife = targetPlayer.life;
+              const lifeLost = stat === 'life' ? Math.abs(amount) : amount;
+              const newLife = isDamage ? Math.max(0, oldLife - lifeLost) : oldLife + amount;
+
+              // Effetto Cura
+              if (isHeal && typeof playShortSfx !== 'undefined') {
+                  playShortSfx('heal');
+              }
+
+              // Effetto Danno e Musica Intelligente
+              if (isDamage) {
+                  if (typeof playShortSfx !== 'undefined') playShortSfx('damage');
+
+                  // Se cadiamo a 15 o meno (scattando dal 16 in giù), parte la canzone disperata!
+                  if (newLife <= 15 && oldLife > 15 && typeof playEpicEvent !== 'undefined') {
+                      playEpicEvent('lowLife');
+                  } 
+                  // Se prendiamo danno ma restiamo a 16 o più, parte la battaglia!
+                  else if (newLife > 15 && typeof playBgm !== 'undefined') {
+                      playBgm('bgm_battaglia.mp3');
+                  }
+              }
           }
-          // 2. Cure
-          if (stat === 'life' && amount > 0) {
-              if (typeof playShortSfx !== 'undefined') playShortSfx('heal');
-          }
-          // 3. Danni da Comandante (Aumentano)
-          if (stat === 'cmdDmg' && amount > 0) {
-              if (typeof playShortSfx !== 'undefined') playShortSfx('damage');
-              if (typeof playBgm !== 'undefined') playBgm('bgm_battaglia.mp3'); // Cambia in Battle Mode
-          }
-          // 4. Veleno (a 8+ scatta l'allarme)
+
+          // 2. Veleno (a 8+ scatta l'allarme disperato)
           if (stat === 'poison' && amount > 0) {
               const newPoison = targetPlayer.poison + amount;
               if (targetPlayer.poison < 8 && newPoison >= 8 && typeof playEpicEvent !== 'undefined') {
                   playEpicEvent('lowLife');
               }
           }
-          // 5. Energia (ZAP)
+
+          // 3. Energia (ZAP)
           if (stat === 'energy' && amount > 0 && typeof playShortSfx !== 'undefined') {
               playShortSfx('https://www.myinstants.com/media/sounds/electric-zap.mp3');
-          }
-
-          // 6. Vita Bassa (Sotto 15)
-          if (stat === 'life') {
-              const oldLife = targetPlayer.life;
-              const newLife = Math.max(0, oldLife + amount);
-              if (oldLife >= 15 && newLife < 15 && typeof playEpicEvent !== 'undefined') {
-                  playEpicEvent('lowLife');
-              }
           }
 
           // 💾 SALVATAGGIO STATO PER LA MACCHINA DEL TEMPO
