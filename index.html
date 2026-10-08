@@ -4558,11 +4558,6 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const passTurn = () => {
           setActiveTurnIdx(prev => (prev + 1) % players.length);
           setTimeRemaining(turnMinutes * 60);
-      };
-
-     const passTurn = () => {
-          setActiveTurnIdx(prev => (prev + 1) % players.length);
-          setTimeRemaining(turnMinutes * 60);
           playBgm("bgm_taverna.mp3"); // A fine turno torna la calma!
       };
 
