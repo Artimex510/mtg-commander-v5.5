@@ -4442,6 +4442,29 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       // --- STATI TAGLIE DELLA TAVERNA ---
       const [bounties, setBounties] = useState([]);
       const [showBountiesModal, setShowBountiesModal] = useState(false);
+
+      const [suddenDeath, setSuddenDeath] = useState(null);
+
+      const handleSyncSuddenDeath = (rule) => {
+          setSuddenDeath(rule);
+          if (inCloudRoom && roomCode) db.collection('matches').doc(roomCode).update({ suddenDeath: rule }).catch(function(){});
+      };
+
+      const SUDDEN_DEATH_RULES = [
+          "🔥 SANGUE CHIAMA SANGUE: Tutti i danni inflitti sono RADDOPPIATI.",
+          "☠️ AGONIA: All'inizio della tua fase principale, perdi 3 Punti Vita.",
+          "⚔️ NESSUNA PIETÀ: Le creature non possono più bloccare in alcun modo.",
+          "🩸 TERRE AVVELENATE: Ogniqualvolta tappi una Terra per attingere mana, perdi 1 Punto Vita.",
+          "⏳ OROLOGIO DELL'APOCALISSE: Alla fine del ciclo di turni, chi ha più Punti Vita li dimezza."
+      ];
+
+      const activateSuddenDeath = () => {
+          if (!window.confirm("🚨 ATTENZIONE! Attivare la Sudden Death? Le regole del tavolo cambieranno drasticamente!")) return;
+          const rule = SUDDEN_DEATH_RULES[Math.floor(Math.random() * SUDDEN_DEATH_RULES.length)];
+          handleSyncSuddenDeath(rule);
+          setShowDice(false);
+          if (typeof playEpicEvent !== 'undefined') playEpicEvent('alarm', 10); // Spara la sirena per 10 secondi!
+      };
       
       // --- NUOVI STATI TIMER TURNI (MTG Chess Clock) ---
       const [useTimer, setUseTimer] = useState(false);
@@ -4472,11 +4495,12 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           damage: "https://www.myinstants.com/media/sounds/minecraft-damage-ooff.mp3", 
           heal: "https://www.myinstants.com/media/sounds/1-up.mp3", 
           lowLife: "music_lowlife_15s.mp3", 
-          criticalLife: "music_critical_10s.mp3", // NOME AGGIORNATO DA TE!
-          defeat: "music_defeat.mp3", // NUOVA! TRACCIA SCONFITTA/FUNERALE
+          criticalLife: "music_critical_10s.mp3", 
+          defeat: "music_defeat.mp3",
           cmdrDefault: "music_cmdr_epic_15s.mp3",
           oof: "https://www.myinstants.com/media/sounds/roblox-death-sound_1.mp3", 
-          zap: "https://www.myinstants.com/media/sounds/zap.mp3" 
+          zap: "https://www.myinstants.com/media/sounds/zap.mp3",
+          alarm: "https://www.myinstants.com/media/sounds/nuclear-alarm.mp3" // LA SIRENA SUDDEN DEATH!
       };
 
       const getCommanderTheme = (typeLine) => {
@@ -4640,6 +4664,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                       if (data.planechase) setPlanechase(prev => ({ ...prev, active: data.planechase.active, planes: data.planechase.planes, currentPlane: data.planechase.currentPlane }));
                       if (data.voting) setVoting(data.voting || { active: false, title: "", options: [], votes: {}, revealed: false });
                       if (data.bounties) setBounties(data.bounties || []);
+                      if (data.suddenDeath !== undefined) setSuddenDeath(data.suddenDeath);
                   }
               });
               return () => unsubscribe();
@@ -5077,6 +5102,7 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                   setTimeRemaining(turnMinutes * 60);
                   setIsTimerPaused(true);
               }
+            handleSyncSuddenDeath(null); // <-- AGGIUNGI QUESTA RIGA PER SPEGNERE LA SUDDEN DEATH AL RESET
           }
           let lockMode = 'auto';
           if (activeModal && activeModal.type === 'tokens') lockMode = 'landscape';
@@ -5477,7 +5503,18 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
 
       return (
         <div className="fixed inset-0 z-[100] bg-black flex flex-col h-[100dvh] w-[100dvw]">
-           {isCloudMode && myPlayer ? (
+
+          {/* BANNER SUDDEN DEATH (Fluttua al centro-alto dello schermo) */}
+          {suddenDeath && (
+              <div className="absolute top-[12%] inset-x-0 z-[150] pointer-events-none animate-pulse px-4">
+                  <div className="max-w-2xl mx-auto bg-red-800/95 border-4 border-red-400 p-4 rounded-2xl shadow-[0_0_60px_rgba(220,38,38,1)] flex flex-col items-center justify-center backdrop-blur-md">
+                      <p className="text-white font-black text-xl md:text-3xl tracking-widest uppercase mb-2 drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">⚠️ SUDDEN DEATH ⚠️</p>
+                      <p className="text-yellow-300 font-bold text-sm md:text-xl text-center drop-shadow-md">{suddenDeath}</p>
+                  </div>
+              </div>
+          )}
+         
+          {isCloudMode && myPlayer ? (
                // --- PLANCIA PERSONALE CLOUD ---
                <React.Fragment>
                   <div className="flex-1 w-full relative overflow-hidden bg-gray-900 shadow-xl">
@@ -5776,6 +5813,11 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                    
                    {/* TASTI EXTRA: TAGLIE E CONSIGLIO SEGRETO */}
                    <div className="flex flex-col gap-2 mt-3 shrink-0">
+                     
+                    {/* NUOVO TASTO SUDDEN DEATH */}
+                       <button onClick={activateSuddenDeath} className="w-full py-3 rounded-xl text-white font-black shadow-[0_0_15px_rgba(220,38,38,0.5)] active:scale-95 text-lg transition-all flex items-center justify-center gap-2 border bg-red-700 hover:bg-red-600 border-red-500 animate-pulse">
+                           ⚠️ SUDDEN DEATH ⚠️
+                       </button>
                        <button onClick={() => { setShowDice(false); setShowBountiesModal(true); }} className="w-full py-3 rounded-xl text-white font-black shadow-[0_0_15px_rgba(202,138,4,0.4)] active:scale-95 text-lg transition-all flex items-center justify-center gap-2 border bg-yellow-600 hover:bg-yellow-500 border-yellow-500">
                            💰 TAGLIE DELLA TAVERNA
                        </button>
