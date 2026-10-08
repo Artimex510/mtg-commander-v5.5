@@ -4186,7 +4186,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
       const [lifeDiff, setLifeDiff] = useState(0);
       const diffTimer = useRef(null);
 
-     const handleLifeChange = (amount) => {
+      const handleLifeChange = (amount) => {
           updateStat(player.id, 'life', amount);
           setLifeDiff(prev => prev + amount);
       };
@@ -4199,13 +4199,35 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           return () => clearTimeout(diffTimer.current);
       }, [lifeDiff]);
 
+      // --- NUOVA LOGICA: ALLARME CORNICE ROSSA ---
+      const [showWarning, setShowWarning] = useState(false);
+      const warningTimer = useRef(null);
+
+      useEffect(() => {
+          // Tra 11 e 15 punti vita: Lampeggia per 10 secondi
+          if (player.life <= 15 && player.life > 10) {
+              setShowWarning(true);
+              if (warningTimer.current) clearTimeout(warningTimer.current);
+              warningTimer.current = setTimeout(() => setShowWarning(false), 10000); // 10 secondi esatti
+          } else {
+              // Se la vita torna sopra 15 (cura) o scende sotto 10 (critico), ferma questo timer temporaneo
+              setShowWarning(false);
+              if (warningTimer.current) clearTimeout(warningTimer.current);
+          }
+      }, [player.life]);
+
+      // Se sei a 10 o meno, l'allarme è PERMANENTE e più intenso
+      const isCritical = player.life <= 10;
+      const isWarning = showWarning;
+      // ------------------------------------------
+
       let isDead = false;
       if (!player.immune) {
          if (player.life <= 0) isDead = true; if (player.poison >= (player.maxPoison || 10)) isDead = true;
          if (player.cmdDmg) { Object.keys(player.cmdDmg).forEach(key => { if (player.cmdDmg[key] >= 21) isDead = true; }); }
       }
 
-      // Il colore c'è sempre. Se l'utente imposta mixBg, l'immagine sarà semitrasparente e rivelerà il colore. Altrimenti l'immagine copre tutto.
+      // Il colore c'è sempre. Se l'utente imposta mixBg, l'immagine sarà semitrasparente e rivelerà il colore.
       const activeColorClass = player.color || 'bg-gray-900';
 
       return (
@@ -4219,6 +4241,11 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           {isDead && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-50 pointer-events-none z-10">💀</div>}
           {player.immune && <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-30 pointer-events-none text-blue-500 drop-shadow-lg z-10">🛡️</div>}
           {isStartingPlayer && <div className="absolute inset-0 border-4 border-yellow-400 shadow-[inset_0_0_50px_rgba(250,204,21,0.6)] animate-pulse pointer-events-none z-[60] rounded-xl"></div>}
+          
+          {/* NUOVO: CORNICE ALLARME ROSSA VITA BASSA */}
+          {(isCritical || isWarning) && !isDead && (
+              <div className={`absolute inset-0 border-4 pointer-events-none z-[55] rounded-xl transition-all duration-500 animate-pulse ${isCritical ? 'border-red-600 bg-red-600/15 shadow-[inset_0_0_80px_rgba(220,38,38,0.8)]' : 'border-red-500 shadow-[inset_0_0_40px_rgba(239,68,68,0.6)]'}`}></div>
+          )}
           
           {/* BARRA SUPERIORE (Trasparente, con tasti minimizzati) */}
           <div className="absolute top-0 inset-x-0 flex justify-between items-start bg-gradient-to-b from-black/90 via-black/40 to-transparent p-2 z-30 min-h-[60px] w-full px-2 md:px-4 shrink-0 pointer-events-none">
@@ -4236,10 +4263,9 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                    {player.name} ✎
                </span>
                
-               {/* Il tasto Avversari compare SOLO in modalità Cloud */}
                {isCloud && (
                    <button onClick={() => setShowOpponents(!showOpponents)} className="mt-1 bg-indigo-700/80 hover:bg-indigo-600 text-white font-bold px-2 py-0.5 rounded text-[10px] shadow border border-indigo-400 flex items-center justify-center gap-1 active:scale-95 transition-transform shrink-0">
-                        👁️ Avv
+                       👁️ Avv
                    </button>
                )}
                
