@@ -4471,10 +4471,11 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           damage: "https://www.myinstants.com/media/sounds/minecraft-damage-ooff.mp3", 
           heal: "https://www.myinstants.com/media/sounds/1-up.mp3", 
           lowLife: "music_lowlife_15s.mp3", 
-          criticalLife: "music_critical_10s.mp3", 
+          criticalLife: "music_lowlife_10s.mp3", // NOME AGGIORNATO DA TE!
+          defeat: "music_defeat.mp3", // NUOVA! TRACCIA SCONFITTA/FUNERALE
           cmdrDefault: "music_cmdr_epic_15s.mp3",
-          oof: "https://www.myinstants.com/media/sounds/roblox-death-sound_1.mp3", // Il suono OOF dei meme
-          zap: "https://www.myinstants.com/media/sounds/zap.mp3" // Link riparato per l'energia
+          oof: "https://www.myinstants.com/media/sounds/roblox-death-sound_1.mp3", 
+          zap: "https://www.myinstants.com/media/sounds/zap.mp3" 
       };
 
       const getCommanderTheme = (typeLine) => {
@@ -5126,15 +5127,19 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
               if (isDamage) {
                   if (typeof playShortSfx !== 'undefined') playShortSfx('damage');
 
-                  // SOGLIA 10: Se cadiamo a 10 o meno, parte la canzone critica!
-                  if (newLife <= 10 && oldLife > 10 && typeof playEpicEvent !== 'undefined') {
+                  // SOGLIA 0: Sconfitta / Funerale (0 o meno)
+                  if (newLife <= 0 && typeof playEpicEvent !== 'undefined') {
+                      playEpicEvent('defeat');
+                  }
+                  // SOGLIA 10: Tra 1 e 10 Punti Vita (Riparte ad ogni colpo!)
+                  else if (newLife > 0 && newLife <= 10 && typeof playEpicEvent !== 'undefined') {
                       playEpicEvent('criticalLife');
                   }
-                  // SOGLIA 15: Se cadiamo tra 11 e 15, parte la canzone disperata!
-                  else if (newLife <= 15 && newLife > 10 && oldLife > 15 && typeof playEpicEvent !== 'undefined') {
+                  // SOGLIA 15: Tra 11 e 15 Punti Vita (Riparte ad ogni colpo!)
+                  else if (newLife > 10 && newLife <= 15 && typeof playEpicEvent !== 'undefined') {
                       playEpicEvent('lowLife');
                   } 
-                  // NORMALE: Se prendiamo danno ma restiamo sopra i 15, Battaglia di 15 secondi!
+                  // NORMALE: Sopra i 15 (Battaglia)
                   else if (newLife > 15 && typeof playEpicEvent !== 'undefined') {
                       playEpicEvent('bgm_battaglia.mp3');
                   }
