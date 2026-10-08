@@ -923,7 +923,8 @@
           { name: "7. Comandante Drago", url: "music_dragon.mp3" },
           { name: "8. Comandante Goblin", url: "music_goblin.mp3" },
           { name: "9. Comandante Orrore", url: "music_horror.mp3" },
-          { name: "10. Comandante Elfo", url: "music_elf.mp3" },
+          { name: "10. Comandante Elfo", url: "music_elf_battle.mp3" },
+          { name: "10. Comandante Artificer", url: "music_artificer.mp3" },
           { name: "11. Vita < 15 (Tensione)", url: "music_lowlife_15s.mp3" },
           { name: "12. Vita < 10 (Critica)", url: "music_critical_10s.mp3" }
       ];
@@ -4484,7 +4485,8 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
           if (t.includes("horror") || t.includes("demon") || t.includes("zombie")) return "music_horror.mp3";
           if (t.includes("dragon")) return "music_dragon.mp3";
           if (t.includes("goblin")) return "music_goblin.mp3";
-          if (t.includes("elf")) return "music_elf.mp3";
+          if (t.includes("elf")) return "music_elf_battle.mp3";
+          if (t.includes("artificer")) return "music_artificer.mp3";
           return SFX.cmdrDefault;
       };
 
