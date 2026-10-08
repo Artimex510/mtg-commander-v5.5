@@ -4118,13 +4118,7 @@ Restituisci SOLO ED ESCLUSIVAMENTE la lista delle carte in testo semplice, in IN
                                 </div>
                             </div>
 
-                            <button onClick={() => {
-                                updateStat(player.id, 'cmdCasts', 1);
-                                if (playEpicEvent) {
-                                    const cardType = (player.cmdrCard && player.cmdrCard.type) ? player.cmdrCard.type : "";
-                                    playEpicEvent(getCommanderTheme(cardType));
-                                }
-                            }} className="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-xl shadow-[0_0_15px_rgba(202,138,4,0.5)] transition-all text-lg mb-4 active:scale-95">
+                            <button onClick={() => updateStat(player.id, 'cmdCasts', 1)} className="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 rounded-xl shadow-[0_0_15px_rgba(202,138,4,0.5)] transition-all text-lg mb-4 active:scale-95">
                                 ⚔️ LANCIA COMANDANTE
                             </button>
                             
@@ -5047,7 +5041,7 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
           const targetPlayer = prev.find(p => p.id === playerId);
           if(!targetPlayer) return prev;
 
-          // --- TRIGGER AUDIO AUTOMATICI ---
+         // --- TRIGGER AUDIO AUTOMATICI ---
           // 1. Gestione Vita e Danni Comandante
           if (stat === 'life' || stat === 'cmdDmg') {
               const isDamage = (stat === 'life' && amount < 0) || (stat === 'cmdDmg' && amount > 0);
@@ -5057,27 +5051,33 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
               const lifeLost = stat === 'life' ? Math.abs(amount) : amount;
               const newLife = isDamage ? Math.max(0, oldLife - lifeLost) : oldLife + amount;
 
-              // Effetto Cura
               if (isHeal && typeof playShortSfx !== 'undefined') {
                   playShortSfx('heal');
               }
 
-              // Effetto Danno e Musica Intelligente
               if (isDamage) {
                   if (typeof playShortSfx !== 'undefined') playShortSfx('damage');
 
-                  // Se cadiamo a 15 o meno (scattando dal 16 in giù), parte la canzone disperata!
+                  // Se cadiamo a 15 o meno, parte la canzone disperata!
                   if (newLife <= 15 && oldLife > 15 && typeof playEpicEvent !== 'undefined') {
                       playEpicEvent('lowLife');
                   } 
-                  // Se prendiamo danno ma restiamo a 16 o più, la BATTAGLIA dura 15 secondi e poi torna la Taverna!
+                  // Se prendiamo danno ma restiamo a 16 o più, la BATTAGLIA dura 15 sec!
                   else if (newLife > 15 && typeof playEpicEvent !== 'undefined') {
                       playEpicEvent('bgm_battaglia.mp3');
                   }
               }
           }
 
-          // 2. Veleno (a 8+ scatta l'allarme disperato)
+          // 2. Lancio del Comandante (Intercetta OGNI lancio, da qualsiasi tasto!)
+          if (stat === 'cmdCasts' && amount > 0) {
+              const cardType = (targetPlayer.cmdrCard && targetPlayer.cmdrCard.type) ? targetPlayer.cmdrCard.type : "";
+              if (typeof getCommanderTheme !== 'undefined' && typeof playEpicEvent !== 'undefined') {
+                  playEpicEvent(getCommanderTheme(cardType));
+              }
+          }
+
+          // 3. Veleno (a 8+ scatta l'allarme)
           if (stat === 'poison' && amount > 0) {
               const newPoison = targetPlayer.poison + amount;
               if (targetPlayer.poison < 8 && newPoison >= 8 && typeof playEpicEvent !== 'undefined') {
@@ -5085,7 +5085,7 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
               }
           }
 
-          // 3. Energia (ZAP)
+          // 4. Energia (ZAP)
           if (stat === 'energy' && amount > 0 && typeof playShortSfx !== 'undefined') {
               playShortSfx('https://www.myinstants.com/media/sounds/electric-zap.mp3');
           }
