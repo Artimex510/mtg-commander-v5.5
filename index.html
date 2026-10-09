@@ -5376,13 +5376,32 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
           // 💾 SALVATAGGIO STATO PER LA MACCHINA DEL TEMPO
           setPlayersHistory(h => [...h, prev].slice(-30));
           
-          // 📜 CREAZIONE COMBAT LOG
-          let statName = stat === 'life' ? 'Vita' : (stat === 'poison' ? 'Veleno' : (stat === 'cmdDmg' ? 'Danni Cmdr' : stat));
+          // 📜 CREAZIONE COMBAT LOG POTENZIATO
+          let statName = stat === 'life' ? 'Vita' : (stat === 'poison' ? 'Veleno' : (stat === 'cmdDmg' ? 'Danni Comandante' : stat));
           if (stat === 'life' || stat === 'poison' || stat === 'cmdDmg') {
              const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
              let valBefore = stat === 'cmdDmg' ? (targetPlayer.cmdDmg[opponentId] || 0) : targetPlayer[stat];
              let valAfter = Math.max(0, valBefore + amount);
-             setCombatLog(l => [{ time, msg: `${targetPlayer.name} ${statName}: ${valBefore} ➔ ${valAfter} (${amount > 0 ? '+'+amount : amount})` }, ...l].slice(0, 40));
+             
+             // Identifichiamo da chi viene il danno comandante!
+             let oppName = "";
+             if (stat === 'cmdDmg' && opponentId) {
+                 const opp = prev.find(p => p.id === opponentId);
+                 if (opp) oppName = ` (da ${opp.name})`;
+             }
+
+             // Definiamo un colore per l'azione: Rosso = Danno, Verde = Cura, Viola = Veleno, Arancione = Cmdr
+             let logColor = "text-white"; 
+             if (stat === 'life' && amount < 0) logColor = "text-red-400";
+             else if (stat === 'life' && amount > 0) logColor = "text-green-400";
+             else if (stat === 'poison' && amount > 0) logColor = "text-purple-400";
+             else if (stat === 'cmdDmg' && amount > 0) logColor = "text-orange-400";
+
+             setCombatLog(l => [{ 
+                 time, 
+                 msg: `${targetPlayer.name} ➔ ${statName}${oppName}: ${valBefore} ➔ ${valAfter} (${amount > 0 ? '+'+amount : amount})`,
+                 color: logColor // Salviamo il colore!
+             }, ...l].slice(0, 40));
           }
 
           const sharedStats = ['life', 'poison', 'energy', 'ticket'];
@@ -6163,9 +6182,9 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                             <p className="text-center text-gray-500 text-sm py-4 font-bold">Nessun evento registrato finora.</p>
                         ) : (
                             combatLog.map((log, i) => (
-                                <div key={i} className={`text-sm p-2 rounded-lg border flex justify-between items-center shadow-sm ${i === 0 ? 'bg-blue-900/30 border-blue-500/50 text-white' : 'bg-gray-900 border-gray-700 text-gray-300'}`}>
-                                    <span className="font-bold flex-1 pr-2 leading-tight">{log.msg}</span>
-                                    <span className="text-gray-500 text-[10px] shrink-0 font-bold">{log.time}</span>
+                                <div key={i} className={`text-sm p-2 rounded-lg border flex justify-between items-center shadow-sm ${i === 0 ? 'bg-blue-900/40 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]' : 'bg-gray-900 border-gray-700'}`}>
+                                    <span className={`font-black flex-1 pr-2 leading-tight ${log.color || 'text-gray-300'} drop-shadow-md`}>{log.msg}</span>
+                                    <span className="text-gray-500 text-[10px] shrink-0 font-bold ml-2 border-l border-gray-700 pl-2">{log.time}</span>
                                 </div>
                             ))
                         )}
