@@ -899,6 +899,166 @@
             </div>
         );
     };
+
+    // --- SIMULATORE DI BUSTE (PACK OPENING) ---
+    const BoosterSimulator = ({ navigate, mtgSets, collection, setCollection }) => {
+        const [selectedSet, setSelectedSet] = useState("");
+        const [packCards, setPackCards] = useState([]);
+        const [isOpening, setIsOpening] = useState(false);
+        const [showAdded, setShowAdded] = useState(false);
+
+        const openPack = async () => {
+            if(!selectedSet) return alert("Seleziona un'espansione!");
+            setIsOpening(true);
+            setPackCards([]);
+            setShowAdded(false);
+            
+            try {
+                let allCards = [];
+                // API di Scryfall: peschiamo tutte le carte di quell'espansione che si trovano nelle bustine!
+                let url = `https://api.scryfall.com/cards/search?q=e:${selectedSet}+is:booster`;
+                
+                while(url) {
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    if(data.data) allCards = allCards.concat(data.data);
+                    url = data.has_more ? data.next_page : null;
+                }
+
+                if(allCards.length === 0) {
+                    alert("Scryfall non ha dati per le buste di questa espansione.");
+                    setIsOpening(false);
+                    return;
+                }
+
+                const commons = allCards.filter(c => c.rarity === 'common');
+                const uncommons = allCards.filter(c => c.rarity === 'uncommon');
+                const rares = allCards.filter(c => c.rarity === 'rare');
+                const mythics = allCards.filter(c => c.rarity === 'mythic');
+
+                let pack = [];
+                
+                // SLOT 1: Rara o Mitica (12.5% chance per Mitica)
+                const isMythic = Math.random() < 0.125 && mythics.length > 0;
+                const rarePool = isMythic ? mythics : (rares.length > 0 ? rares : allCards);
+                if(rarePool.length > 0) pack.push(rarePool[Math.floor(Math.random() * rarePool.length)]);
+
+                // SLOT 2-4: 3 Non Comuni
+                const uncPool = uncommons.length > 0 ? uncommons : allCards;
+                for(let i=0; i<3; i++) {
+                    if(uncPool.length > 0) pack.push(uncPool[Math.floor(Math.random() * uncPool.length)]);
+                }
+
+                // SLOT 5-14: 10 Comuni
+                const comPool = commons.length > 0 ? commons : allCards;
+                for(let i=0; i<10; i++) {
+                    if(comPool.length > 0) pack.push(comPool[Math.floor(Math.random() * comPool.length)]);
+                }
+
+                // SLOT 15: 1 Terra Base o Foil (Semplificato: peschiamo una carta a caso extra)
+                pack.push(allCards[Math.floor(Math.random() * allCards.length)]);
+
+                const finalPack = pack.map((c, index) => {
+                    let img = "";
+                    if (c.image_uris && c.image_uris.normal) img = c.image_uris.normal;
+                    else if (c.card_faces && c.card_faces.length > 0 && c.card_faces[0].image_uris) img = c.card_faces[0].image_uris.normal;
+                    
+                    let price = (c.prices && c.prices.eur) ? parseFloat(c.prices.eur) : 0;
+                    
+                    return { 
+                        id: c.id + '-' + index, scryfallId: c.id, name: c.name, image: img, rarity: c.rarity, price: price,
+                        colors: c.color_identity || [], type: c.type_line || "", setName: c.set_name || "", setCode: c.set || "", isFlipped: false 
+                    };
+                }).filter(c => c.image);
+
+                setPackCards(finalPack);
+                setIsOpening(false);
+            } catch(e) {
+                alert("Errore durante l'apertura della busta!");
+                setIsOpening(false);
+            }
+        };
+
+        const flipCard = (index) => setPackCards(prev => prev.map((c, i) => i === index ? { ...c, isFlipped: true } : c));
+        const flipAll = () => setPackCards(prev => prev.map(c => ({ ...c, isFlipped: true })));
+
+        const addToCollection = () => {
+            let newColl = [...(collection || [])];
+            packCards.forEach(card => {
+                const existingIndex = newColl.findIndex(c => c.scryfallId === card.scryfallId);
+                if(existingIndex >= 0) newColl[existingIndex].qty += 1;
+                else {
+                    newColl.push({
+                        id: 'coll-' + Math.random(), scryfallId: card.scryfallId, name: card.name, img: card.image, colors: card.colors,
+                        price: card.price, qty: 1, folder: 'Da Vendere', type: card.type, rarity: card.rarity, setName: card.setName, setCode: card.setCode
+                    });
+                }
+            });
+            setCollection(newColl);
+            setShowAdded(true);
+            alert("Tutte le carte sbustate sono state aggiunte alla tua Collezione (Folder: Da Vendere)!");
+        };
+
+        const totalValue = packCards.reduce((acc, c) => acc + (c.isFlipped ? c.price : 0), 0);
+
+        return (
+            <div className="max-w-4xl mx-auto space-y-4 p-4 text-white animate-fade pb-20">
+                <div className="bg-gray-800 p-6 rounded-xl border border-gray-600 shadow-xl">
+                    <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+                        <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold shadow">⬅ Home</button>
+                        <h2 className="text-3xl font-black text-amber-500 drop-shadow-md text-center hidden md:block">📦 Simulatore di Buste</h2>
+                        <div className="w-20"></div>
+                    </div>
+
+                    <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 mb-6 shadow-md text-center">
+                        <p className="text-gray-300 text-sm font-bold mb-3">Scegli un'espansione e apri una busta virtuale (1 Rara/Mitica, 3 Non Comuni, 10 Comuni, 1 Foil/Jolly).</p>
+                        <div className="flex gap-2 max-w-md mx-auto">
+                            <select value={selectedSet} onChange={e => setSelectedSet(e.target.value)} className="flex-1 bg-gray-800 border border-amber-600 rounded p-3 text-white font-bold outline-none focus:ring-2 ring-amber-500 shadow-inner">
+                                <option value="">Scegli Espansione...</option>
+                                {(mtgSets || []).map(set => <option key={set.code} value={set.code}>{set.name}</option>)}
+                            </select>
+                            <button onClick={openPack} disabled={isOpening || !selectedSet} className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-black px-6 rounded-lg shadow-lg active:scale-95 transition-all">
+                                {isOpening ? "SBUSTO..." : "APRI BUSTA"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {packCards.length > 0 && (
+                        <div className="animate-fade space-y-6">
+                            <div className="flex justify-between items-end bg-gray-900 p-3 rounded-lg border border-gray-700">
+                                <button onClick={flipAll} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded shadow transition-colors text-sm">Gira Tutte</button>
+                                <div className="text-right">
+                                    <span className="text-[10px] text-gray-400 font-bold uppercase block">Valore Sbustata</span>
+                                    <span className="text-xl font-black text-emerald-400">€ {totalValue.toFixed(2)}</span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-4">
+                                {packCards.map((card, idx) => (
+                                    <div key={card.id} className="cursor-pointer group active:scale-95 transition-transform" style={{ aspectRatio: '63/88' }} onClick={() => !card.isFlipped && flipCard(idx)}>
+                                        {card.isFlipped ? (
+                                            <div className="relative animate-fade h-full w-full">
+                                                <img src={card.image} className={`w-full h-full object-cover rounded-lg shadow-[0_5px_15px_rgba(0,0,0,0.8)] border-2 ${card.rarity === 'mythic' ? 'border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.8)]' : (card.rarity === 'rare' ? 'border-yellow-400' : 'border-black')}`} />
+                                                <div className="absolute bottom-[-10px] left-1/2 transform -translate-x-1/2 bg-black/90 px-2 py-0.5 rounded border border-gray-600 z-10">
+                                                    <span className="text-[9px] font-black text-emerald-400 whitespace-nowrap">€ {card.price.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <img src="mtg-bg.jpg" className="w-full h-full object-cover rounded-lg shadow-[0_5px_15px_rgba(0,0,0,0.8)] border-2 border-black group-hover:border-amber-400 transition-colors animate-pulse" />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <button onClick={addToCollection} disabled={showAdded || packCards.some(c => !c.isFlipped)} className={`w-full font-black py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 mt-4 ${showAdded ? 'bg-gray-700 text-green-400' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.5)]'}`}>
+                                {packCards.some(c => !c.isFlipped) ? "⚠️ GIRA TUTTE LE CARTE PER AGGIUNGERLE" : (showAdded ? "✅ CARTE AGGIUNTE ALLA COLLEZIONE" : "📥 AGGIUNGI TUTTE ALLA COLLEZIONE")}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
     
     function App() {
       const [introState, setIntroState] = useState('initial');
@@ -1130,9 +1290,10 @@
                   <div className="w-64 bg-gray-900 h-full p-6 shadow-2xl border-r border-gray-700 overflow-y-auto" onClick={e => e.stopPropagation()}>
                     <h2 className="text-2xl font-bold mb-6 border-b border-gray-700 pb-2">Menu</h2>
                     <nav className="space-y-4">
-                      <MenuBtn icon={<Icons.Home/>} text="Home" onClick={() => navigate('home')} />
+                      e/>} text="Home" onClick={() => navigate('home')} />
                       <MenuBtn icon="🔍" text="Database & Scan" onClick={() => navigate('cardsearch')} />
                       <MenuBtn icon="🎴" text="Deckbuilding" onClick={() => navigate('deckbuilder')} />
+                      <MenuBtn icon="📦" text="Sbustamento (Draft)" onClick={() => navigate('booster')} />
                       <MenuBtn icon="⚖️" text="Bilancia Scambi (Trade)" onClick={() => navigate('trade')} />
                       <MenuBtn icon="🖨️" text={`Area Stampa Proxy (${printQueue.length})`} onClick={() => navigate('print')} />
                       <MenuBtn icon="🛠️" text="Strumenti Pro" onClick={() => navigate('protools')} />
@@ -1178,6 +1339,7 @@
                 {view === 'collection' && <CollectionBinder navigate={navigate} collection={collection} setCollection={setCollection} mtgSets={mtgSets} />}
                 {view === 'cart' && <CartView navigate={navigate} />}
                 {view === 'trade' && <TradeEvaluator setView={setView} />}
+                {view === 'booster' && <BoosterSimulator navigate={navigate} mtgSets={mtgSets} collection={collection} setCollection={setCollection} />}
                 {view === 'print' && <ProxyPrintArea printQueue={printQueue} setPrintQueue={setPrintQueue} setView={setView} />}
                 {view === 'myproxies' && <MyProxies navigate={navigate} printQueue={printQueue} setPrintQueue={setPrintQueue} />}
                 {view === 'viewdeck' && <DeckViewer deck={activeDeck} navigate={navigate} />}
