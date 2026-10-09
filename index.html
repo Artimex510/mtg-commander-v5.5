@@ -1012,12 +1012,12 @@
 
                     <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 mb-6 shadow-md text-center">
                         <p className="text-gray-300 text-sm font-bold mb-3">Scegli un'espansione e apri una busta virtuale (1 Rara/Mitica, 3 Non Comuni, 10 Comuni, 1 Foil/Jolly).</p>
-                        <div className="flex gap-2 max-w-md mx-auto">
-                            <select value={selectedSet} onChange={e => setSelectedSet(e.target.value)} className="flex-1 bg-gray-800 border border-amber-600 rounded p-3 text-white font-bold outline-none focus:ring-2 ring-amber-500 shadow-inner">
+                        <div className="flex flex-col gap-3 max-w-md mx-auto w-full">
+                            <select value={selectedSet} onChange={e => setSelectedSet(e.target.value)} className="w-full bg-gray-800 border border-amber-600 rounded p-3 text-white font-bold outline-none focus:ring-2 ring-amber-500 shadow-inner truncate">
                                 <option value="">Scegli Espansione...</option>
                                 {(mtgSets || []).map(set => <option key={set.code} value={set.code}>{set.name}</option>)}
                             </select>
-                            <button onClick={openPack} disabled={isOpening || !selectedSet} className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-black px-6 rounded-lg shadow-lg active:scale-95 transition-all">
+                            <button onClick={openPack} disabled={isOpening || !selectedSet} className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-black py-4 px-6 rounded-xl shadow-lg active:scale-95 transition-all">
                                 {isOpening ? "SBUSTO..." : "APRI BUSTA"}
                             </button>
                         </div>
