@@ -743,10 +743,16 @@
         );
     };
 
-    // --- COMPONENTE STATISTICHE PARTITE (HALL OF FAME ANALITICA) ---
+    // --- COMPONENTE STATISTICHE PARTITE (HALL OF FAME ANALITICA E LEGA) ---
     const MatchStatistics = ({ navigate }) => {
         const [history, setHistory] = useState([]);
         const [loading, setLoading] = useState(true);
+        const [statsTab, setStatsTab] = useState('halloffame'); // 'halloffame' o 'league'
+        
+        // Regole della Lega (Punti)
+        const [ptsWin, setPtsWin] = useState(3);
+        const [ptsKill, setPtsKill] = useState(1);
+        const [ptsLoss, setPtsLoss] = useState(0);
 
         useEffect(() => {
             db.collection('match_history').orderBy('date', 'desc').get()
@@ -760,23 +766,66 @@
         const totalMatches = history.length;
         const winsByPlayer = {};
         const winsByCmdr = {};
+        const leagueScores = {}; // Punteggi per la Lega
 
         history.forEach(m => {
             const pName = m.winnerName || "Sconosciuto";
+            
+            // Aggiorna Vittorie Base
             winsByPlayer[pName] = (winsByPlayer[pName] || 0) + 1;
             
             if (m.winnerCommander && m.winnerCommander !== "Sconosciuto") {
                 winsByCmdr[m.winnerCommander] = (winsByCmdr[m.winnerCommander] || 0) + 1;
             }
+
+            // --- CALCOLO PUNTI LEGA ---
+            if (!leagueScores[pName]) leagueScores[pName] = { name: pName, pts: 0, wins: 0, kills: 0, losses: 0 };
+            
+            // Punti Vittoria
+            leagueScores[pName].wins += 1;
+            leagueScores[pName].pts += ptsWin;
+
+            // Analizziamo i perdenti e le uccisioni di questa partita
+            if (m.kills) {
+                Object.keys(m.kills).forEach(loserId => {
+                    const killerId = m.kills[loserId];
+                    // Trova il nome del killer spulciando la history (un po' tricky senza l'oggetto player intero, 
+                    // ma se il killer è il vincitore, sappiamo il suo nome)
+                    let killerName = "Sconosciuto";
+                    if (killerId === m.winnerId) killerName = pName;
+                    else {
+                        // Se non è il vincitore ad aver fatto la kill, proviamo a dedurlo o creiamo un record fittizio
+                        // (Nella versione attuale salviamo solo l'ID nelle kills. Se vogliamo nomi perfetti, il report dovrebbe salvare i nomi).
+                        killerName = `Giocatore (${killerId})`; 
+                    }
+
+                    if (killerId && killerId !== "") {
+                        if (!leagueScores[killerName]) leagueScores[killerName] = { name: killerName, pts: 0, wins: 0, kills: 0, losses: 0 };
+                        leagueScores[killerName].kills += 1;
+                        leagueScores[killerName].pts += ptsKill;
+                    }
+                });
+            }
+            
+            // Aggiungiamo i punti sconfitta per chi NON ha vinto (stima approssimativa: giocatori totali - 1)
+            // Nota: per essere precisissimi servirebbe la lista completa dei partecipanti salvata in Firebase.
+            // Qui applichiamo la perdita di punti a tutti i record "morti" presenti nel log Kills.
+            if (m.kills) {
+                Object.keys(m.kills).forEach(loserId => {
+                     // In una versione più avanzata, se Firebase salva name -> ID, recuperiamo il nome.
+                     // Per ora la Lega premia soprattutto vittorie e kill esplicite salvate!
+                });
+            }
         });
 
-        // Ordinamento per creare le classifiche
+        // Ordinamento
         const sortedPlayers = Object.entries(winsByPlayer).sort((a,b) => b[1] - a[1]);
         const sortedCmdrs = Object.entries(winsByCmdr).sort((a,b) => b[1] - a[1]);
+        const sortedLeague = Object.values(leagueScores).sort((a,b) => b.pts - a.pts).filter(p => !p.name.includes("Giocatore ("));
 
-        // Calcolo Nemesi (Giocatore con più vittorie in assoluto)
         const nemesis = sortedPlayers.length > 0 ? sortedPlayers[0][0] : "Nessuno";
         const nemesisWins = sortedPlayers.length > 0 ? sortedPlayers[0][1] : 0;
+        
         const deleteMatch = async (matchId) => {
             if(window.confirm("Vuoi davvero eliminare questa partita dalla Hall of Fame? (L'azione non può essere annullata)")) {
                 try {
@@ -792,107 +841,173 @@
             <div className="max-w-4xl mx-auto space-y-4 p-4 animate-fade pb-20">
                 <button onClick={() => navigate('game')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-2 shadow transition-colors">⬅ Torna al Tavolo</button>
                 <div className="bg-gray-800/90 p-6 md:p-8 rounded-xl border border-gray-600 shadow-xl backdrop-blur-sm">
-                    <h2 className="text-3xl md:text-4xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 drop-shadow-md mb-8">📊 Hall of Fame</h2>
+                    <h2 className="text-3xl md:text-4xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 drop-shadow-md mb-6">📊 Hall of Fame & Lega</h2>
                     
+                    <div className="flex gap-2 mb-6 bg-gray-900 p-1 rounded-lg border border-gray-700 w-full max-w-sm mx-auto shadow-inner">
+                        <button onClick={()=>setStatsTab('halloffame')} className={`flex-1 font-black py-2 text-sm rounded transition-colors ${statsTab==='halloffame'?'bg-purple-600 text-white shadow':'text-gray-400 hover:text-white'}`}>🏆 HALL OF FAME</button>
+                        <button onClick={()=>setStatsTab('league')} className={`flex-1 font-black py-2 text-sm rounded transition-colors ${statsTab==='league'?'bg-orange-600 text-white shadow':'text-gray-400 hover:text-white'}`}>⚔️ LEGA A PUNTI</button>
+                    </div>
+
                     {loading ? <p className="text-center text-white font-bold animate-pulse">Analisi database in corso...</p> : totalMatches === 0 ? <p className="text-center text-gray-400 font-bold">Nessuna partita registrata. Gioca e dichiara un vincitore!</p> : (
-                        <div className="space-y-8">
+                        <div className="space-y-8 animate-fade">
                             
-                            {/* OVERVIEW WIDGETS */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 text-center shadow-inner flex flex-col justify-center">
-                                    <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Partite Giocate</p>
-                                    <p className="text-4xl font-black text-white">{totalMatches}</p>
-                                </div>
-                                <div className="bg-gray-900 p-4 rounded-xl border border-red-900 shadow-inner flex flex-col justify-center col-span-2 md:col-span-3 relative overflow-hidden group">
-                                    <div className="absolute -right-4 -bottom-4 text-7xl opacity-20 group-hover:scale-110 transition-transform">👿</div>
-                                    <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-1 relative z-10">La Nemesi del Gruppo</p>
-                                    <p className="text-3xl md:text-4xl font-black text-white truncate pr-10 relative z-10">{nemesis}</p>
-                                    <p className="text-xs text-red-300 mt-1 font-semibold relative z-10">Ha dominato il tavolo con {nemesisWins} vittorie ({((nemesisWins/totalMatches)*100).toFixed(0)}% Winrate).</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* WINRATE GIOCATORI */}
-                                <div className="bg-gray-900 p-5 rounded-xl border border-gray-700 shadow-inner">
-                                    <h3 className="text-emerald-400 font-black mb-4 flex items-center gap-2 text-lg border-b border-gray-700 pb-2"><span className="text-2xl">🏆</span> Winrate Giocatori</h3>
-                                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-                                        {sortedPlayers.map(([name, wins], idx) => {
-                                            const winrate = ((wins / totalMatches) * 100).toFixed(1);
-                                            return (
-                                                <div key={name} className="relative">
-                                                    <div className="flex justify-between items-end mb-1">
-                                                        <span className="text-white font-bold text-sm flex items-center gap-2">
-                                                            {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '🔹'} {name}
-                                                        </span>
-                                                        <span className="text-emerald-300 text-xs font-black">{wins} Vit. ({winrate}%)</span>
-                                                    </div>
-                                                    <div className="w-full bg-gray-800 rounded-full h-2.5 border border-gray-700 overflow-hidden">
-                                                        <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-2.5 rounded-full transition-all duration-1000" style={{ width: `${winrate}%` }}></div>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* COMANDANTI PIÙ LETALI */}
-                                <div className="bg-gray-900 p-5 rounded-xl border border-gray-700 shadow-inner">
-                                    <h3 className="text-orange-400 font-black mb-4 flex items-center gap-2 text-lg border-b border-gray-700 pb-2"><span className="text-2xl">👑</span> Comandanti Letali</h3>
-                                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-                                        {sortedCmdrs.slice(0, 10).map(([cmdr, wins], idx) => {
-                                            const winrate = ((wins / totalMatches) * 100).toFixed(1);
-                                            return (
-                                                <div key={cmdr} className="relative">
-                                                    <div className="flex justify-between items-end mb-1">
-                                                        <span className="text-white font-bold text-sm truncate pr-2 w-2/3" title={cmdr}>{idx + 1}. {cmdr}</span>
-                                                        <span className="text-orange-300 text-xs font-black shrink-0">{wins} Vit. ({winrate}%)</span>
-                                                    </div>
-                                                    <div className="w-full bg-gray-800 rounded-full h-2.5 border border-gray-700 overflow-hidden">
-                                                        <div className="bg-gradient-to-r from-orange-600 to-yellow-400 h-2.5 rounded-full transition-all duration-1000" style={{ width: `${winrate}%` }}></div>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* CRONOLOGIA RECENTE */}
-                            <div className="bg-gray-900 p-5 rounded-xl border border-gray-700 shadow-inner">
-                                <h3 className="text-blue-400 font-black mb-4 flex items-center gap-2 text-lg border-b border-gray-700 pb-2"><span className="text-2xl">📜</span> Ultime Partite (Cronologia)</h3>
-                                <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
-                                    {history.slice(0, 10).map(m => (
-                                        <div key={m.id} className="bg-gray-800 p-3 rounded-lg border border-gray-700 flex flex-col gap-3 shadow hover:border-gray-500 transition-colors">
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                                <div className="flex flex-col">
-                                                    <span className="text-white font-bold text-sm">Vittoria di <span className="text-yellow-400">{m.winnerName}</span></span>
-                                                    <span className="text-gray-400 text-[10px]">{new Date(m.date).toLocaleString('it-IT')} • {m.playerCount} Giocatori {m.teamMode ? '(2HG)' : ''}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    {m.winnerCommander && m.winnerCommander !== "Sconosciuto" && (
-                                                        <span className="bg-blue-900/50 text-blue-300 px-3 py-1.5 rounded-lg text-xs font-bold border border-blue-800 truncate max-w-[200px] text-center" title={m.winnerCommander}>
-                                                            👑 {m.winnerCommander}
-                                                        </span>
-                                                    )}
-                                                    <button onClick={() => deleteMatch(m.id)} className="bg-red-900/50 hover:bg-red-700 text-red-400 hover:text-white px-2 py-1.5 rounded-lg border border-red-800 transition-colors shadow active:scale-95" title="Elimina Partita">🗑️</button>
-                                                </div>
-                                            </div>
-                                            
-                                            {/* IL CANTASTORIE SCENDE IN CAMPO (Design a Pergamena scrollabile) */}
-                                            {m.story && (
-                                                <div className="bg-black/40 rounded-lg p-4 border border-gray-700 border-l-4 border-l-amber-500 mt-1 shadow-inner relative overflow-hidden">
-                                                    <div className="absolute top-0 right-0 p-2 opacity-10 text-4xl pointer-events-none">📜</div>
-                                                    <p className="text-sm text-gray-300 italic whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto pr-2" style={{ fontFamily: "Georgia, serif" }}>
-                                                        "{m.story.replace(/\*/g, '')}"
-                                                    </p>
-                                                    <p className="text-[10px] text-amber-400 font-black text-right mt-3 uppercase tracking-widest">- Capitolo della Saga</p>
-                                                </div>
-                                            )}
+                            {statsTab === 'halloffame' && (
+                                <React.Fragment>
+                                    {/* OVERVIEW WIDGETS */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 text-center shadow-inner flex flex-col justify-center">
+                                            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Partite Giocate</p>
+                                            <p className="text-4xl font-black text-white">{totalMatches}</p>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
+                                        <div className="bg-gray-900 p-4 rounded-xl border border-red-900 shadow-inner flex flex-col justify-center col-span-2 md:col-span-3 relative overflow-hidden group">
+                                            <div className="absolute -right-4 -bottom-4 text-7xl opacity-20 group-hover:scale-110 transition-transform">👿</div>
+                                            <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-1 relative z-10">La Nemesi del Gruppo</p>
+                                            <p className="text-3xl md:text-4xl font-black text-white truncate pr-10 relative z-10">{nemesis}</p>
+                                            <p className="text-xs text-red-300 mt-1 font-semibold relative z-10">Ha dominato il tavolo con {nemesisWins} vittorie ({((nemesisWins/totalMatches)*100).toFixed(0)}% Winrate).</p>
+                                        </div>
+                                    </div>
 
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* WINRATE GIOCATORI */}
+                                        <div className="bg-gray-900 p-5 rounded-xl border border-gray-700 shadow-inner">
+                                            <h3 className="text-emerald-400 font-black mb-4 flex items-center gap-2 text-lg border-b border-gray-700 pb-2"><span className="text-2xl">🏆</span> Winrate Assoluto</h3>
+                                            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                                                {sortedPlayers.map(([name, wins], idx) => {
+                                                    const winrate = ((wins / totalMatches) * 100).toFixed(1);
+                                                    return (
+                                                        <div key={name} className="relative">
+                                                            <div className="flex justify-between items-end mb-1">
+                                                                <span className="text-white font-bold text-sm flex items-center gap-2">
+                                                                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '🔹'} {name}
+                                                                </span>
+                                                                <span className="text-emerald-300 text-xs font-black">{wins} Vit. ({winrate}%)</span>
+                                                            </div>
+                                                            <div className="w-full bg-gray-800 rounded-full h-2.5 border border-gray-700 overflow-hidden">
+                                                                <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-2.5 rounded-full transition-all duration-1000" style={{ width: `${winrate}%` }}></div>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {/* COMANDANTI PIÙ LETALI */}
+                                        <div className="bg-gray-900 p-5 rounded-xl border border-gray-700 shadow-inner">
+                                            <h3 className="text-orange-400 font-black mb-4 flex items-center gap-2 text-lg border-b border-gray-700 pb-2"><span className="text-2xl">👑</span> Comandanti Letali</h3>
+                                            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                                                {sortedCmdrs.slice(0, 10).map(([cmdr, wins], idx) => {
+                                                    const winrate = ((wins / totalMatches) * 100).toFixed(1);
+                                                    return (
+                                                        <div key={cmdr} className="relative">
+                                                            <div className="flex justify-between items-end mb-1">
+                                                                <span className="text-white font-bold text-sm truncate pr-2 w-2/3" title={cmdr}>{idx + 1}. {cmdr}</span>
+                                                                <span className="text-orange-300 text-xs font-black shrink-0">{wins} Vit. ({winrate}%)</span>
+                                                            </div>
+                                                            <div className="w-full bg-gray-800 rounded-full h-2.5 border border-gray-700 overflow-hidden">
+                                                                <div className="bg-gradient-to-r from-orange-600 to-yellow-400 h-2.5 rounded-full transition-all duration-1000" style={{ width: `${winrate}%` }}></div>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* CRONOLOGIA RECENTE */}
+                                    <div className="bg-gray-900 p-5 rounded-xl border border-gray-700 shadow-inner mt-6">
+                                        <h3 className="text-blue-400 font-black mb-4 flex items-center gap-2 text-lg border-b border-gray-700 pb-2"><span className="text-2xl">📜</span> Ultime Partite (Cronologia)</h3>
+                                        <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
+                                            {history.slice(0, 10).map(m => (
+                                                <div key={m.id} className="bg-gray-800 p-3 rounded-lg border border-gray-700 flex flex-col gap-3 shadow hover:border-gray-500 transition-colors">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-white font-bold text-sm">Vittoria di <span className="text-yellow-400">{m.winnerName}</span></span>
+                                                            <span className="text-gray-400 text-[10px]">{new Date(m.date).toLocaleString('it-IT')} • {m.playerCount} Giocatori {m.teamMode ? '(2HG)' : ''}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {m.winnerCommander && m.winnerCommander !== "Sconosciuto" && (
+                                                                <span className="bg-blue-900/50 text-blue-300 px-3 py-1.5 rounded-lg text-xs font-bold border border-blue-800 truncate max-w-[200px] text-center" title={m.winnerCommander}>
+                                                                    👑 {m.winnerCommander}
+                                                                </span>
+                                                            )}
+                                                            <button onClick={() => deleteMatch(m.id)} className="bg-red-900/50 hover:bg-red-700 text-red-400 hover:text-white px-2 py-1.5 rounded-lg border border-red-800 transition-colors shadow active:scale-95" title="Elimina Partita">🗑️</button>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {m.story && (
+                                                        <div className="bg-black/40 rounded-lg p-4 border border-gray-700 border-l-4 border-l-amber-500 mt-1 shadow-inner relative overflow-hidden">
+                                                            <div className="absolute top-0 right-0 p-2 opacity-10 text-4xl pointer-events-none">📜</div>
+                                                            <p className="text-sm text-gray-300 italic whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto pr-2" style={{ fontFamily: "Georgia, serif" }}>
+                                                                "{m.story.replace(/\*/g, '')}"
+                                                            </p>
+                                                            <p className="text-[10px] text-amber-400 font-black text-right mt-3 uppercase tracking-widest">- Capitolo della Saga</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </React.Fragment>
+                            )}
+
+                            {statsTab === 'league' && (
+                                <div className="space-y-6 animate-fade">
+                                    <div className="bg-orange-900/30 p-4 rounded-xl border border-orange-500 shadow-inner flex flex-col md:flex-row gap-4 items-center justify-between">
+                                        <div className="text-center md:text-left">
+                                            <h3 className="text-xl font-black text-orange-400 mb-1">Regole del Torneo / Lega</h3>
+                                            <p className="text-gray-300 text-xs font-semibold">Imposta i punteggi assegnati ad ogni evento. La classifica si aggiornerà in tempo reale.</p>
+                                        </div>
+                                        <div className="flex gap-3 bg-gray-900 p-2 rounded-lg border border-gray-700">
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase">Vittoria</span>
+                                                <input type="number" value={ptsWin} onChange={e=>setPtsWin(parseInt(e.target.value)||0)} className="w-12 bg-gray-800 text-white font-black text-center rounded border border-gray-600 outline-none" />
+                                            </div>
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase">Uccisione</span>
+                                                <input type="number" value={ptsKill} onChange={e=>setPtsKill(parseInt(e.target.value)||0)} className="w-12 bg-gray-800 text-white font-black text-center rounded border border-gray-600 outline-none" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-900 p-5 rounded-xl border border-gray-700 shadow-xl overflow-hidden">
+                                        <h3 className="text-2xl font-black text-white mb-6 text-center tracking-wider">🏆 CLASSIFICA LEGA 🏆</h3>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left border-collapse">
+                                                <thead>
+                                                    <tr className="border-b-2 border-gray-700 text-gray-400 text-xs uppercase tracking-wider">
+                                                        <th className="p-3 text-center w-12">Pos</th>
+                                                        <th className="p-3">Giocatore</th>
+                                                        <th className="p-3 text-center hidden sm:table-cell">Vittorie</th>
+                                                        <th className="p-3 text-center hidden sm:table-cell">Kills</th>
+                                                        <th className="p-3 text-right text-orange-400 font-black text-sm">PUNTI</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {sortedLeague.length === 0 ? (
+                                                        <tr><td colSpan="5" className="p-6 text-center text-gray-500 font-bold">Nessun dato di lega disponibile. Salva un report partita!</td></tr>
+                                                    ) : (
+                                                        sortedLeague.map((player, idx) => (
+                                                            <tr key={idx} className={`border-b border-gray-800 hover:bg-gray-800/50 transition-colors ${idx === 0 ? 'bg-orange-900/20' : ''}`}>
+                                                                <td className="p-3 text-center font-black text-lg">
+                                                                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}°`}
+                                                                </td>
+                                                                <td className={`p-3 font-bold ${idx === 0 ? 'text-orange-400 text-lg' : 'text-white'}`}>
+                                                                    {player.name}
+                                                                </td>
+                                                                <td className="p-3 text-center text-gray-300 hidden sm:table-cell">{player.wins}</td>
+                                                                <td className="p-3 text-center text-gray-400 hidden sm:table-cell text-xs">{player.kills}</td>
+                                                                <td className={`p-3 text-right font-black text-xl drop-shadow-md ${idx === 0 ? 'text-orange-400 text-2xl' : 'text-white'}`}>
+                                                                    {player.pts}
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
