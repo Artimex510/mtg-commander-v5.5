@@ -1484,51 +1484,137 @@
         }
     ]; // <--- ECCO LA PARENTESI E IL PUNTO E VIRGOLA FINALI DEFINITIVI!
     
-    // --- E-READER: LORE LIBRARY ---
+    // --- E-READER: LORE LIBRARY (Versione Audiolibro) ---
     const LoreLibrary = ({ navigate }) => {
-        const [activeVol, setActiveVol] = useState(MTG_LORE_DATABASE[0]);
-        const [activeChapIndex, setActiveChapIndex] = useState(0);
+        const [activeVol, setActiveVol] = React.useState(MTG_LORE_DATABASE[0]);
+        const [activeChapIndex, setActiveChapIndex] = React.useState(0);
+        
+        // Stati per l'Audiolibro
+        const [isSpeaking, setIsSpeaking] = React.useState(false);
+        const [isMusicPlaying, setIsMusicPlaying] = React.useState(false);
+        const audioRef = React.useRef(null);
 
         const currentChapter = activeVol.chapters[activeChapIndex];
 
-        const nextChap = () => { if (activeChapIndex < activeVol.chapters.length - 1) setActiveChapIndex(activeChapIndex + 1); };
-        const prevChap = () => { if (activeChapIndex > 0) setActiveChapIndex(activeChapIndex - 1); };
+        // Ferma tutto se l'utente esce dalla pagina
+        React.useEffect(() => {
+            return () => {
+                window.speechSynthesis.cancel();
+            };
+        }, []);
+
+        const stopAudiobook = () => {
+            window.speechSynthesis.cancel();
+            setIsSpeaking(false);
+            if (audioRef.current && isMusicPlaying) {
+                audioRef.current.volume = 0.4; // Riporta la musica al volume normale
+            }
+        };
+
+        const startAudiobook = () => {
+            if (!('speechSynthesis' in window)) {
+                return alert("Il tuo dispositivo/browser non supporta la lettura vocale.");
+            }
+            
+            window.speechSynthesis.cancel(); // Ferma eventuali letture precedenti
+            
+            const textToRead = `${currentChapter.title}. ${currentChapter.content}`;
+            const utterance = new SpeechSynthesisUtterance(textToRead);
+            utterance.lang = 'it-IT'; // Lingua italiana
+            utterance.rate = 0.9; // Velocità leggermente più lenta per la narrazione
+            utterance.pitch = 0.9; // Tono leggermente più epico e profondo
+            
+            utterance.onend = () => {
+                setIsSpeaking(false);
+                if (audioRef.current && isMusicPlaying) audioRef.current.volume = 0.4;
+            };
+            
+            // Gestione Musica automatica
+            if (audioRef.current) {
+                audioRef.current.volume = 0.15; // Abbassa la musica mentre parla
+                if (!isMusicPlaying) {
+                    audioRef.current.play().catch(e => console.log("Autoplay bloccato", e));
+                    setIsMusicPlaying(true);
+                }
+            }
+
+            window.speechSynthesis.speak(utterance);
+            setIsSpeaking(true);
+        };
+
+        const toggleMusic = () => {
+            if (isMusicPlaying) {
+                audioRef.current.pause();
+                setIsMusicPlaying(false);
+            } else {
+                audioRef.current.play();
+                audioRef.current.volume = isSpeaking ? 0.15 : 0.4;
+                setIsMusicPlaying(true);
+            }
+        };
+
+        const nextChap = () => { 
+            stopAudiobook(); 
+            if (activeChapIndex < activeVol.chapters.length - 1) setActiveChapIndex(activeChapIndex + 1); 
+        };
+        const prevChap = () => { 
+            stopAudiobook(); 
+            if (activeChapIndex > 0) setActiveChapIndex(activeChapIndex - 1); 
+        };
+        const changeVolume = (vol) => {
+            stopAudiobook();
+            setActiveVol(vol); 
+            setActiveChapIndex(0);
+        };
 
         return (
             <div className="max-w-4xl mx-auto space-y-4 p-4 text-white animate-fade pb-20">
-                <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold shadow mb-4 transition-colors">⬅ Torna Indietro</button>
+                {/* Player invisibile per la musica */}
+                <audio ref={audioRef} src="lore-music.mp3" loop preload="auto" />
+
+                <button onClick={() => { stopAudiobook(); navigate('home'); }} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold shadow mb-4 transition-colors">⬅ Torna Indietro</button>
                 
                 <div className="flex flex-col md:flex-row gap-6">
                     {/* Menu Laterale Volumi */}
                     <div className="md:w-1/3 bg-gray-900 rounded-xl border border-gray-700 p-4 shadow-xl h-fit">
                         <h2 className="text-xl font-black text-amber-500 mb-4 border-b border-gray-700 pb-2">📚 Indice Volumi</h2>
-                        <div className="space-y-2">
+                        <div className="space-y-2 h-[450px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin', scrollbarColor: '#4B5563 #111827' }}>
                             {MTG_LORE_DATABASE.map(vol => (
                                 <button 
                                     key={vol.id} 
-                                    onClick={() => { setActiveVol(vol); setActiveChapIndex(0); }}
-                                    className={`w-full text-left p-3 rounded-lg font-bold transition-all ${activeVol.id === vol.id ? 'bg-amber-900/50 border border-amber-500 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-gray-800 border-gray-600 hover:bg-gray-700 text-gray-300'}`}
+                                    onClick={() => changeVolume(vol)}
+                                    className={`w-full text-left p-3 rounded-lg font-bold transition-all text-sm ${activeVol.id === vol.id ? 'bg-amber-900/50 border border-amber-500 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-gray-800 border-gray-600 hover:bg-gray-700 text-gray-300'}`}
                                 >
                                     {vol.title}
                                 </button>
                             ))}
                         </div>
-                        <div className="mt-4 p-3 bg-black/50 rounded-lg border border-gray-800">
-                            <p className="text-[10px] text-gray-400 italic font-bold">Nuovi volumi verranno redatti presto dal tuo fido Scriba IA!</p>
-                        </div>
                     </div>
 
-                    {/* Il Libro (Cornice) */}
+                    {/* Il Libro (Cornice) e Controlli Audio */}
                     <div className="md:w-2/3 flex flex-col items-center">
+                        
+                        {/* Nuovi Controlli Audio */}
+                        <div className="flex gap-3 mb-4 w-full max-w-[450px] justify-center bg-gray-900 p-3 rounded-xl border border-gray-700 shadow-xl">
+                            {!isSpeaking ? (
+                                <button onClick={startAudiobook} className="bg-amber-700 hover:bg-amber-600 text-white font-black py-2 px-4 rounded-lg shadow-lg text-sm flex items-center gap-2 transition-transform active:scale-95 border border-amber-500">
+                                    🎙️ Ascolta Capitolo
+                                </button>
+                            ) : (
+                                <button onClick={stopAudiobook} className="bg-red-700 hover:bg-red-600 text-white font-black py-2 px-4 rounded-lg shadow-lg text-sm flex items-center gap-2 transition-transform active:scale-95 animate-pulse border border-red-500">
+                                    🛑 Ferma Voce
+                                </button>
+                            )}
+                            <button onClick={toggleMusic} className={`py-2 px-4 rounded-lg shadow-lg font-black text-sm flex items-center gap-2 transition-transform active:scale-95 border ${isMusicPlaying ? 'bg-blue-900 border-blue-500 text-blue-200' : 'bg-gray-700 border-gray-500 text-gray-300'}`}>
+                                {isMusicPlaying ? '🎵 Musica: ON' : '🔇 Musica: OFF'}
+                            </button>
+                        </div>
+
+                        {/* Cornice */}
                         <div 
                             className="relative w-full max-w-[450px] aspect-[9/16] bg-black rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col"
-                            style={{ 
-                                backgroundImage: "url('Lore-frame.jpg')", 
-                                backgroundSize: "100% 100%", 
-                                backgroundRepeat: "no-repeat" 
-                            }}
+                            style={{ backgroundImage: "url('Lore-frame.jpg')", backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }}
                         >
-                            {/* Area Testo Centrale Scrollabile */}
                             <div className="absolute top-[18%] bottom-[12%] left-[13%] right-[13%] overflow-y-auto pr-3" style={{ scrollbarWidth: 'none' }}>
                                 <h3 className="text-2xl font-black text-amber-100 text-center mb-6 mt-4 drop-shadow-[0_2px_4px_rgba(0,0,0,1)]" style={{ fontFamily: "Georgia, serif" }}>
                                     {currentChapter.title}
@@ -1542,7 +1628,7 @@
                         {/* Bottoni Navigazione Capitoli */}
                         <div className="flex items-center justify-between gap-4 mt-6 w-full max-w-[450px] bg-gray-900 p-2 rounded-full border border-gray-700 shadow-xl">
                             <button onClick={prevChap} disabled={activeChapIndex === 0} className="w-12 h-12 rounded-full bg-gray-800 disabled:opacity-50 text-white font-black border border-gray-600 shadow flex items-center justify-center active:scale-95 transition-transform hover:bg-amber-700">⬅</button>
-                            <span className="text-amber-400 font-black text-xs tracking-widest uppercase drop-shadow-md">Capitolo {activeChapIndex + 1} / {activeVol.chapters.length}</span>
+                            <span className="text-amber-400 font-black text-xs tracking-widest uppercase drop-shadow-md text-center">Cap. {activeChapIndex + 1} / {activeVol.chapters.length}</span>
                             <button onClick={nextChap} disabled={activeChapIndex === activeVol.chapters.length - 1} className="w-12 h-12 rounded-full bg-gray-800 disabled:opacity-50 text-white font-black border border-gray-600 shadow flex items-center justify-center active:scale-95 transition-transform hover:bg-amber-700">➡</button>
                         </div>
                     </div>
@@ -1550,6 +1636,7 @@
             </div>
         );
     };
+    
     
     function App() {
       const [introState, setIntroState] = useState('initial');
