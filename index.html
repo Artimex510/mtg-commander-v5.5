@@ -7345,7 +7345,10 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
     const AudiobookPremium = ({ navigate }) => {
         const [selectedVolume, setSelectedVolume] = useState(null);
         const [currentChapter, setCurrentChapter] = useState(1);
-        const audioRef = useRef(null);
+        const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+        
+        const audioRef = useRef(null); // Riferimento al player della voce
+        const bgmRef = useRef(null);   // Riferimento al player della musica di sottofondo
 
         const catalog = [
             { id: 1, title: "La Guerra dei Fratelli", chapters: 3 },
@@ -7371,13 +7374,50 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
             { id: 21, title: "Reality Fracture", chapters: 4 }
         ];
 
-        // Autoplay quando cambia capitolo
+        // 1. Gestione Autoplay della Musica di Sottofondo quando entri nella pagina
+        useEffect(() => {
+            if (bgmRef.current) {
+                bgmRef.current.volume = 0.4; // Volume base
+                bgmRef.current.play()
+                    .then(() => setIsMusicPlaying(true))
+                    .catch(e => console.log("Autoplay BGM bloccato dal browser", e));
+            }
+            // Quando esci da questa pagina, spegni la musica
+            return () => {
+                if (bgmRef.current) {
+                    bgmRef.current.pause();
+                }
+            };
+        }, []);
+
+        // 2. Accendi / Spegni manualmente la musica
+        const toggleMusic = () => {
+            if (isMusicPlaying) {
+                bgmRef.current.pause();
+                setIsMusicPlaying(false);
+            } else {
+                bgmRef.current.play();
+                setIsMusicPlaying(true);
+            }
+        };
+
+        // 3. Effetto "Ducking": abbassa la musica quando parla la voce
+        const handleVoicePlay = () => {
+            if (bgmRef.current) bgmRef.current.volume = 0.10; // Abbassa molto il volume
+        };
+
+        // 4. Riporta il volume normale quando la voce è in pausa
+        const handleVoicePause = () => {
+            if (bgmRef.current) bgmRef.current.volume = 0.4; // Volume ripristinato
+        };
+
+        // Autoplay del capitolo vocale quando ne selezioni uno nuovo
         useEffect(() => {
             if (audioRef.current && selectedVolume) {
                 audioRef.current.load();
-                audioRef.current.play().catch(e => console.log("Autoplay bloccato", e));
+                audioRef.current.play().catch(e => console.log("Autoplay voce bloccato", e));
             }
-        }, [currentChapter]);
+        }, [currentChapter, selectedVolume]);
 
         const openVolume = (vol) => {
             setSelectedVolume(vol);
@@ -7391,10 +7431,21 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
         };
 
         return (
-            <div className="audiobook-container animate-fade">
-                <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-4 shadow transition-colors">
-                    ⬅ Torna alla Home
-                </button>
+            <div className="audiobook-container animate-fade relative">
+                
+                {/* Player Audio INVISIBILE per la Musica di Sottofondo */}
+                <audio ref={bgmRef} src="./lore-music.mp3" loop preload="auto" />
+
+                {/* Barra Superiore con Pulsanti */}
+                <div className="flex justify-between items-center mb-6">
+                    <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold shadow transition-colors">
+                        ⬅ Torna alla Home
+                    </button>
+                    
+                    <button onClick={toggleMusic} className={`py-2 px-4 rounded-lg shadow-lg font-black text-sm flex items-center gap-2 transition-transform active:scale-95 border ${isMusicPlaying ? 'bg-blue-900 border-blue-500 text-blue-200' : 'bg-gray-700 border-gray-500 text-gray-300'}`}>
+                        {isMusicPlaying ? '🎵 Musica: ON' : '🔇 Musica: OFF'}
+                    </button>
+                </div>
 
                 <header className="audiobook-header">
                     <h1>Audiolibri Premium</h1>
@@ -7405,8 +7456,7 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                     <div className="volume-grid">
                         {catalog.map(vol => (
                             <div key={vol.id} className="volume-card" onClick={() => openVolume(vol)}>
-                                {/* RICERCA LE IMMAGINI PNG */}
-                                <img src={`Volume${vol.id}.png`} alt={`Copertina ${vol.title}`} className="volume-cover" onError={(e) => { e.target.src = 'mtg-bg.jpg'; }} />
+                                <img src={`./Volume${vol.id}.png`} alt={`Copertina ${vol.title}`} className="volume-cover" onError={(e) => { e.target.src = './mtg-bg.jpg'; }} />
                                 <div className="volume-info">
                                     <h3>Volume {vol.id}</h3>
                                     <p>{vol.title}</p>
@@ -7422,8 +7472,8 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                         
                         <div className="player-content">
                             <div className="player-cover-section">
-                                <img src={`Volume${selectedVolume.id}.png`} alt={selectedVolume.title} className="player-cover-large inline-block" onError={(e) => { e.target.src = 'mtg-bg.jpg'; }} />
-                                <h2 className="text-2xl font-black mt-2">Volume {selectedVolume.id}</h2>
+                                <img src={`./Volume${selectedVolume.id}.png`} alt={selectedVolume.title} className="player-cover-large inline-block" onError={(e) => { e.target.src = './mtg-bg.jpg'; }} />
+                                <h2 className="text-2xl font-black mt-2 text-yellow-500">Volume {selectedVolume.id}</h2>
                                 <h3 className="text-lg text-gray-300">{selectedVolume.title}</h3>
                             </div>
 
@@ -7442,16 +7492,21 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
 
                                 <div className="bg-gray-900 p-4 rounded-xl border-t-4 border-yellow-500">
                                     <p className="text-yellow-500 font-bold mb-2">In Riproduzione: Capitolo {currentChapter}</p>
+                                    {/* Player della VOCE con logica OnPlay e OnPause */}
                                     <audio 
                                         ref={audioRef} 
                                         controls 
                                         className="native-audio-player"
+                                        onPlay={handleVoicePlay}
+                                        onPause={handleVoicePause}
                                         onEnded={() => {
-                                            if (currentChapter < selectedVolume.chapters) setCurrentChapter(currentChapter + 1);
+                                            handleVoicePause();
+                                            if (currentChapter < selectedVolume.chapters) {
+                                                setCurrentChapter(currentChapter + 1);
+                                            }
                                         }}
                                     >
-                                        {/* RICERCA I FILE MP3 NELLA STESSA CARTELLA DELL'APP */}
-                                        <source src={`vol${selectedVolume.id}-cap${currentChapter}.mp3`} type="audio/mpeg" />
+                                        <source src={`./vol${selectedVolume.id}-cap${currentChapter}.mp3`} type="audio/mpeg" />
                                     </audio>
                                 </div>
                             </div>
