@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>MTG Commander Companion</title>
-
+  
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#000000">
 
@@ -35,6 +35,27 @@
       .print-grid { display: grid; grid-template-columns: repeat(3, 63mm); gap: 2mm; justify-content: center; }
       .print-card { width: 63mm; height: 88mm; object-fit: cover; border-radius: 3mm; margin-bottom: 2mm; page-break-inside: avoid; }
     }
+    /* --- AUDIOBOOK PREMIUM CSS --- */
+    .audiobook-container { padding: 2rem; color: #f5f5f5; font-family: 'Segoe UI', Tahoma, sans-serif; padding-bottom: 6rem; }
+    .audiobook-header { text-align: center; margin-bottom: 2rem; }
+    .audiobook-header h1 { font-size: 2.5rem; color: #d4af37; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 2px; }
+    .audiobook-header p { color: #a0a0a0; font-size: 1.1rem; }
+    .volume-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.5rem; max-width: 1200px; margin: 0 auto; }
+    .volume-card { background: #1e1e1e; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.3s, box-shadow 0.3s; border: 1px solid #333; }
+    .volume-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(212, 175, 55, 0.2); border-color: #d4af37; }
+    .volume-cover { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-bottom: 3px solid #d4af37; }
+    .volume-info { padding: 1rem; text-align: center; }
+    .volume-info h3 { margin: 0 0 0.5rem 0; color: #d4af37; font-size: 1.2rem; }
+    .volume-info p { margin: 0; font-size: 0.85rem; color: #ccc; }
+    .player-view { max-width: 900px; margin: 0 auto; background: #1a1a1a; border-radius: 16px; padding: 2rem; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+    .player-content { display: flex; gap: 2rem; flex-wrap: wrap; }
+    .player-cover-section { flex: 1; min-width: 250px; text-align: center; }
+    .player-cover-large { w-full; max-width: 300px; border-radius: 12px; border: 2px solid #d4af37; margin-bottom: 1rem; box-shadow: 0 8px 16px rgba(0,0,0,0.5); }
+    .player-controls-section { flex: 2; min-width: 280px; display: flex; flex-direction: column; justify-content: flex-start; }
+    .track-button { width: 100%; background: #1e1e1e; color: #fff; border: 1px solid #333; padding: 1rem; margin-bottom: 0.5rem; border-radius: 6px; cursor: pointer; text-align: left; font-weight: bold; transition: 0.2s; }
+    .track-button:hover { background: #2a2a2a; }
+    .track-button.active-track { background: rgba(212, 175, 55, 0.15); border-color: #d4af37; color: #d4af37; }
+    .native-audio-player { width: 100%; outline: none; margin-top: 1rem; }
   </style>
 </head>
 <body>
@@ -1880,7 +1901,8 @@
                       <MenuBtn icon="🛒" text="Carrello" onClick={() => navigate('cart')} />
                       <MenuBtn icon="🌐" text="Gioca Online" onClick={() => navigate('playonline')} />
                       <MenuBtn icon="🃏" text="Testa Mazzo" onClick={() => navigate('playtester')} />
-                      <MenuBtn icon="📜" text="MTG History Lore" onClick={() => navigate('lore')} />
+                      <MenuBtn icon="📜" text="MTG History Lore (E-Reader)" onClick={() => navigate('lore')} />
+                      <MenuBtn icon="🎧" text="Audiolibri Premium" onClick={() => navigate('audiobook')} />
                       <MenuBtn icon="🍻" text="La Taverna (Chat)" onClick={() => navigate('taverna')} />
                       <MenuBtn icon="✨" text="Proxy Creator" onClick={() => navigate('proxycreator')} />
                       <MenuBtn icon="🖼️" text="Le Mie Proxy" onClick={() => navigate('myproxies')} />
@@ -1929,6 +1951,7 @@
                 {view === 'backup' && <BackupView navigate={navigate} />}
                 {(view === 'game' || view === 'game_active') && <GameUtility view={view} setView={setView} />}
                 {view === 'lore' && <LoreLibrary navigate={navigate} />}
+                {view === 'audiobook' && <AudiobookPremium navigate={navigate} />}
                 {(view === 'playtester' || view === 'playtester_active') && <PlaytesterSandbox view={view} setView={setView} navigate={navigate} />}
                 {view === 'dice' && <DiceRoller />}
                 {view === 'rules' && <RulesAI />}
@@ -7318,6 +7341,127 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
       );
     };
 
+    // --- AUDIOBOOK PREMIUM ---
+    const AudiobookPremium = ({ navigate }) => {
+        const [selectedVolume, setSelectedVolume] = useState(null);
+        const [currentChapter, setCurrentChapter] = useState(1);
+        const audioRef = useRef(null);
+
+        const catalog = [
+            { id: 1, title: "La Guerra dei Fratelli", chapters: 3 },
+            { id: 2, title: "L'Invasione di Phyrexia", chapters: 3 },
+            { id: 3, title: "Il Mirari e l'Olio Nero", chapters: 3 },
+            { id: 4, title: "Kamigawa e Ravnica", chapters: 3 },
+            { id: 5, title: "Le Fratture Temporali", chapters: 3 },
+            { id: 6, title: "Alara e il Risveglio", chapters: 3 },
+            { id: 7, title: "La Nascita di Nuova Phyrexia", chapters: 3 },
+            { id: 8, title: "L'Ombra su Innistrad", chapters: 3 },
+            { id: 9, title: "Il Labirinto e Theros", chapters: 3 },
+            { id: 10, title: "Tarkir e il Tempo Riforgiato", chapters: 3 },
+            { id: 11, title: "Il Giuramento dei Guardiani", chapters: 3 },
+            { id: 12, title: "Luna Spettrale e Kaladesh", chapters: 3 },
+            { id: 13, title: "La Guerra della Scintilla", chapters: 3 },
+            { id: 14, title: "L'Inizio dell'Invasione", chapters: 3 },
+            { id: 15, title: "L'Avanzata delle Macchine", chapters: 3 },
+            { id: 16, title: "Sentieri del Presagio", chapters: 3 },
+            { id: 17, title: "Bloomburrow e Duskmourn", chapters: 3 },
+            { id: 18, title: "L'Aetherdrift", chapters: 3 },
+            { id: 19, title: "Lorwyn e Strixhaven", chapters: 3 },
+            { id: 20, title: "Il Grande Incantesimo", chapters: 3 },
+            { id: 21, title: "Reality Fracture", chapters: 4 }
+        ];
+
+        // Autoplay quando cambia capitolo
+        useEffect(() => {
+            if (audioRef.current && selectedVolume) {
+                audioRef.current.load();
+                audioRef.current.play().catch(e => console.log("Autoplay bloccato", e));
+            }
+        }, [currentChapter]);
+
+        const openVolume = (vol) => {
+            setSelectedVolume(vol);
+            setCurrentChapter(1);
+            window.scrollTo(0,0);
+        };
+
+        const closePlayer = () => {
+            if (audioRef.current) audioRef.current.pause();
+            setSelectedVolume(null);
+        };
+
+        return (
+            <div className="audiobook-container animate-fade">
+                <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold mb-4 shadow transition-colors">
+                    ⬅ Torna alla Home
+                </button>
+
+                <header className="audiobook-header">
+                    <h1>Audiolibri Premium</h1>
+                    <p>Ascolta l'intera epopea del Multiverso di Magic.</p>
+                </header>
+
+                {!selectedVolume ? (
+                    <div className="volume-grid">
+                        {catalog.map(vol => (
+                            <div key={vol.id} className="volume-card" onClick={() => openVolume(vol)}>
+                                {/* RICERCA LE IMMAGINI PNG */}
+                                <img src={`Volume${vol.id}.png`} alt={`Copertina ${vol.title}`} className="volume-cover" onError={(e) => { e.target.src = 'mtg-bg.jpg'; }} />
+                                <div className="volume-info">
+                                    <h3>Volume {vol.id}</h3>
+                                    <p>{vol.title}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="player-view animate-fade">
+                        <button onClick={closePlayer} className="text-yellow-500 font-bold mb-4 hover:text-white transition-colors">
+                            &#8592; Torna alla Libreria
+                        </button>
+                        
+                        <div className="player-content">
+                            <div className="player-cover-section">
+                                <img src={`Volume${selectedVolume.id}.png`} alt={selectedVolume.title} className="player-cover-large inline-block" onError={(e) => { e.target.src = 'mtg-bg.jpg'; }} />
+                                <h2 className="text-2xl font-black mt-2">Volume {selectedVolume.id}</h2>
+                                <h3 className="text-lg text-gray-300">{selectedVolume.title}</h3>
+                            </div>
+
+                            <div className="player-controls-section">
+                                <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 mb-6">
+                                    <h4 className="text-gray-400 font-bold uppercase mb-3">Seleziona Capitolo</h4>
+                                    {[...Array(selectedVolume.chapters)].map((_, i) => {
+                                        const capNum = i + 1;
+                                        return (
+                                            <button key={capNum} className={`track-button ${currentChapter === capNum ? 'active-track' : ''}`} onClick={() => setCurrentChapter(capNum)}>
+                                                Capitolo {capNum} {currentChapter === capNum && '🎵'}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="bg-gray-900 p-4 rounded-xl border-t-4 border-yellow-500">
+                                    <p className="text-yellow-500 font-bold mb-2">In Riproduzione: Capitolo {currentChapter}</p>
+                                    <audio 
+                                        ref={audioRef} 
+                                        controls 
+                                        className="native-audio-player"
+                                        onEnded={() => {
+                                            if (currentChapter < selectedVolume.chapters) setCurrentChapter(currentChapter + 1);
+                                        }}
+                                    >
+                                        {/* RICERCA I FILE MP3 NELLA STESSA CARTELLA DELL'APP */}
+                                        <source src={`vol${selectedVolume.id}-cap${currentChapter}.mp3`} type="audio/mpeg" />
+                                    </audio>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+    
     // --- GIOCA ONLINE (ENDSTEP HUB) ---
     const PlayOnlineView = ({navigate}) => {
        const [decks, setDecks] = useState([]);
