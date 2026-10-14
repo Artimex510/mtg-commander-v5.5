@@ -7343,83 +7343,129 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
 
     // --- AUDIOBOOK PREMIUM ---
     const AudiobookPremium = ({ navigate }) => {
+        const [selectedCollection, setSelectedCollection] = useState(null);
         const [selectedVolume, setSelectedVolume] = useState(null);
         const [currentChapter, setCurrentChapter] = useState(1);
-        const [isMusicPlaying, setIsMusicPlaying] = useState(false);
         
-        const audioRef = useRef(null); // Riferimento al player della voce
-        const bgmRef = useRef(null);   // Riferimento al player della musica di sottofondo
+        const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+        const [isAutoTransitioning, setIsAutoTransitioning] = useState(false); // Timer di 5 secondi
+        
+        const audioRef = useRef(null); 
+        const bgmRef = useRef(null);   
+        const autoPlayTimer = useRef(null);
 
-        const catalog = [
-            { id: 1, title: "La Guerra dei Fratelli", chapters: 3 },
-            { id: 2, title: "L'Invasione di Phyrexia", chapters: 3 },
-            { id: 3, title: "Il Mirari e l'Olio Nero", chapters: 3 },
-            { id: 4, title: "Kamigawa e Ravnica", chapters: 3 },
-            { id: 5, title: "Le Fratture Temporali", chapters: 3 },
-            { id: 6, title: "Alara e il Risveglio", chapters: 3 },
-            { id: 7, title: "La Nascita di Nuova Phyrexia", chapters: 3 },
-            { id: 8, title: "L'Ombra su Innistrad", chapters: 3 },
-            { id: 9, title: "Il Labirinto e Theros", chapters: 3 },
-            { id: 10, title: "Tarkir e il Tempo Riforgiato", chapters: 3 },
-            { id: 11, title: "Il Giuramento dei Guardiani", chapters: 3 },
-            { id: 12, title: "Luna Spettrale e Kaladesh", chapters: 3 },
-            { id: 13, title: "La Guerra della Scintilla", chapters: 3 },
-            { id: 14, title: "L'Inizio dell'Invasione", chapters: 3 },
-            { id: 15, title: "L'Avanzata delle Macchine", chapters: 3 },
-            { id: 16, title: "Sentieri del Presagio", chapters: 3 },
-            { id: 17, title: "Bloomburrow e Duskmourn", chapters: 3 },
-            { id: 18, title: "L'Aetherdrift", chapters: 3 },
-            { id: 19, title: "Lorwyn e Strixhaven", chapters: 3 },
-            { id: 20, title: "Il Grande Incantesimo", chapters: 3 },
-            { id: 21, title: "Reality Fracture", chapters: 6 }
+        // IL NUOVO CATALOGO DIVISO A RACCOLTE
+        const libraryCollections = [
+            {
+                id: 'storia_principale',
+                title: "Storia Principale",
+                description: "La cronologia ufficiale degli eventi cosmici del Multiverso.",
+                cover: "Storia.png", // <--- L'immagine che andrai a creare!
+                volPrefix: "Volume", // Immagini: Volume1.png
+                audioPrefix: "vol",  // Audio: vol1-cap1.mp3
+                volumes: [
+                    { id: 1, title: "La Guerra dei Fratelli", chapters: 3 },
+                    { id: 2, title: "L'Invasione di Phyrexia", chapters: 3 },
+                    { id: 3, title: "Il Mirari e l'Olio Nero", chapters: 3 },
+                    { id: 4, title: "Kamigawa e Ravnica", chapters: 3 },
+                    { id: 5, title: "Le Fratture Temporali", chapters: 3 },
+                    { id: 6, title: "Alara e il Risveglio", chapters: 3 },
+                    { id: 7, title: "La Nascita di Nuova Phyrexia", chapters: 3 },
+                    { id: 8, title: "L'Ombra su Innistrad", chapters: 3 },
+                    { id: 9, title: "Il Labirinto e Theros", chapters: 3 },
+                    { id: 10, title: "Tarkir e il Tempo Riforgiato", chapters: 3 },
+                    { id: 11, title: "Il Giuramento dei Guardiani", chapters: 3 },
+                    { id: 12, title: "Luna Spettrale e Kaladesh", chapters: 3 },
+                    { id: 13, title: "La Guerra della Scintilla", chapters: 3 },
+                    { id: 14, title: "L'Inizio dell'Invasione", chapters: 3 },
+                    { id: 15, title: "L'Avanzata delle Macchine", chapters: 3 },
+                    { id: 16, title: "Sentieri del Presagio", chapters: 3 },
+                    { id: 17, title: "Bloomburrow e Duskmourn", chapters: 3 },
+                    { id: 18, title: "L'Aetherdrift", chapters: 3 },
+                    { id: 19, title: "Lorwyn e Strixhaven", chapters: 3 },
+                    { id: 20, title: "Il Grande Incantesimo", chapters: 3 },
+                    { id: 21, title: "Reality Fracture", chapters: 6 }
+                ]
+            },
+            {
+                id: 'planeswalker',
+                title: "Storia dei Planeswalker",
+                description: "Le origini e le avventure dei Viandanti più famosi.",
+                cover: "Planeswalker.png", // Crea un file Planeswalker.png
+                volPrefix: "PW_Volume", // Immagini future: PW_Volume1.png
+                audioPrefix: "pw",      // Audio futuro: pw1-cap1.mp3
+                volumes: [] // Qui aggiungeremo i volumi futuri
+            },
+            {
+                id: 'personaggi',
+                title: "Storie di Leggende",
+                description: "I miti come Akroma, Phage e altri personaggi storici.",
+                cover: "Personaggi.png", // Crea un file Personaggi.png
+                volPrefix: "Char_Volume",
+                audioPrefix: "char",
+                volumes: [] // Qui aggiungeremo i volumi futuri
+            }
         ];
 
-        // 1. Gestione Autoplay della Musica di Sottofondo quando entri nella pagina
+        // Autoplay Musica Sottofondo all'avvio
         useEffect(() => {
             if (bgmRef.current) {
-                bgmRef.current.volume = 0.4; // Volume base
+                bgmRef.current.volume = 0.4;
                 bgmRef.current.play()
                     .then(() => setIsMusicPlaying(true))
-                    .catch(e => console.log("Autoplay BGM bloccato dal browser", e));
+                    .catch(e => console.log("Autoplay BGM bloccato", e));
             }
-            // Quando esci da questa pagina, spegni la musica
             return () => {
-                if (bgmRef.current) {
-                    bgmRef.current.pause();
-                }
+                if (bgmRef.current) bgmRef.current.pause();
+                if (autoPlayTimer.current) clearTimeout(autoPlayTimer.current);
             };
         }, []);
 
-        // 2. Accendi / Spegni manualmente la musica
         const toggleMusic = () => {
-            if (isMusicPlaying) {
-                bgmRef.current.pause();
-                setIsMusicPlaying(false);
-            } else {
-                bgmRef.current.play();
-                setIsMusicPlaying(true);
-            }
+            if (isMusicPlaying) { bgmRef.current.pause(); setIsMusicPlaying(false); } 
+            else { bgmRef.current.play(); setIsMusicPlaying(true); }
         };
 
-        // 3. Effetto "Ducking": abbassa la musica quando parla la voce
-        const handleVoicePlay = () => {
-            if (bgmRef.current) bgmRef.current.volume = 0.10; // Abbassa molto il volume
-        };
+        const handleVoicePlay = () => { if (bgmRef.current) bgmRef.current.volume = 0.10; };
+        const handleVoicePause = () => { if (bgmRef.current) bgmRef.current.volume = 0.4; };
 
-        // 4. Riporta il volume normale quando la voce è in pausa
-        const handleVoicePause = () => {
-            if (bgmRef.current) bgmRef.current.volume = 0.4; // Volume ripristinato
-        };
-
-        // Autoplay del capitolo vocale quando ne selezioni uno nuovo
+        // Autoplay del capitolo (se non in fase di transizione)
         useEffect(() => {
-            if (audioRef.current && selectedVolume) {
+            if (audioRef.current && selectedVolume && !isAutoTransitioning) {
                 audioRef.current.load();
                 audioRef.current.play().catch(e => console.log("Autoplay voce bloccato", e));
             }
-        }, [currentChapter, selectedVolume]);
+        }, [currentChapter, selectedVolume, isAutoTransitioning]);
 
+        // LOGICA DI TRANSIZIONE (5 SECONDI)
+        const handleChapterEnd = () => {
+            handleVoicePause();
+            if (currentChapter < selectedVolume.chapters) {
+                setCurrentChapter(prev => prev + 1); // Capitolo successivo
+            } else {
+                // Fine del Volume: cerco il volume successivo nella Raccolta
+                const volIndex = selectedCollection.volumes.findIndex(v => v.id === selectedVolume.id);
+                if (volIndex < selectedCollection.volumes.length - 1) {
+                    const nextVol = selectedCollection.volumes[volIndex + 1];
+                    setIsAutoTransitioning(true);
+                    
+                    // Attendi 5 secondi e poi passa al Volume successivo
+                    autoPlayTimer.current = setTimeout(() => {
+                        setSelectedVolume(nextVol);
+                        setCurrentChapter(1);
+                        setIsAutoTransitioning(false);
+                    }, 5000);
+                }
+            }
+        };
+
+        // Navigazione
+        const openCollection = (coll) => { setSelectedCollection(coll); setSelectedVolume(null); window.scrollTo(0,0); };
+        const closeCollection = () => { setSelectedCollection(null); setSelectedVolume(null); window.scrollTo(0,0); };
+        
         const openVolume = (vol) => {
+            if (autoPlayTimer.current) clearTimeout(autoPlayTimer.current);
+            setIsAutoTransitioning(false);
             setSelectedVolume(vol);
             setCurrentChapter(1);
             window.scrollTo(0,0);
@@ -7427,19 +7473,27 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
 
         const closePlayer = () => {
             if (audioRef.current) audioRef.current.pause();
+            if (autoPlayTimer.current) clearTimeout(autoPlayTimer.current);
+            setIsAutoTransitioning(false);
             setSelectedVolume(null);
+            handleVoicePause(); // Riporta la musica alta se esci dal player
+        };
+
+        const changeChapterManually = (capNum) => {
+            if (autoPlayTimer.current) clearTimeout(autoPlayTimer.current);
+            setIsAutoTransitioning(false);
+            setCurrentChapter(capNum);
         };
 
         return (
             <div className="audiobook-container animate-fade relative">
                 
-                {/* Player Audio INVISIBILE per la Musica di Sottofondo */}
+                {/* Audio Musica Sottofondo (Invisibile) */}
                 <audio ref={bgmRef} src="./lore-music.mp3" loop preload="auto" />
 
-                {/* Barra Superiore con Pulsanti */}
                 <div className="flex justify-between items-center mb-6">
-                    <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold shadow transition-colors">
-                        ⬅ Torna alla Home
+                    <button onClick={() => selectedCollection ? closeCollection() : navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold shadow transition-colors">
+                        ⬅ {selectedCollection ? 'Indietro alle Raccolte' : 'Torna alla Home'}
                     </button>
                     
                     <button onClick={toggleMusic} className={`py-2 px-4 rounded-lg shadow-lg font-black text-sm flex items-center gap-2 transition-transform active:scale-95 border ${isMusicPlaying ? 'bg-blue-900 border-blue-500 text-blue-200' : 'bg-gray-700 border-gray-500 text-gray-300'}`}>
@@ -7449,65 +7503,97 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
 
                 <header className="audiobook-header">
                     <h1>Audiolibri Premium</h1>
-                    <p>Ascolta l'intera epopea del Multiverso di Magic.</p>
+                    <p>{selectedCollection ? selectedCollection.title : "Scegli la tua Raccolta e ascolta la Lore."}</p>
                 </header>
 
-                {!selectedVolume ? (
+                {/* VISTA 1: LE RACCOLTE */}
+                {!selectedCollection && (
                     <div className="volume-grid">
-                        {catalog.map(vol => (
-                            <div key={vol.id} className="volume-card" onClick={() => openVolume(vol)}>
-                                <img src={`./Volume${vol.id}.png`} alt={`Copertina ${vol.title}`} className="volume-cover" onError={(e) => { e.target.src = './mtg-bg.jpg'; }} />
+                        {libraryCollections.map(coll => (
+                            <div key={coll.id} className="volume-card" onClick={() => openCollection(coll)}>
+                                <img src={`./${coll.cover}`} alt={coll.title} className="volume-cover" onError={(e) => { e.target.src = './mtg-bg.jpg'; }} />
                                 <div className="volume-info">
-                                    <h3>Volume {vol.id}</h3>
-                                    <p>{vol.title}</p>
+                                    <h3 className="text-xl text-yellow-500">{coll.title}</h3>
+                                    <p className="mb-2">{coll.description}</p>
+                                    <p className="text-xs text-gray-500 font-bold uppercase">{coll.volumes.length} Volumi</p>
                                 </div>
                             </div>
                         ))}
                     </div>
-                ) : (
+                )}
+
+                {/* VISTA 2: I VOLUMI DELLA RACCOLTA */}
+                {selectedCollection && !selectedVolume && (
+                    <div className="volume-grid animate-fade">
+                        {selectedCollection.volumes.length === 0 ? (
+                            <div className="col-span-full text-center text-gray-500 p-10 font-bold text-xl">
+                                Storie in arrivo prossimamente...
+                            </div>
+                        ) : (
+                            selectedCollection.volumes.map(vol => (
+                                <div key={vol.id} className="volume-card" onClick={() => openVolume(vol)}>
+                                    <img src={`./${selectedCollection.volPrefix}${vol.id}.png`} alt={vol.title} className="volume-cover" onError={(e) => { e.target.src = './mtg-bg.jpg'; }} />
+                                    <div className="volume-info">
+                                        <h3>Volume {vol.id}</h3>
+                                        <p>{vol.title}</p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+
+                {/* VISTA 3: IL PLAYER */}
+                {selectedVolume && (
                     <div className="player-view animate-fade">
                         <button onClick={closePlayer} className="text-yellow-500 font-bold mb-4 hover:text-white transition-colors">
-                            &#8592; Torna alla Libreria
+                            &#8592; Torna all'Elenco Volumi
                         </button>
                         
                         <div className="player-content">
                             <div className="player-cover-section">
-                                <img src={`./Volume${selectedVolume.id}.png`} alt={selectedVolume.title} className="player-cover-large inline-block" onError={(e) => { e.target.src = './mtg-bg.jpg'; }} />
+                                <img src={`./${selectedCollection.volPrefix}${selectedVolume.id}.png`} alt={selectedVolume.title} className="player-cover-large inline-block" onError={(e) => { e.target.src = './mtg-bg.jpg'; }} />
                                 <h2 className="text-2xl font-black mt-2 text-yellow-500">Volume {selectedVolume.id}</h2>
                                 <h3 className="text-lg text-gray-300">{selectedVolume.title}</h3>
                             </div>
 
                             <div className="player-controls-section">
                                 <div className="bg-gray-900 p-4 rounded-xl border border-gray-700 mb-6">
-                                    <h4 className="text-gray-400 font-bold uppercase mb-3">Seleziona Capitolo</h4>
+                                    <h4 className="text-gray-400 font-bold uppercase mb-3">Capitoli</h4>
                                     {[...Array(selectedVolume.chapters)].map((_, i) => {
                                         const capNum = i + 1;
                                         return (
-                                            <button key={capNum} className={`track-button ${currentChapter === capNum ? 'active-track' : ''}`} onClick={() => setCurrentChapter(capNum)}>
-                                                Capitolo {capNum} {currentChapter === capNum && '🎵'}
+                                            <button key={capNum} className={`track-button ${currentChapter === capNum && !isAutoTransitioning ? 'active-track' : ''}`} onClick={() => changeChapterManually(capNum)}>
+                                                Capitolo {capNum} {currentChapter === capNum && !isAutoTransitioning && '🎵'}
                                             </button>
                                         );
                                     })}
                                 </div>
 
-                                <div className="bg-gray-900 p-4 rounded-xl border-t-4 border-yellow-500">
-                                    <p className="text-yellow-500 font-bold mb-2">In Riproduzione: Capitolo {currentChapter}</p>
-                                    {/* Player della VOCE con logica OnPlay e OnPause */}
-                                    <audio 
-                                        ref={audioRef} 
-                                        controls 
-                                        className="native-audio-player"
-                                        onPlay={handleVoicePlay}
-                                        onPause={handleVoicePause}
-                                        onEnded={() => {
-                                            handleVoicePause();
-                                            if (currentChapter < selectedVolume.chapters) {
-                                                setCurrentChapter(currentChapter + 1);
-                                            }
-                                        }}
-                                    >
-                                        <source src={`./vol${selectedVolume.id}-cap${currentChapter}.mp3`} type="audio/mpeg" />
-                                    </audio>
+                                <div className="bg-gray-900 p-4 rounded-xl border-t-4 border-yellow-500 min-h-[120px] flex flex-col justify-center">
+                                    {isAutoTransitioning ? (
+                                        <div className="text-center animate-fade">
+                                            <p className="text-emerald-400 font-black text-lg mb-1">✅ Volume Completato!</p>
+                                            <p className="text-white font-semibold text-sm">Passaggio automatico al prossimo volume in 5 secondi...</p>
+                                            <button onClick={closePlayer} className="mt-4 bg-red-800 hover:bg-red-700 text-white font-bold py-2 px-4 rounded text-xs transition-colors">
+                                                Annulla e Ferma
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="animate-fade w-full">
+                                            <p className="text-yellow-500 font-bold mb-2">In Riproduzione: Capitolo {currentChapter}</p>
+                                            <audio 
+                                                ref={audioRef} 
+                                                controls 
+                                                className="native-audio-player"
+                                                onPlay={handleVoicePlay}
+                                                onPause={handleVoicePause}
+                                                onEnded={handleChapterEnd}
+                                            >
+                                                <source src={`./${selectedCollection.audioPrefix}${selectedVolume.id}-cap${currentChapter}.mp3`} type="audio/mpeg" />
+                                            </audio>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
