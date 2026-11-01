@@ -1657,7 +1657,358 @@
             </div>
         );
     };
-    
+
+    // --- MOTORE GDR OFFLINE: CREATORE E SCHEDA PERSONAGGIO v3 (CON AVATAR AUTOMATICI) ---
+    const RpgCharacterManager = ({ navigate }) => {
+        const [character, setCharacter] = useState(null);
+        
+        // Form di Creazione
+        const [name, setName] = useState("");
+        const [selectedRace, setSelectedRace] = useState("");
+        const [selectedClass, setSelectedClass] = useState("");
+        const [selectedMana, setSelectedMana] = useState("");
+        const [customAvatar, setCustomAvatar] = useState(null);
+
+        const MANA_COLORS = [
+            { id: "W", name: "Bianco (Legge, Protezione, Guarigione)", icon: "☀️", colorClass: "text-yellow-600", bgClass: "bg-yellow-100", borderClass: "border-yellow-600" },
+            { id: "U", name: "Blu (Conoscenza, Illusione, Controllo)", icon: "💧", colorClass: "text-blue-600", bgClass: "bg-blue-100", borderClass: "border-blue-600" },
+            { id: "B", name: "Nero (Morte, Ambizione, Sacrificio)", icon: "💀", colorClass: "text-gray-800", bgClass: "bg-gray-200", borderClass: "border-gray-800" },
+            { id: "R", name: "Rosso (Caos, Fuoco, Impulso)", icon: "🔥", colorClass: "text-red-600", bgClass: "bg-red-100", borderClass: "border-red-600" },
+            { id: "G", name: "Verde (Natura, Istinto, Crescita)", icon: "🌳", colorClass: "text-green-600", bgClass: "bg-green-100", borderClass: "border-green-600" }
+        ];
+
+        const RACES = [
+            { id: "umano", name: "Umano", str: 10, agi: 10, mag: 10, con: 20, ability: "Versatilità: +1 a tutti i tiri di salvezza. Adattabile al bene (Angeli) e al male (Demoni)." },
+            { id: "elfo", name: "Elfo", str: 8, agi: 12, mag: 12, con: 18, ability: "Passo Silvano: Ignora i malus ambientali (es. fango/neve)." },
+            { id: "goblin", name: "Goblin", str: 9, agi: 14, mag: 8, con: 16, ability: "Frenesia: +2 ai tiri d'attacco se sei in svantaggio numerico." },
+            { id: "leonin", name: "Leonin", str: 14, agi: 10, mag: 6, con: 22, ability: "Ruggito Intimidatorio: Può spaventare i nemici minori." },
+            { id: "vampiro", name: "Vampiro", str: 12, agi: 12, mag: 12, con: 16, ability: "Legame Vitale: I colpi critici (20) curano 3 PV." },
+            { id: "tritone", name: "Tritone (Merfolk)", str: 8, agi: 10, mag: 14, con: 18, ability: "Anfibio: Vantaggio totale in ambienti acquatici." },
+            { id: "ratto", name: "Ratto (Nezumi)", str: 8, agi: 14, mag: 10, con: 18, ability: "Infiltrazione: Vantaggio nei tiri di furtività e scasso." },
+            { id: "volpe", name: "Volpe (Kitsune)", str: 8, agi: 12, mag: 14, con: 16, ability: "Sesto Senso: Percepisce trappole e illusioni automaticamente." },
+            { id: "nano", name: "Nano", str: 12, agi: 8, mag: 8, con: 24, ability: "Resilienza: Subisce -1 Danno da ogni attacco fisico." },
+            { id: "naga", name: "Naga", str: 10, agi: 14, mag: 12, con: 16, ability: "Morsa Velenosa: Gli attacchi a mani nude infliggono Veleno." },
+            { id: "aven", name: "Aven (Uccello)", str: 8, agi: 14, mag: 10, con: 16, ability: "Volare: Evita automaticamente le trappole a terra e i burroni." },
+            { id: "draconico", name: "Draconico", str: 16, agi: 8, mag: 10, con: 20, ability: "Soffio: Può lanciare un attacco magico ad area una volta per scontro." }
+        ];
+
+        const CLASSES = [
+            { id: "guerriero", name: "Guerriero", strBonus: 4, agiBonus: 1, magBonus: 0, conBonus: 10, ability: "Maestria d'Arme: Rilancia i danni pari a 1." },
+            { id: "mago", name: "Mago", strBonus: 0, agiBonus: 1, magBonus: 5, conBonus: 2, ability: "Studio Arcano: Decifra antichi testi e barriere magiche." },
+            { id: "assassino", name: "Assassino", strBonus: 2, agiBonus: 4, magBonus: 0, conBonus: 4, ability: "Colpo Furtivo: Raddoppia i danni se attacca di nascosto." },
+            { id: "chierico", name: "Chierico", strBonus: 1, agiBonus: 0, magBonus: 4, conBonus: 6, ability: "Luce Curativa: Fuori dal combattimento può curare 5 PV." },
+            { id: "sciamano", name: "Sciamano", strBonus: 2, agiBonus: 1, magBonus: 3, conBonus: 6, ability: "Legame Elementale: Comunica con bestie e spiriti del piano." },
+            { id: "artefice", name: "Artefice", strBonus: 1, agiBonus: 2, magBonus: 3, conBonus: 4, ability: "Ingegnere: Può riparare artefatti distrutti." }
+        ];
+
+        useEffect(() => {
+            const savedChar = localStorage.getItem('rpg_character');
+            if (savedChar) setCharacter(JSON.parse(savedChar));
+        }, []);
+
+        // Gestione caricamento immagine manuale dalla galleria
+        const handleImageUpload = (e, isExistingChar = false) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const base64 = ev.target.result;
+                if (isExistingChar && character) {
+                    const updated = { ...character, customAvatar: base64 };
+                    setCharacter(updated);
+                    localStorage.setItem('rpg_character', JSON.stringify(updated));
+                } else {
+                    setCustomAvatar(base64);
+                }
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // Logica di fallback automatico per le immagini
+        const handleImgError = (e, raceId) => {
+            const currentSrc = e.target.getAttribute('src');
+            const raceFallback = `./rpg_${raceId}.png`;
+            const defaultFallback = './mtg-bg.jpg'; // Immagine standard se manca tutto
+
+            if (currentSrc !== raceFallback && currentSrc !== defaultFallback && !currentSrc.startsWith('data:')) {
+                e.target.src = raceFallback; // Prova solo la razza (es. rpg_goblin.png)
+            } else if (currentSrc !== defaultFallback) {
+                e.target.src = defaultFallback; // Ripiega sullo sfondo standard
+            }
+        };
+
+        const getAvatarSrc = (rId, cId, customImg, ascensionForm = null) => {
+            if (customImg) return customImg;
+            if (ascensionForm === 'angelo') return './rpg_umano_angelo.png';
+            if (ascensionForm === 'demone') return './rpg_umano_demone.png';
+            if (rId && cId) return `./rpg_${rId}_${cId}.png`;
+            if (rId) return `./rpg_${rId}.png`;
+            return './mtg-bg.jpg';
+        };
+
+        const createCharacter = () => {
+            if (!name || !selectedRace || !selectedClass || !selectedMana) return alert("Compila tutti i campi!");
+            
+            const rData = RACES.find(r => r.id === selectedRace);
+            const cData = CLASSES.find(c => c.id === selectedClass);
+            const mData = MANA_COLORS.find(m => m.id === selectedMana);
+
+            const newChar = {
+                id: 'char-' + Date.now(),
+                name: name,
+                raceId: rData.id,
+                classId: cData.id,
+                race: rData.name,
+                classType: cData.name,
+                customAvatar: customAvatar,
+                ascensionForm: null, // 'angelo' o 'demone' per gli umani in futuro
+                manaIdentity: [mData.id],
+                level: 1,
+                exp: 0,
+                karma: 0,
+                isLegendary: false,
+                sparkIgnited: false,
+                baseStats: {
+                    str: rData.str + cData.strBonus,
+                    agi: rData.agi + cData.agiBonus,
+                    mag: rData.mag + cData.magBonus,
+                    con: rData.con + cData.conBonus,
+                },
+                currentHP: rData.con + cData.conBonus,
+                abilities: [rData.ability, cData.ability],
+                mtgKeywords: [],
+                inventory: [],
+                equipped: { weapon: null, armor: null, artifact: null }
+            };
+
+            localStorage.setItem('rpg_character', JSON.stringify(newChar));
+            setCharacter(newChar);
+        };
+
+        const deleteCharacter = () => {
+            if (window.confirm("Vuoi davvero eliminare il tuo personaggio e ricominciare da zero?")) {
+                localStorage.removeItem('rpg_character');
+                setCharacter(null);
+                setCustomAvatar(null);
+            }
+        };
+
+        const getFinalStats = (char) => {
+            let bonus = (char.level - 1) * 2;
+            if (char.isLegendary) bonus += 5;
+            if (char.sparkIgnited) bonus += 15;
+            
+            return {
+                str: char.baseStats.str + bonus,
+                agi: char.baseStats.agi + bonus,
+                mag: char.baseStats.mag + bonus,
+                con: char.baseStats.con + (char.level * 2) + (char.isLegendary ? 10 : 0) + (char.sparkIgnited ? 20 : 0),
+                maxHP: char.baseStats.con + (char.level * 5) + (char.isLegendary ? 10 : 0) + (char.sparkIgnited ? 20 : 0)
+            };
+        };
+
+        if (character) {
+            const stats = getFinalStats(character);
+            const mainMana = MANA_COLORS.find(m => character.manaIdentity[0] === m.id) || MANA_COLORS[0];
+            
+            let typeLine = "Creatura";
+            if (character.isLegendary) typeLine = "Creatura Leggendaria";
+            if (character.sparkIgnited) typeLine = "Planeswalker Leggendario";
+
+            const avatarSrc = getAvatarSrc(character.raceId, character.classId, character.customAvatar, character.ascensionForm);
+
+            return (
+                <div className="max-w-2xl mx-auto p-4 animate-fade pb-20">
+                    <div className="no-print flex flex-wrap justify-between items-center gap-2 mb-6">
+                        <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold shadow">⬅ Home</button>
+                        <div className="flex gap-2">
+                            <label className="bg-purple-700 hover:bg-purple-600 text-white font-bold px-3 py-2 rounded shadow cursor-pointer text-sm flex items-center gap-1">
+                                🖼️ Cambia Foto
+                                <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, true)} className="hidden" />
+                            </label>
+                            <button onClick={() => window.print()} className="bg-blue-600 hover:bg-blue-500 text-white font-black px-4 py-2 rounded shadow text-sm">🖨️ Stampa</button>
+                            <button onClick={deleteCharacter} className="bg-red-800 hover:bg-red-700 text-white font-bold px-3 py-2 rounded shadow text-sm">✖</button>
+                        </div>
+                    </div>
+
+                    {/* LA SCHEDA PERSONAGGIO STAMPABILE */}
+                    <div id="print-area" className={`${mainMana.bgClass} text-black border-[6px] border-gray-900 rounded-2xl p-5 shadow-2xl relative`} style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/aged-paper.png')" }}>
+                        
+                        {/* Etichette Status Superiori */}
+                        {character.isLegendary && !character.sparkIgnited && (
+                            <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 font-black uppercase px-4 py-1 rounded-full border-2 border-gray-900 shadow-md text-xs z-20">
+                                👑 LEGGENDARIO
+                            </div>
+                        )}
+                        {character.sparkIgnited && (
+                            <div className="absolute top-2 right-2 bg-gradient-to-r from-orange-500 to-yellow-400 text-black font-black uppercase px-4 py-1 rounded-full border-2 border-gray-900 shadow-[0_0_15px_rgba(245,158,11,0.8)] text-xs z-20">
+                                🔥 PLANESWALKER
+                            </div>
+                        )}
+                        
+                        {/* BARRA TITOLO STILE MAGIC */}
+                        <div className="bg-white/70 border-2 border-gray-900 rounded-xl px-4 py-2 mb-4 flex justify-between items-center shadow-sm">
+                            <h1 className="text-2xl sm:text-3xl font-black tracking-wide text-gray-900 truncate" style={{ fontFamily: "Georgia, serif" }}>{character.name}</h1>
+                            <div className="flex gap-1 shrink-0">
+                                {character.manaIdentity.map(mId => {
+                                    const mObj = MANA_COLORS.find(mc => mc.id === mId);
+                                    return <span key={mId} className="text-2xl drop-shadow">{mObj?.icon}</span>;
+                                })}
+                            </div>
+                        </div>
+
+                        {/* RIQUADRO IMMAGINE DEL PERSONAGGIO (ART BOX) */}
+                        <div className="w-full h-64 sm:h-80 bg-gray-900 border-4 border-gray-900 rounded-xl overflow-hidden mb-4 shadow-inner relative">
+                            <img 
+                                src={avatarSrc} 
+                                alt={character.name} 
+                                onError={(e) => handleImgError(e, character.raceId)}
+                                className="w-full h-full object-cover object-top" 
+                            />
+                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 flex justify-between items-end">
+                                <span className="text-white font-bold italic text-sm drop-shadow" style={{ fontFamily: "Georgia, serif" }}>
+                                    {typeLine} — {character.race} {character.classType} {character.ascensionForm ? `(${character.ascensionForm.toUpperCase()})` : ''}
+                                </span>
+                                <span className="bg-amber-500 text-black font-black px-2.5 py-0.5 rounded text-xs border border-black shadow">
+                                    LIV. {character.level}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* GRIGLIA STATISTICHE */}
+                        <div className="grid grid-cols-4 gap-2 sm:gap-4 mb-4 text-center">
+                            <div className="bg-white/80 border-2 border-gray-800 rounded-lg p-2 shadow-sm">
+                                <p className="text-[10px] font-black uppercase text-gray-600">Forza</p>
+                                <p className="text-2xl font-black text-gray-900">{stats.str}</p>
+                            </div>
+                            <div className="bg-white/80 border-2 border-gray-800 rounded-lg p-2 shadow-sm">
+                                <p className="text-[10px] font-black uppercase text-gray-600">Agilità</p>
+                                <p className="text-2xl font-black text-gray-900">{stats.agi}</p>
+                            </div>
+                            <div className="bg-white/80 border-2 border-gray-800 rounded-lg p-2 shadow-sm">
+                                <p className="text-[10px] font-black uppercase text-gray-600">Magia</p>
+                                <p className="text-2xl font-black text-gray-900">{stats.mag}</p>
+                            </div>
+                            <div className="bg-red-100 border-2 border-red-800 rounded-lg p-2 shadow-sm">
+                                <p className="text-[10px] font-black uppercase text-red-900">Salute</p>
+                                <p className="text-2xl font-black text-red-700">{character.currentHP}/{stats.maxHP}</p>
+                            </div>
+                        </div>
+
+                        {/* TESTO DI COLORE / ABILITA' (ORACLE TEXT BOX) */}
+                        <div className="bg-white/80 border-2 border-gray-800 rounded-xl p-4 mb-4 shadow-inner space-y-3">
+                            {character.mtgKeywords.length > 0 && (
+                                <p className="font-black text-indigo-900 text-sm border-b border-gray-300 pb-1">
+                                    ⚡ {character.mtgKeywords.join(", ")}
+                                </p>
+                            )}
+                            <div>
+                                <h3 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-1">Abilità Innate & Classe:</h3>
+                                <ul className="list-disc list-inside text-xs sm:text-sm font-semibold space-y-1 text-gray-800">
+                                    {character.abilities.map((ab, i) => <li key={i}>{ab}</li>)}
+                                    {character.sparkIgnited && <li className="text-indigo-700 font-bold">Planeswalk: Può viaggiare attraverso la Cieca Eternità verso altri Piani.</li>}
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* EQUIPAGGIAMENTO E ZAINO */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white/60 p-3 rounded-xl border-2 border-gray-800">
+                            <div>
+                                <h3 className="font-black text-gray-900 border-b border-gray-500 mb-1.5 text-xs uppercase">Equipaggiamento</h3>
+                                <div className="space-y-1 text-xs font-bold text-gray-800">
+                                    <p>⚔️ Arma: {character.equipped.weapon ? character.equipped.weapon.name : "Mani Nude"}</p>
+                                    <p>🛡️ Armatura: {character.equipped.armor ? character.equipped.armor.name : "Abiti Comuni"}</p>
+                                    <p>💍 Artefatto: {character.equipped.artifact ? character.equipped.artifact.name : "Nessuno"}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="font-black text-gray-900 border-b border-gray-500 mb-1.5 text-xs uppercase">Zaino (Loot)</h3>
+                                {character.inventory.length === 0 ? (
+                                    <p className="text-xs italic text-gray-600">Zaino vuoto.</p>
+                                ) : (
+                                    <ul className="text-xs font-semibold text-gray-800">
+                                        {character.inventory.map((item, i) => <li key={i}>• {item.name}</li>)}
+                                    </ul>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <div className="mt-6 text-center no-print">
+                            <button className="bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 px-8 rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.5)] transition-all text-xl w-full border border-indigo-400">
+                                📖 ENTRA NELLA STORIA (Fase 2)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ANTEPRIMA LIVE DURANTE LA CREAZIONE
+        const previewSrc = getAvatarSrc(selectedRace, selectedClass, customAvatar);
+
+        return (
+            <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl border border-gray-600 mt-6 backdrop-blur-sm shadow-2xl animate-fade space-y-5 pb-10">
+                <div className="flex justify-between items-center border-b border-gray-700 pb-2">
+                    <h2 className="text-3xl font-black text-amber-400 drop-shadow-md">Crea Eroe</h2>
+                    <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded font-bold shadow">Esci</button>
+                </div>
+
+                {/* Riquadro Anteprima Immagine */}
+                <div className="w-full h-48 bg-gray-900 rounded-xl border-2 border-amber-500/50 overflow-hidden relative shadow-inner flex items-center justify-center">
+                    {(selectedRace || customAvatar) ? (
+                        <img 
+                            key={previewSrc} 
+                            src={previewSrc} 
+                            onError={(e) => handleImgError(e, selectedRace)} 
+                            className="w-full h-full object-cover object-top animate-fade" 
+                            alt="Preview" 
+                        />
+                    ) : (
+                        <p className="text-gray-500 text-xs font-bold text-center px-4">Seleziona Razza e Classe per vedere l'anteprima (o carica una foto)</p>
+                    )}
+                    <label className="absolute bottom-2 right-2 bg-black/80 hover:bg-black text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-gray-500 cursor-pointer shadow-lg">
+                        📸 Carica Foto Custom
+                        <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, false)} className="hidden" />
+                    </label>
+                </div>
+
+                <div>
+                    <label className="block text-gray-300 font-bold text-sm mb-1">Nome Personaggio</label>
+                    <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="es. Dack, Urza, Elspeth..." className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold outline-none focus:border-amber-500" />
+                </div>
+                
+                <div>
+                    <label className="block text-gray-300 font-bold text-sm mb-1">Allineamento Mana Iniziale</label>
+                    <select value={selectedMana} onChange={e=>setSelectedMana(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold outline-none focus:border-amber-500">
+                        <option value="">-- Scegli il tuo Colore --</option>
+                        {MANA_COLORS.map(m => <option key={m.id} value={m.id}>{m.icon} {m.name}</option>)}
+                    </select>
+                </div>
+
+                <div>
+                    <label className="block text-gray-300 font-bold text-sm mb-1">Seleziona Razza (Magic / D&D)</label>
+                    <select value={selectedRace} onChange={e=>setSelectedRace(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold outline-none focus:border-amber-500">
+                        <option value="">-- Scegli Razza --</option>
+                        {RACES.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                    </select>
+                    {selectedRace && <p className="text-emerald-400 text-xs font-bold mt-2 bg-emerald-900/30 p-2 rounded border border-emerald-800 shadow-inner">Passiva: {RACES.find(r=>r.id===selectedRace).ability}</p>}
+                </div>
+
+                <div>
+                    <label className="block text-gray-300 font-bold text-sm mb-1">Seleziona Classe / Sottotipo</label>
+                    <select value={selectedClass} onChange={e=>setSelectedClass(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold outline-none focus:border-amber-500">
+                        <option value="">-- Scegli Classe --</option>
+                        {CLASSES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    {selectedClass && <p className="text-blue-400 text-xs font-bold mt-2 bg-blue-900/30 p-2 rounded border border-blue-800 shadow-inner">Passiva: {CLASSES.find(c=>c.id===selectedClass).ability}</p>}
+                </div>
+
+                <button onClick={createCharacter} disabled={!name || !selectedRace || !selectedClass || !selectedMana} className="w-full bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 disabled:opacity-50 text-black font-black py-4 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.5)] transition-all text-xl mt-2">
+                    FORGIA DESTINO
+                </button>
+            </div>
+        );
+    };
     
     function App() {
       const [introState, setIntroState] = useState('initial');
@@ -1909,6 +2260,7 @@
                       <MenuBtn icon="⚔️" text="Life Tracker" onClick={() => navigate('game')} />
                       <MenuBtn icon="🎲" text="Lancia Dado" onClick={() => navigate('dice')} />
                       <MenuBtn icon="⚖️" text="Regole & Judge" onClick={() => navigate('rules')} />
+                      <MenuBtn icon="🧙‍♂️" text="GDR: L'Ascesa del Viandante" onClick={() => navigate('rpg')} />
                       
                       <div className="pt-4 mt-4 border-t border-gray-700">
                          <MenuBtn icon="💾" text="Backup & Sync" onClick={() => navigate('backup')} />
@@ -1958,6 +2310,7 @@
                 {view === 'playonline' && <PlayOnlineView navigate={navigate} />}
                 {view === 'taverna' && <TavernaChat navigate={navigate} />}
                 {view === 'protools' && <ProTools navigate={navigate} activeDeck={activeDeck} />}
+                {view === 'rpg' && <RpgCharacterManager navigate={navigate} />}
               </main>
             </div>
           )}
