@@ -2791,7 +2791,8 @@
         if(!importText.trim()) return; setLoading(true); const lines = importText.split('\n'); let promises = [];
         for (let i = 0; i < lines.length; i++) {
           let line = lines[i].trim(); if(!line) continue;
-          const match = line.match(/^(\d+)?\s*(.*)$/); let qty = match[1] ? parseInt(match[1]) : 1; let name = match[2];
+          // IGNORA LA X O GLI SPAZI DOPO IL NUMERO E PRENDE IL NOME
+          const match = line.match(/^(\d+)?\s*[xX]?\s*(.*)$/); let qty = match[1] ? parseInt(match[1]) : 1; let name = match[2].trim();
           let p = fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}`).then(res => { if(res.ok) return res.json(); throw new Error('Not found'); }).then(c => {
                let arr = [];
                for(let j=0; j<qty; j++) {
@@ -7394,7 +7395,20 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                 cover: "Planeswalker.png", // Crea un file Planeswalker.png
                 volPrefix: "PW_Volume", // Immagini future: PW_Volume1.png
                 audioPrefix: "pw",      // Audio futuro: pw1-cap1.mp3
-                volumes: [] // Qui aggiungeremo i volumi futuri
+                volumes: [
+                  { id: 1, title: "Urza, l'Artefice Divino", chapters: 7 },
+                  { id: 2, title: "Karn, il Golem d'Argento", chapters: 6 },
+                  { id: 3, title: "Teferi, Maestro del Tempo", chapters: 5 },
+                  { id: 4, title: "Nicol Bolas, Il Dio Drago", chapters: 6 },
+                  { id: 5, title: "Ugin, Lo Spirito Drago", chapters: 6 },
+                  { id: 6, title: "Jace Beleren, Lo Scultore di Menti", chapters: 8 },
+                  { id: 7, title: "Chandra Nalaar, Il Cuore di Fuoco", chapters: 7 },
+                  { id: 8, title: "Nissa Revane, L'Anima di Zendikar", chapters: 6 },
+                  { id: 9, title: "Garruk, Lingua selvaggia", chapters: 5 },
+                  { id: 10, title: "Liliana Vess, La Signora della Morte", chapters: 8 },
+                  { id: 11, title: "Ajani Criniera d'oro, Il Saggio Leonid", chapters: 6 },
+                  { id: 12, title: "Gideon Jura, Il Paladino di Theros", chapters: 6 }
+                ] // Qui aggiungeremo i volumi futuri
             },
             {
                 id: 'personaggi',
@@ -7405,11 +7419,35 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                 audioPrefix: "char",
                 volumes: [
                   { id: 1, title: "Phage, L'Intoccabile", chapters: 3 },
-                  { id: 2, title: "Akroma, Angelo della Distruzzione", chapters: 3 }
+                  { id: 2, title: "Akroma, Angelo della Distruzzione", chapters: 3 },
+                  { id: 3, title: "Kamahl, la Spada e la Foresta", chapters: 3 },
+                  { id: 4, title: "Karona, la Falsa Dea", chapters: 3 },
+                  { id: 5, title: "Squee, il Goblin Nababbo", chapters: 3 },
+                  { id: 6, title: "Edgar Markov, Il Primo Vampiro", chapters: 3 },
+                  { id: 7, title: "Geth, il Signore della Cripta", chapters: 3 },
+                  { id: 8, title: "Fblthp, Lo Smarrito", chapters: 4 },
+                  { id: 9, title: "Volrath, Il Tiranno Mutaforma", chapters: 3 },
+                  { id: 10, title: "Glissa Sunseeker", chapters: 3 },
+                  { id: 11, title: "Memnarch, Il Golem Impazzito", chapters: 3 },
+                  { id: 12, title: "Avacyn, Angel of Hope", chapters: 4 },
+                  { id: 13, title: "Griselbrand, Il Demone del Patto", chapters: 3 },
+                  { id: 14, title: "Yawgmoth, Il Padre delle Macchine", chapters: 3 },
+                  { id: 15, title: "Vorinclex, La Voce della Fame", chapters: 3 },
+                  { id: 16, title: "Jin-Gitaxias, l'Augure del Nucleo", chapters: 3 },
+                  { id: 17, title: "Sheoldred, La Bisbigliante", chapters: 3 },
+                  { id: 18, title: "Urabrask, Il Nascosto", chapters: 3 },
+                  { id: 19, title: "Elesh Norn, La Madre delle Macchine", chapters: 5 },
+                  { id: 20, title: "Atraxa, Grand Unifier", chapters: 3 },
+                  { id: 21, title: "Gerrard Capashen, L'Eroe Predestinato", chapters: 3 },
+                  { id: 22, title: "Sisay, il Capitano della Cavalcavento", chapters: 3 },
+                  { id: 23, title: "Mishra, l'Artefice Corrotto", chapters: 3 }
                 ] // Qui aggiungeremo i volumi futuri
             }
         ];
 
+        // Definisce l'ordine in cui passare da una collezione all'altra
+        const collectionOrder = ['storia_principale', 'planeswalker', 'personaggi'];
+      
         // Autoplay Musica Sottofondo all'avvio
         useEffect(() => {
             if (bgmRef.current) {
@@ -7440,14 +7478,19 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
             }
         }, [currentChapter, selectedVolume, isAutoTransitioning]);
 
-        // LOGICA DI TRANSIZIONE (5 SECONDI)
+        // LOGICA DI TRANSIZIONE AVANZATA
         const handleChapterEnd = () => {
             handleVoicePause();
+            
+            // 1. C'è un altro capitolo nello stesso volume?
             if (currentChapter < selectedVolume.chapters) {
-                setCurrentChapter(prev => prev + 1); // Capitolo successivo
-            } else {
+                setCurrentChapter(prev => prev + 1); 
+            } 
+            else {
                 // Fine del Volume: cerco il volume successivo nella Raccolta
                 const volIndex = selectedCollection.volumes.findIndex(v => v.id === selectedVolume.id);
+                
+                // 2. C'è un altro volume in QUESTA raccolta?
                 if (volIndex < selectedCollection.volumes.length - 1) {
                     const nextVol = selectedCollection.volumes[volIndex + 1];
                     setIsAutoTransitioning(true);
@@ -7458,6 +7501,34 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                         setCurrentChapter(1);
                         setIsAutoTransitioning(false);
                     }, 5000);
+                } 
+                // 3. FINE DELLA RACCOLTA: Passiamo alla raccolta successiva?
+                else {
+                    const currentOrderIndex = collectionOrder.indexOf(selectedCollection.id);
+                    
+                    // Se esiste una raccolta successiva nell'array
+                    if (currentOrderIndex !== -1 && currentOrderIndex < collectionOrder.length - 1) {
+                        const nextCollectionId = collectionOrder[currentOrderIndex + 1];
+                        const nextCollection = libraryCollections.find(c => c.id === nextCollectionId);
+                        
+                        if (nextCollection && nextCollection.volumes.length > 0) {
+                            setIsAutoTransitioning(true);
+                            // Puoi usare un messaggio visivo personalizzato se vuoi modificando il div nell'HTML
+                            
+                            // Attendi 10 secondi e passa alla prossima Raccolta
+                            autoPlayTimer.current = setTimeout(() => {
+                                setSelectedCollection(nextCollection);
+                                setSelectedVolume(nextCollection.volumes[0]); // Seleziona il Volume 1
+                                setCurrentChapter(1);
+                                setIsAutoTransitioning(false);
+                            }, 10000); // 10 secondi
+                        } else {
+                            closePlayer(); // Prossima raccolta vuota, chiudi.
+                        }
+                    } else {
+                        // Abbiamo finito tutte le raccolte dell'App!
+                        closePlayer();
+                    }
                 }
             }
         };
@@ -7576,8 +7647,14 @@ Scrivi un racconto epico di circa 20 righe (3-4 paragrafi). Romanza i danni e gl
                                 <div className="bg-gray-900 p-4 rounded-xl border-t-4 border-yellow-500 min-h-[120px] flex flex-col justify-center">
                                     {isAutoTransitioning ? (
                                         <div className="text-center animate-fade">
-                                            <p className="text-emerald-400 font-black text-lg mb-1">✅ Volume Completato!</p>
-                                            <p className="text-white font-semibold text-sm">Passaggio automatico al prossimo volume in 5 secondi...</p>
+                                            <p className="text-emerald-400 font-black text-lg mb-1">
+                                                ✅ {currentChapter >= selectedVolume.chapters && selectedCollection.volumes.findIndex(v => v.id === selectedVolume.id) === selectedCollection.volumes.length - 1 ? "Raccolta Completata!" : "Volume Completato!"}
+                                            </p>
+                                            <p className="text-white font-semibold text-sm">
+                                                {currentChapter >= selectedVolume.chapters && selectedCollection.volumes.findIndex(v => v.id === selectedVolume.id) === selectedCollection.volumes.length - 1 
+                                                    ? "Passaggio alla prossima Raccolta in 10 secondi..." 
+                                                    : "Passaggio automatico al prossimo volume in 5 secondi..."}
+                                            </p>
                                             <button onClick={closePlayer} className="mt-4 bg-red-800 hover:bg-red-700 text-white font-bold py-2 px-4 rounded text-xs transition-colors">
                                                 Annulla e Ferma
                                             </button>
