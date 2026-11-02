@@ -1852,7 +1852,7 @@
                             <div className="flex gap-1 shrink-0">
                                 {character.manaIdentity.map(mId => {
                                     const mObj = MANA_COLORS.find(mc => mc.id === mId);
-                                    return <span key={mId} className="text-2xl drop-shadow">{mObj?.icon}</span>;
+                                    return <span key={mId} className="text-2xl drop-shadow">{mObj ? mObj.icon : ''}</span>;
                                 })}
                             </div>
                         </div>
