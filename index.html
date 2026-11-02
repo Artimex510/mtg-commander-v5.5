@@ -2544,7 +2544,11 @@
                     )}
 
                     {/* PERGAMENA DELLA SCENA */}
-                    <div className="bg-gray-900 border-2 border-amber-700/80 rounded-2xl p-5 sm:p-6 shadow-2xl">
+                    {/* PERGAMENA DELLA SCENA CON SFONDO CUSTOM */}
+                    <div 
+                        className="bg-gray-900 border-2 border-amber-700/80 rounded-2xl p-5 sm:p-6 shadow-2xl bg-cover bg-center relative overflow-hidden"
+                        style={{ backgroundImage: "linear-gradient(rgba(10, 15, 25, 0.82), rgba(10, 15, 25, 0.90)), url('./rpg_bg.png')" }}
+                    >
                         <div className="flex justify-between items-center mb-1">
                             <p className="text-amber-500 text-xs font-black uppercase tracking-widest">{currentNodeObj.act}</p>
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-800 text-gray-300 border border-gray-700">
