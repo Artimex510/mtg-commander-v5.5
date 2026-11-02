@@ -2074,11 +2074,13 @@
     };
     // ============================================================================
     // --- PARTE 2: CREATORE PERSONAGGIO, SCHEDA STAMPABILE E MOTORE DI GIOCO ---
-    // (100% Compatibile con Babel 6 - Zero Optional Chaining)
+    // (100% Compatibile con Babel 6 - Zero Optional Chaining - ZERO TAGLI)
     // ============================================================================
     const RpgCharacterManager = ({ navigate }) => {
+        const [party, setParty] = useState([]);
         const [character, setCharacter] = useState(null);
-        const [rpgView, setRpgView] = useState("sheet"); // "sheet" (Scheda) | "story" (Gioco)
+        // "create" (Creazione/Gestione Party) | "sheet" (Scheda Stampabile) | "story" (Gioco)
+        const [rpgView, setRpgView] = useState("create"); 
         const [playMode, setPlayMode] = useState("solo"); // "solo" (1 Giocatore) | "party" (Gruppo D&D)
         
         // Stati Form di Creazione Personaggio
@@ -2097,6 +2099,7 @@
         const [masterStat, setMasterStat] = useState("str");
         const [masterDc, setMasterDc] = useState(25);
         const [masterLootId, setMasterLootId] = useState("bonesplitter");
+        const [masterNodeJump, setMasterNodeJump] = useState("start");
 
         const MANA_COLORS = [
             { id: "W", name: "Bianco (Legge, Luce, Protezione)", icon: "☀️", colorClass: "text-yellow-600", bgClass: "bg-yellow-100", borderClass: "border-yellow-600" },
@@ -2137,8 +2140,6 @@
         ];
 
         // Carica la compagnia o il singolo eroe salvato
-        const [party, setParty] = useState([]);
-
         useEffect(() => {
             const savedParty = localStorage.getItem('rpg_party');
             if (savedParty) {
@@ -2148,6 +2149,7 @@
                     if (parsed.length > 0) {
                         setCharacter(parsed[0]);
                         if (parsed[0].playMode) setPlayMode(parsed[0].playMode);
+                        if (parsed[0].currentNode) setMasterNodeJump(parsed[0].currentNode);
                     }
                 } catch(e){}
             } else {
@@ -2158,6 +2160,7 @@
                         setParty([single]);
                         setCharacter(single);
                         if (single.playMode) setPlayMode(single.playMode);
+                        if (single.currentNode) setMasterNodeJump(single.currentNode);
                     } catch(e){}
                 }
             }
@@ -2176,9 +2179,12 @@
         const saveCharState = (updatedChar) => {
             setCharacter(updatedChar);
             localStorage.setItem('rpg_character', JSON.stringify(updatedChar));
-            // Aggiorna anche dentro il party se presente
-            setParty(prev => prev.map(p => p.id === updatedChar.id ? updatedChar : p));
+            // Aggiorna anche dentro il party e salva su localStorage
+            const newParty = party.map(p => p.id === updatedChar.id ? updatedChar : p);
+            setParty(newParty);
+            localStorage.setItem('rpg_party', JSON.stringify(newParty));
         };
+
         // Calcolo Statistiche Totali e Keywords attive
         const getFinalStats = (char) => {
             let bonus = (char.level - 1) * 2;
@@ -2258,7 +2264,7 @@
             return './mtg-bg.jpg';
         };
 
-        // CREAZIONE PERSONAGGIO
+        // CREAZIONE PERSONAGGIO (CON SUPPORTO MULTI-EROE IN GRUPPO)
         const createCharacter = () => {
             if (!name || !selectedRace || !selectedClass || !selectedMana) return alert("Compila tutti i campi!");
             
@@ -2312,6 +2318,14 @@
             
             // Reset campi form per un eventuale secondo eroe
             setName(""); setSelectedRace(""); setSelectedClass(""); setSelectedMana(""); setCustomAvatar(null);
+
+            if (playMode === 'solo') {
+                // In solitario apre subito la scheda dell'eroe pronto a giocare
+                setRpgView("sheet");
+            } else {
+                // In gruppo resta nella pagina di creazione così puoi aggiungere il 2°, 3° o 4° amico!
+                alert(`🛡️ Eroe "${newHero.name}" aggiunto alla compagnia! Puoi creare un altro eroe qui sotto oppure cliccare su "AVVIA LA STORIA CON LA COMPAGNIA".`);
+            }
         };
 
         const deleteParty = () => {
@@ -2320,15 +2334,26 @@
                 localStorage.removeItem('rpg_character');
                 setParty([]);
                 setCharacter(null);
+                setRpgView("create");
+                setLastRollInfo(null);
+                setEventBanner(null);
             }
         };
 
         const deleteCharacter = () => {
-            if (window.confirm("Vuoi davvero eliminare il tuo personaggio e ricominciare da zero?")) {
-                localStorage.removeItem('rpg_character');
-                setCharacter(null);
-                setCustomAvatar(null);
-                setRpgView("sheet");
+            if (window.confirm("Vuoi davvero eliminare questo personaggio?")) {
+                const remaining = party.filter(p => p.id !== character.id);
+                if (remaining.length > 0) {
+                    savePartyState(remaining);
+                    setRpgView("create");
+                } else {
+                    localStorage.removeItem('rpg_party');
+                    localStorage.removeItem('rpg_character');
+                    setParty([]);
+                    setCharacter(null);
+                    setCustomAvatar(null);
+                    setRpgView("create");
+                }
                 setLastRollInfo(null);
                 setEventBanner(null);
             }
@@ -2353,7 +2378,8 @@
 
         // GESTIONE RICOMPENSE, SALITA DI LIVELLO, TRASFORMAZIONE ANGELO/DEMONE E SCINTILLA
         const applyRewardsAndMove = (charState, rewards, targetNodeId, extraBanner = "") => {
-            let nextChar = { ...charState, currentNode: targetNodeId || charState.currentNode };
+            const nextNodeVal = targetNodeId || charState.currentNode;
+            let nextChar = { ...charState, currentNode: nextNodeVal };
             let messages = [];
             if (extraBanner) messages.push(extraBanner);
 
@@ -2421,7 +2447,14 @@
             if (messages.length > 0) setEventBanner(messages.join("\n"));
             else setEventBanner(null);
 
-            saveCharState(nextChar);
+            // Sincronizza il nodo della storia per tutta la compagnia e aggiorna la tendina Master
+            setMasterNodeJump(nextNodeVal);
+            setCharacter(nextChar);
+            localStorage.setItem('rpg_character', JSON.stringify(nextChar));
+            const syncedParty = party.map(p => p.id === nextChar.id ? nextChar : { ...p, currentNode: nextNodeVal });
+            setParty(syncedParty);
+            localStorage.setItem('rpg_party', JSON.stringify(syncedParty));
+
             window.scrollTo(0, 0);
         };
 
@@ -2518,9 +2551,14 @@
                 <div className="max-w-3xl mx-auto p-2 sm:p-4 animate-fade pb-24 space-y-4">
                     {/* BARRA COMANDI SUPERIORE */}
                     <div className="bg-gray-800 p-3 rounded-xl border border-gray-600 flex flex-wrap justify-between items-center gap-2 shadow-lg">
-                        <button onClick={() => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); setRpgView("sheet"); }} className="bg-amber-500 hover:bg-amber-400 text-black font-black px-3 py-2 rounded-lg text-xs shadow">
-                            🪪 Scheda & Stampa
-                        </button>
+                        <div className="flex gap-2">
+                            <button onClick={() => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); setRpgView("sheet"); }} className="bg-amber-500 hover:bg-amber-400 text-black font-black px-3 py-2 rounded-lg text-xs shadow">
+                                🪪 Scheda & Stampa
+                            </button>
+                            <button onClick={() => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); setRpgView("create"); }} className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-3 py-2 rounded-lg text-xs shadow">
+                                👥 Compagnia ({party.length})
+                            </button>
+                        </div>
 
                         {/* SELETTORE SOLITARIO / GRUPPO SEMPRE ACCESSIBILE */}
                         <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
@@ -2536,6 +2574,22 @@
                             {isSpeaking ? "🛑 Ferma Voce" : "🎙️ Voce Narrante"}
                         </button>
                     </div>
+
+                    {/* SELETTORE RAPIDO DELL'EROE ATTIVO (SE IN GRUPPO CON PIÙ EROI) */}
+                    {party.length > 1 && (
+                        <div className="bg-purple-950/60 border border-purple-500 rounded-xl p-2.5 flex items-center gap-2 overflow-x-auto">
+                            <span className="text-purple-300 font-black text-xs uppercase shrink-0">Turno di:</span>
+                            {party.map((hero) => (
+                                <button
+                                    key={hero.id}
+                                    onClick={() => setCharacter(hero)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${character.id === hero.id ? "bg-amber-500 text-black shadow-md scale-105" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}
+                                >
+                                    🛡️ {hero.name} ({hero.currentHP} PV)
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     {/* MINI-SCHEDA PERSONAGGIO IN ALTO */}
                     <div className="bg-gray-900/95 border-2 border-amber-600/60 rounded-xl p-3 shadow-xl flex items-center gap-3">
@@ -2579,7 +2633,6 @@
                         </div>
                     )}
 
-                    {/* PERGAMENA DELLA SCENA */}
                     {/* PERGAMENA DELLA SCENA CON SFONDO CUSTOM */}
                     <div 
                         className="bg-gray-900 border-2 border-amber-700/80 rounded-2xl p-5 sm:p-6 shadow-2xl bg-cover bg-center relative overflow-hidden"
@@ -2600,7 +2653,7 @@
 
                         {/* PULSANTI DELLE SCELTE */}
                         <div className="space-y-3">
-                            <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">Scegli la tua azione:</h4>
+                            <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">Scegli la tua azione ({character.name}):</h4>
                             {currentNodeObj.choices.map((ch, idx) => {
                                 if (ch.onlyParty && playMode !== "party") return null;
                                 if (ch.onlySolo && playMode !== "solo") return null;
@@ -2627,10 +2680,10 @@
                     {playMode === "party" && (
                         <div className="bg-purple-950/40 border-2 border-purple-500 rounded-2xl p-4 shadow-xl space-y-3 animate-fade">
                             <h3 className="text-purple-300 font-black text-sm uppercase tracking-wider">
-                                🎭 Console del Master (Per Azioni Libere del Gruppo)
+                                🎭 Console del Master (Eroe attivo: {character.name})
                             </h3>
                             <p className="text-xs text-gray-300">
-                                Quando un giocatore al tavolo inventa un'azione libera, scegli la statistica da mettere alla prova, tira il D20 (o usa dadi reali) e poi clicca uno dei bivi della storia!
+                                Quando un giocatore al tavolo inventa un'azione libera, seleziona il suo eroe nella barra in alto, scegli la statistica da mettere alla prova, tira il D20 e poi clicca uno dei bivi della storia!
                             </p>
                             <div className="grid grid-cols-3 gap-2">
                                 <select value={masterStat} onChange={e => setMasterStat(e.target.value)} className="bg-gray-900 border border-purple-500 rounded-lg p-2 text-white text-xs font-bold">
@@ -2661,20 +2714,55 @@
                                     🎲 Tira D20 Master
                                 </button>
                             </div>
+
+                            {/* CURA, DANNI E LOOT RAPIDO */}
                             <div className="flex flex-wrap gap-2 pt-2 border-t border-purple-800/60">
-                                <button onClick={() => saveCharState({ ...character, currentHP: Math.min(stats.maxHP, character.currentHP + 5) })} className="bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded">+5 PV</button>
-                                <button onClick={() => saveCharState({ ...character, currentHP: Math.max(1, character.currentHP - 5) })} className="bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded">-5 PV</button>
+                                <button onClick={() => saveCharState({ ...character, currentHP: Math.min(stats.maxHP, character.currentHP + 5) })} className="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded shadow">+5 PV</button>
+                                <button onClick={() => saveCharState({ ...character, currentHP: Math.max(1, character.currentHP - 5) })} className="bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded shadow">-5 PV</button>
                                 <select value={masterLootId} onChange={e => setMasterLootId(e.target.value)} className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white text-xs flex-1">
                                     {Object.values(RPG_ITEMS_DB).map(it => <option key={it.id} value={it.id}>{it.name}</option>)}
                                 </select>
-                                <button onClick={() => applyRewardsAndMove(character, { loot: masterLootId }, character.currentNode)} className="bg-amber-500 text-black text-xs font-black px-3 py-1.5 rounded">Dai Loot</button>
+                                <button onClick={() => applyRewardsAndMove(character, { loot: masterLootId }, character.currentNode)} className="bg-amber-500 hover:bg-amber-400 text-black text-xs font-black px-3 py-1.5 rounded shadow">Dai Loot</button>
+                            </div>
+
+                            {/* SELETTORE RAPIDO CAPITOLI / NODI DELLA STORIA */}
+                            <div className="pt-2 border-t border-purple-800/60 space-y-1.5">
+                                <label className="block text-[10px] font-black uppercase text-purple-300 tracking-wider">
+                                    🗺️ Salta a un Capitolo / Nodo della Storia:
+                                </label>
+                                <div className="flex gap-2">
+                                    <select
+                                        value={masterNodeJump}
+                                        onChange={e => setMasterNodeJump(e.target.value)}
+                                        className="bg-gray-900 border border-purple-500 rounded-lg px-2 py-1.5 text-white text-xs font-bold flex-1 truncate"
+                                    >
+                                        {Object.keys(RPG_STORY_NODES).map(nodeKey => {
+                                            const nObj = RPG_STORY_NODES[nodeKey];
+                                            return (
+                                                <option key={nodeKey} value={nodeKey}>
+                                                    [{nObj.act || "Scena"}] {nObj.title} ({nodeKey})
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+                                    <button
+                                        onClick={() => {
+                                            if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); setIsSpeaking(false); }
+                                            setLastRollInfo(null);
+                                            applyRewardsAndMove(character, null, masterNodeJump, `🧭 Il Master ha spostato la compagnia al capitolo: "${RPG_STORY_NODES[masterNodeJump] ? RPG_STORY_NODES[masterNodeJump].title : masterNodeJump}"`);
+                                        }}
+                                        className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black px-3 py-1.5 rounded-lg shadow shrink-0"
+                                    >
+                                        🗺️ Salta al Nodo
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
 
                     {/* ZAINO ED EQUIPAGGIAMENTO RAPIDO SOTTO LA STORIA */}
                     <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-lg">
-                        <h4 className="text-xs font-black uppercase text-amber-400 mb-2">🎒 Equipaggiamento Attivo & Zaino</h4>
+                        <h4 className="text-xs font-black uppercase text-amber-400 mb-2">🎒 Equipaggiamento Attivo & Zaino ({character.name})</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-bold text-gray-300 mb-3">
                             <div className="bg-gray-900 p-2 rounded border border-gray-700">⚔️ Arma: <span className="text-white">{character.equipped.weapon ? character.equipped.weapon.name : "Mani Nude"}</span></div>
                             <div className="bg-gray-900 p-2 rounded border border-gray-700">🛡️ Armatura: <span className="text-white">{character.equipped.armor ? character.equipped.armor.name : "Abiti Comuni"}</span></div>
@@ -2699,7 +2787,7 @@
         // ====================================================================
         // VISTA B: SCHEDA PERSONAGGIO STAMPABILE (STILE CARTA MAGIC)
         // ====================================================================
-        if (character) {
+        if (character && rpgView === "sheet") {
             const stats = getFinalStats(character);
             const mainMana = MANA_COLORS.find(m => character.manaIdentity[0] === m.id) || MANA_COLORS[0];
             
@@ -2712,16 +2800,35 @@
             return (
                 <div className="max-w-2xl mx-auto p-4 animate-fade pb-20">
                     <div className="no-print flex flex-wrap justify-between items-center gap-2 mb-6">
-                        <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold shadow">⬅ Home</button>
+                        <div className="flex gap-2">
+                            <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded font-bold shadow text-sm">⬅ Home</button>
+                            <button onClick={() => setRpgView("create")} className="bg-purple-800 hover:bg-purple-700 text-white px-3 py-2 rounded font-bold shadow text-sm">👥 Party ({party.length})</button>
+                        </div>
                         <div className="flex gap-2">
                             <label className="bg-purple-700 hover:bg-purple-600 text-white font-bold px-3 py-2 rounded shadow cursor-pointer text-sm flex items-center gap-1">
                                 🖼️ Cambia Foto
                                 <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, true)} className="hidden" />
                             </label>
                             <button onClick={() => window.print()} className="bg-blue-600 hover:bg-blue-500 text-white font-black px-4 py-2 rounded shadow text-sm">🖨️ Stampa Scheda</button>
-                            <button onClick={deleteCharacter} className="bg-red-800 hover:bg-red-700 text-white font-bold px-3 py-2 rounded shadow text-sm" title="Elimina e Ricrea">✖</button>
+                            <button onClick={deleteCharacter} className="bg-red-800 hover:bg-red-700 text-white font-bold px-3 py-2 rounded shadow text-sm" title="Elimina Eroe">✖</button>
                         </div>
                     </div>
+
+                    {/* SELETTORE EROE NELLA SCHEDA (SE CI SONO PIÙ EROI NEL PARTY) */}
+                    {party.length > 1 && (
+                        <div className="no-print bg-gray-800 border border-gray-600 rounded-xl p-2.5 mb-4 flex items-center gap-2 overflow-x-auto">
+                            <span className="text-amber-400 font-black text-xs uppercase shrink-0">Vedi Scheda di:</span>
+                            {party.map((hero) => (
+                                <button
+                                    key={hero.id}
+                                    onClick={() => setCharacter(hero)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${character.id === hero.id ? "bg-amber-500 text-black shadow" : "bg-gray-900 text-gray-300"}`}
+                                >
+                                    🛡️ {hero.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     <div id="print-area" className={`${mainMana.bgClass} text-black border-[6px] border-gray-900 rounded-2xl p-5 shadow-2xl relative`} style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/aged-paper.png')" }}>
                         
@@ -2838,11 +2945,9 @@
         }
 
         // ====================================================================
-        // VISTA C: CREAZIONE DEL PERSONAGGIO (SCHERMATA INIZIALE)
+        // VISTA C: CREAZIONE DEL PERSONAGGIO E COMPAGNIA (SCHERMATA INIZIALE)
         // ====================================================================
         const previewSrc = getAvatarSrc(selectedRace, selectedClass, customAvatar);
-        const selRaceObj = RACES.find(r => r.id === selectedRace);
-        const selClassObj = CLASSES.find(c => c.id === selectedClass);
 
         return (
             <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl border border-gray-600 mt-6 backdrop-blur-sm shadow-2xl animate-fade space-y-5 pb-10">
@@ -2864,34 +2969,43 @@
                     </div>
                 </div>
 
-                {/* LISTA EROI GIÀ CREATI NELLA COMPAGNIA */}
+                {/* LISTA EROI GIÀ CREATI NELLA COMPAGNIA (MODALITÀ GRUPPO) */}
                 {party.length > 0 && playMode === 'party' && (
-                    <div className="bg-purple-950/40 border border-purple-500 rounded-xl p-3 space-y-2">
+                    <div className="bg-purple-950/40 border-2 border-purple-500 rounded-xl p-3 space-y-2">
                         <p className="text-purple-300 font-black text-xs uppercase">Eroi nel Party ({party.length}):</p>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="space-y-1.5">
                             {party.map((hero, idx) => (
-                                <span key={idx} className="bg-purple-900 text-purple-200 border border-purple-400 text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow">
-                                    🛡️ {hero.name} ({hero.race} {hero.classType})
-                                </span>
+                                <div key={idx} className="bg-purple-900/80 text-purple-100 border border-purple-400 text-xs font-bold px-3 py-2 rounded-lg flex justify-between items-center shadow">
+                                    <span>🛡️ {hero.name} ({hero.race} {hero.classType})</span>
+                                    <button onClick={() => { setCharacter(hero); setRpgView("sheet"); }} className="bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-black px-2 py-1 rounded shadow">
+                                        🪪 Scheda
+                                    </button>
+                                </div>
                             ))}
                         </div>
-                        <button onClick={() => setRpgView("story")} className="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl shadow transition-all text-sm">
+                        <button onClick={() => { if (party.length > 0) { setCharacter(party[0]); setRpgView("story"); } }} className="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3.5 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.5)] transition-all text-sm">
                             🚀 AVVIA LA STORIA CON LA COMPAGNIA ({party.length} Eroi)
                         </button>
                     </div>
                 )}
 
+                {/* EROE PRONTO (MODALITÀ SOLITARIO) */}
                 {party.length > 0 && playMode === 'solo' && (
-                    <div className="bg-indigo-950/40 border border-indigo-500 rounded-xl p-3 text-center space-y-2">
-                        <p className="text-indigo-300 font-black text-xs">Eroe pronto: <b className="text-white">{party[0].name}</b></p>
-                        <button onClick={() => setRpgView("story")} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-xl shadow transition-all text-sm">
-                            📖 INIZIA L'AVVENTURA IN SOLITARIO
-                        </button>
+                    <div className="bg-indigo-950/40 border-2 border-indigo-500 rounded-xl p-3 text-center space-y-2">
+                        <p className="text-indigo-300 font-black text-xs">Eroe attivo: <b className="text-white">{party[0].name} ({party[0].race} {party[0].classType})</b></p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button onClick={() => { setCharacter(party[0]); setRpgView("sheet"); }} className="bg-amber-500 hover:bg-amber-400 text-black font-black py-2.5 rounded-xl shadow text-xs">
+                                🪪 VEDI SCHEDA
+                            </button>
+                            <button onClick={() => { setCharacter(party[0]); setRpgView("story"); }} className="bg-indigo-600 hover:bg-indigo-500 text-white font-black py-2.5 rounded-xl shadow text-xs">
+                                📖 GIOCA STORIA
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 <hr className="border-gray-700 my-2" />
-                <h3 className="text-white font-bold text-sm">{party.length === 0 ? "Crea il tuo Eroe:" : "Aggiungi un altro Eroe al Party:"}</h3>
+                <h3 className="text-white font-bold text-sm">{party.length === 0 ? "Crea il tuo Eroe:" : "➕ Aggiungi un altro Eroe al Party:"}</h3>
 
                 {/* ANTEPRIMA */}
                 <div className="w-full h-40 bg-gray-900 rounded-xl border-2 border-amber-500/50 overflow-hidden relative shadow-inner flex items-center justify-center">
@@ -2946,7 +3060,7 @@
                 )}
             </div>
         );
-      };
+    };
     
     function App() {
       const [introState, setIntroState] = useState('initial');
