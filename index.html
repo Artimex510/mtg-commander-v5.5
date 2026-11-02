@@ -2136,23 +2136,49 @@
             { id: "artefice", name: "Artefice", strBonus: 1, agiBonus: 2, magBonus: 4, conBonus: 5, ability: "Mastro Forgiatore: I suoi oggetti sono indistruttibili ai fallimenti critici (1)." }
         ];
 
+        // Carica la compagnia o il singolo eroe salvato
+        const [party, setParty] = useState([]);
+
         useEffect(() => {
-            const savedChar = localStorage.getItem('rpg_character');
-            if (savedChar) {
+            const savedParty = localStorage.getItem('rpg_party');
+            if (savedParty) {
                 try {
-                    const parsed = JSON.parse(savedChar);
-                    setCharacter(parsed);
-                    if (parsed.playMode) setPlayMode(parsed.playMode);
+                    const parsed = JSON.parse(savedParty);
+                    setParty(parsed);
+                    if (parsed.length > 0) {
+                        setCharacter(parsed[0]);
+                        if (parsed[0].playMode) setPlayMode(parsed[0].playMode);
+                    }
                 } catch(e){}
+            } else {
+                const savedChar = localStorage.getItem('rpg_character');
+                if (savedChar) {
+                    try {
+                        const single = JSON.parse(savedChar);
+                        setParty([single]);
+                        setCharacter(single);
+                        if (single.playMode) setPlayMode(single.playMode);
+                    } catch(e){}
+                }
             }
             return () => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); };
         }, []);
 
+        const savePartyState = (newParty) => {
+            setParty(newParty);
+            localStorage.setItem('rpg_party', JSON.stringify(newParty));
+            if (newParty.length > 0) {
+                setCharacter(newParty[0]);
+                localStorage.setItem('rpg_character', JSON.stringify(newParty[0]));
+            }
+        };
+
         const saveCharState = (updatedChar) => {
             setCharacter(updatedChar);
             localStorage.setItem('rpg_character', JSON.stringify(updatedChar));
+            // Aggiorna anche dentro il party se presente
+            setParty(prev => prev.map(p => p.id === updatedChar.id ? updatedChar : p));
         };
-
         // Calcolo Statistiche Totali e Keywords attive
         const getFinalStats = (char) => {
             let bonus = (char.level - 1) * 2;
@@ -2234,7 +2260,7 @@
 
         // CREAZIONE PERSONAGGIO
         const createCharacter = () => {
-            if (!name || !selectedRace || !selectedClass || !selectedMana) return alert("Compila tutti i campi per forgiare il tuo Eroe!");
+            if (!name || !selectedRace || !selectedClass || !selectedMana) return alert("Compila tutti i campi!");
             
             const rData = RACES.find(r => r.id === selectedRace);
             const cData = CLASSES.find(c => c.id === selectedClass);
@@ -2249,12 +2275,9 @@
             if (rData.id === 'volpe' || cData.id === 'soldato') initialKeywords.push("Cautela");
             if (cData.id === 'cavaliere' || cData.id === 'assassino') initialKeywords.push("Attacco Improvviso");
 
-            // Rimuove eventuali doppioni
-            initialKeywords = [...new Set(initialKeywords)];
-
             const startHP = rData.con + cData.conBonus + 5;
 
-            const newChar = {
+            const newHero = {
                 id: 'char-' + Date.now(),
                 name: name,
                 playMode: playMode,
@@ -2279,12 +2302,25 @@
                 },
                 currentHP: startHP,
                 abilities: [rData.ability, cData.ability],
-                mtgKeywords: initialKeywords,
+                mtgKeywords: [...new Set(initialKeywords)],
                 inventory: [],
                 equipped: { weapon: null, armor: null, artifact: null }
             };
 
-            saveCharState(newChar);
+            const updatedParty = playMode === 'party' ? [...party, newHero] : [newHero];
+            savePartyState(updatedParty);
+            
+            // Reset campi form per un eventuale secondo eroe
+            setName(""); setSelectedRace(""); setSelectedClass(""); setSelectedMana(""); setCustomAvatar(null);
+        };
+
+        const deleteParty = () => {
+            if (window.confirm("Vuoi cancellare tutta la compagnia e ricominciare da zero?")) {
+                localStorage.removeItem('rpg_party');
+                localStorage.removeItem('rpg_character');
+                setParty([]);
+                setCharacter(null);
+            }
         };
 
         const deleteCharacter = () => {
@@ -2811,35 +2847,58 @@
         return (
             <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl border border-gray-600 mt-6 backdrop-blur-sm shadow-2xl animate-fade space-y-5 pb-10">
                 <div className="flex justify-between items-center border-b border-gray-700 pb-2">
-                    <h2 className="text-3xl font-black text-amber-400 drop-shadow-md">Crea Eroe GDR</h2>
+                    <h2 className="text-3xl font-black text-amber-400 drop-shadow-md">Creazione Compagnia</h2>
                     <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded font-bold shadow">Esci</button>
                 </div>
 
-                {/* SCELTA MODALITÀ DI GIOCO: SOLITARIO O GRUPPO */}
+                {/* SCELTA MODALITÀ */}
                 <div>
                     <label className="block text-gray-300 font-bold text-xs uppercase mb-1">1. Modalità di Gioco</label>
                     <div className="grid grid-cols-2 gap-2">
                         <button onClick={() => setPlayMode("solo")} className={`p-3 rounded-xl font-black text-xs border-2 transition-all ${playMode === "solo" ? "bg-indigo-600 border-indigo-300 text-white shadow-lg" : "bg-gray-900 border-gray-700 text-gray-400"}`}>
-                            👤 AVVENTURA IN SOLITARIO
+                            👤 SOLITARIO
                         </button>
                         <button onClick={() => setPlayMode("party")} className={`p-3 rounded-xl font-black text-xs border-2 transition-all ${playMode === "party" ? "bg-purple-600 border-purple-300 text-white shadow-lg" : "bg-gray-900 border-gray-700 text-gray-400"}`}>
-                            🎲 GRUPPO CON MASTER (D&D)
+                            🎲 GRUPPO D&D
                         </button>
                     </div>
                 </div>
 
-                {/* ANTEPRIMA AVATAR */}
-                <div className="w-full h-48 bg-gray-900 rounded-xl border-2 border-amber-500/50 overflow-hidden relative shadow-inner flex items-center justify-center">
+                {/* LISTA EROI GIÀ CREATI NELLA COMPAGNIA */}
+                {party.length > 0 && playMode === 'party' && (
+                    <div className="bg-purple-950/40 border border-purple-500 rounded-xl p-3 space-y-2">
+                        <p className="text-purple-300 font-black text-xs uppercase">Eroi nel Party ({party.length}):</p>
+                        <div className="flex flex-wrap gap-2">
+                            {party.map((hero, idx) => (
+                                <span key={idx} className="bg-purple-900 text-purple-200 border border-purple-400 text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow">
+                                    🛡️ {hero.name} ({hero.race} {hero.classType})
+                                </span>
+                            ))}
+                        </div>
+                        <button onClick={() => setRpgView("story")} className="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl shadow transition-all text-sm">
+                            🚀 AVVIA LA STORIA CON LA COMPAGNIA ({party.length} Eroi)
+                        </button>
+                    </div>
+                )}
+
+                {party.length > 0 && playMode === 'solo' && (
+                    <div className="bg-indigo-950/40 border border-indigo-500 rounded-xl p-3 text-center space-y-2">
+                        <p className="text-indigo-300 font-black text-xs">Eroe pronto: <b className="text-white">{party[0].name}</b></p>
+                        <button onClick={() => setRpgView("story")} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-xl shadow transition-all text-sm">
+                            📖 INIZIA L'AVVENTURA IN SOLITARIO
+                        </button>
+                    </div>
+                )}
+
+                <hr className="border-gray-700 my-2" />
+                <h3 className="text-white font-bold text-sm">{party.length === 0 ? "Crea il tuo Eroe:" : "Aggiungi un altro Eroe al Party:"}</h3>
+
+                {/* ANTEPRIMA */}
+                <div className="w-full h-40 bg-gray-900 rounded-xl border-2 border-amber-500/50 overflow-hidden relative shadow-inner flex items-center justify-center">
                     {(selectedRace || customAvatar) ? (
-                        <img 
-                            key={previewSrc} 
-                            src={previewSrc} 
-                            onError={(e) => handleImgError(e, selectedRace)} 
-                            className="w-full h-full object-cover object-top animate-fade" 
-                            alt="Preview" 
-                        />
+                        <img key={previewSrc} src={previewSrc} onError={(e) => handleImgError(e, selectedRace)} className="w-full h-full object-cover object-top animate-fade" alt="Preview" />
                     ) : (
-                        <p className="text-gray-500 text-xs font-bold text-center px-4">Scegli Razza e Classe per vedere l'anteprima del personaggio</p>
+                        <p className="text-gray-500 text-xs font-bold text-center px-4">Scegli Razza e Classe per l'anteprima</p>
                     )}
                     <label className="absolute bottom-2 right-2 bg-black/80 hover:bg-black text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-gray-500 cursor-pointer shadow-lg">
                         📸 Carica Foto
@@ -2848,42 +2907,46 @@
                 </div>
 
                 <div>
-                    <label className="block text-gray-300 font-bold text-sm mb-1">2. Nome del Personaggio</label>
-                    <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="es. Kaelen, Raksha, Toshiro..." className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold outline-none focus:border-amber-500" />
+                    <label className="block text-gray-300 font-bold text-xs mb-1">Nome Eroe</label>
+                    <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="es. Kaelen, Toshiro..." className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold text-sm outline-none focus:border-amber-500" />
                 </div>
                 
                 <div>
-                    <label className="block text-gray-300 font-bold text-sm mb-1">3. Mana Iniziale</label>
-                    <select value={selectedMana} onChange={e=>setSelectedMana(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold outline-none focus:border-amber-500">
+                    <label className="block text-gray-300 font-bold text-xs mb-1">Mana Iniziale</label>
+                    <select value={selectedMana} onChange={e=>setSelectedMana(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold text-sm outline-none focus:border-amber-500">
                         <option value="">-- Scegli il tuo Colore --</option>
                         {MANA_COLORS.map(m => <option key={m.id} value={m.id}>{m.icon} {m.name}</option>)}
                     </select>
                 </div>
 
                 <div>
-                    <label className="block text-gray-300 font-bold text-sm mb-1">4. Razza (Creatura di Magic)</label>
-                    <select value={selectedRace} onChange={e=>setSelectedRace(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold outline-none focus:border-amber-500">
+                    <label className="block text-gray-300 font-bold text-xs mb-1">Razza (Magic / D&D)</label>
+                    <select value={selectedRace} onChange={e=>setSelectedRace(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold text-sm outline-none focus:border-amber-500">
                         <option value="">-- Scegli Razza --</option>
                         {RACES.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                     </select>
-                    {selRaceObj && <p className="text-emerald-400 text-xs font-bold mt-2 bg-emerald-900/30 p-2 rounded border border-emerald-800 shadow-inner">{selRaceObj.ability}</p>}
                 </div>
 
                 <div>
-                    <label className="block text-gray-300 font-bold text-sm mb-1">5. Classe / Sottotipo</label>
-                    <select value={selectedClass} onChange={e=>setSelectedClass(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold outline-none focus:border-amber-500">
+                    <label className="block text-gray-300 font-bold text-xs mb-1">Classe / Sottotipo</label>
+                    <select value={selectedClass} onChange={e=>setSelectedClass(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold text-sm outline-none focus:border-amber-500">
                         <option value="">-- Scegli Classe --</option>
                         {CLASSES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
-                    {selClassObj && <p className="text-blue-400 text-xs font-bold mt-2 bg-blue-900/30 p-2 rounded border border-blue-800 shadow-inner">{selClassObj.ability}</p>}
                 </div>
 
-                <button onClick={createCharacter} disabled={!name || !selectedRace || !selectedClass || !selectedMana} className="w-full bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 disabled:opacity-50 text-black font-black py-4 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.5)] transition-all text-xl mt-2">
-                    ⚔️ FORGIA EROE E INIZIA
+                <button onClick={createCharacter} disabled={!name || !selectedRace || !selectedClass || !selectedMana} className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-black font-black py-3 rounded-xl shadow transition-all text-base">
+                    {playMode === 'party' ? "➕ AGGIUNGI EROE AL PARTY" : "⚔️ CREA E AVVIA EROE"}
                 </button>
+
+                {party.length > 0 && (
+                    <button onClick={deleteParty} className="w-full bg-red-900/60 hover:bg-red-800 text-white font-bold py-2 rounded-lg text-xs transition-colors">
+                        🗑️ Cancella tutto e rifai il party
+                    </button>
+                )}
             </div>
         );
-    };
+      };
     
     function App() {
       const [introState, setIntroState] = useState('initial');
