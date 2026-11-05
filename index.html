@@ -1659,422 +1659,405 @@
     };
 
     // ============================================================================
-    // --- PARTE 1: DATABASE OGGETTI UFFICIALI DI MAGIC & STORIA ESPANSA ---
-    // (100% Compatibile con Babel 6 - Nessun Optional Chaining)
+    // --- PARTE 1: ARMERIA A 6 SLOT E MAXI-CAMPAGNA GDR MULTIVERSALE ---
+    // (100% Compatibile con Babel 6 - Zero Optional Chaining)
     // ============================================================================
     const RPG_ITEMS_DB = {
-        // ARMI (Slot: weapon)
-        "bonesplitter": { id: "bonesplitter", name: "Spaccaossa (Bonesplitter)", slot: "weapon", reqMana: null, str: 3, agi: 0, mag: 0, con: 0, keywords: [], desc: "Un'ascia grezza ma letale (+3 FOR)." },
-        "ghostfire_blade": { id: "ghostfire_blade", name: "Lama di Fuocospettrale", slot: "weapon", reqMana: null, str: 3, agi: 3, mag: 2, con: 0, keywords: ["Attacco Improvviso"], desc: "Lama incisa da Ugin (+3 FOR, +3 AGI, +2 MAG, Attacco Improvviso)." },
-        "loxodon_warhammer": { id: "loxodon_warhammer", name: "Martello da Guerra Lossodonte", slot: "weapon", reqMana: null, str: 5, agi: -1, mag: 0, con: 3, keywords: ["Travolgere", "Legame Vitale"], desc: "Pesante martello sacro (+5 FOR, +3 COS, Travolgere, Legame Vitale)." },
-        "shadowspear": { id: "shadowspear", name: "Lancia d'Ombra (Shadowspear)", slot: "weapon", reqMana: null, str: 4, agi: 3, mag: 2, con: 0, keywords: ["Travolgere", "Legame Vitale"], desc: "Dissolve l'immunità dei nemici (+4 FOR, +3 AGI, +2 MAG)." },
-        "sword_fire_ice": { id: "sword_fire_ice", name: "Spada di Fuoco e Ghiaccio", slot: "weapon", reqMana: null, str: 5, agi: 3, mag: 5, con: 0, keywords: ["Doppio Attacco"], desc: "Reliquia di Mirrodin (+5 FOR, +3 AGI, +5 MAG, Doppio Attacco)." },
-        "sword_feast_famine": { id: "sword_feast_famine", name: "Spada di Abbondanza e Carestia", slot: "weapon", reqMana: null, str: 5, agi: 4, mag: 2, con: 3, keywords: ["Tocco Letale"], desc: "Prosciuga la mente e il vigore (+5 FOR, +4 AGI, +3 COS, Tocco Letale)." },
-        "embercleave": { id: "embercleave", name: "Fenditura Cinerea (Embercleave)", slot: "weapon", reqMana: "R", str: 8, agi: 2, mag: 0, con: 0, keywords: ["Travolgere", "Doppio Attacco"], desc: "Richiede Mana Rosso 🔥 (+8 FOR, +2 AGI, Travolgere, Doppio Attacco)." },
-        "helm_of_the_host": { id: "helm_of_the_host", name: " Mazza del Conclave", slot: "weapon", reqMana: "G", str: 6, agi: 0, mag: 2, con: 4, keywords: ["Travolgere", "Cautela"], desc: "Richiede Mana Verde 🌳 (+6 FOR, +4 COS, Travolgere, Cautela)." },
-        "blackblade": { id: "blackblade", name: "Lama Nera Riforgiata (Blackblade)", slot: "weapon", reqMana: null, reqLegendary: true, str: 10, agi: 2, mag: 4, con: 5, keywords: ["Tocco Letale", "Indistruttibile"], desc: "Solo Creature Leggendarie. Uccise gli antichi dèi (+10 FOR, +4 MAG, +5 COS)." },
+        // --- ARMI (slot: "weapon") ---
+        bonesplitter: { id: "bonesplitter", name: "Spaccaossa (Ascia Grezza)", slot: "weapon", str: 3, agi: 0, mag: 0, con: 0, keywords: [] },
+        loxodon_warhammer: { id: "loxodon_warhammer", name: "Martello da Guerra Lossodonte", slot: "weapon", str: 4, agi: -1, mag: 0, con: 2, keywords: ["Travolgere", "Legame Vitale"] },
+        umezawa_jitte: { id: "umezawa_jitte", name: "Jitte di Umezawa", slot: "weapon", str: 2, agi: 4, mag: 2, con: 0, keywords: ["Attacco Improvviso"] },
+        sword_fire_ice: { id: "sword_fire_ice", name: "Spada di Fuoco e Ghiaccio", slot: "weapon", str: 4, agi: 2, mag: 4, con: 2, keywords: ["Attacco Improvviso"] },
+        staff_domination: { id: "staff_domination", name: "Bastone della Dominazione Arcana", slot: "weapon", str: 0, agi: 1, mag: 6, con: 2, keywords: ["Cautela"] },
+        blackblade: { id: "blackblade", name: "Blackblade Riforgiata", slot: "weapon", reqLegendary: true, str: 7, agi: 3, mag: 5, con: 5, keywords: ["Indistruttibile", "Travolgere"] },
 
-        // ARMATURE E AURE (Slot: armor)
-        "swiftfoot_boots": { id: "swiftfoot_boots", name: "Stivali Piedi Veloci (Swiftfoot Boots)", slot: "armor", reqMana: null, str: 0, agi: 5, mag: 0, con: 2, keywords: ["Rapidità", "Anti-Malocchio"], desc: "Stivali incantati (+5 AGI, +2 COS, Rapidità, Anti-Malocchio)." },
-        "lightning_greaves": { id: "lightning_greaves", name: "Schinieri dei Fulmini (Lightning Greaves)", slot: "armor", reqMana: null, str: 0, agi: 7, mag: 0, con: 2, keywords: ["Rapidità"], desc: "Velocità del lampo (+7 AGI, +2 COS, Rapidità)." },
-        "whispersilk_cloak": { id: "whispersilk_cloak", name: "Manto di Setabruna (Whispersilk Cloak)", slot: "armor", reqMana: null, str: 0, agi: 5, mag: 3, con: 2, keywords: ["Imbloccabile"], desc: "Ti rende invisibile alle guardie (+5 AGI, +3 MAG, Imbloccabile)." },
-        "darksteel_plate": { id: "darksteel_plate", name: "Corazza di Acciaio Scuro", slot: "armor", reqMana: null, str: 2, agi: 0, mag: 0, con: 9, keywords: ["Indistruttibile"], desc: "Non si rompe mai con l'1 critico (+9 COS, +2 FOR, Indistruttibile)." },
-        "celestial_mantle": { id: "celestial_mantle", name: "Manto Celestiale (Aura Bianca)", slot: "armor", reqMana: "W", str: 2, agi: 2, mag: 5, con: 7, keywords: ["Volare", "Cautela"], desc: "Richiede Mana Bianco ☀️ (+7 COS, +5 MAG, Volare, Cautela)." },
-        "curiosity_aura": { id: "curiosity_aura", name: "Veste dell'Arcimago (Aura Blu)", slot: "armor", reqMana: "U", str: 0, agi: 4, mag: 8, con: 3, keywords: ["Volare", "Anti-Malocchio"], desc: "Richiede Mana Blu 💧 (+8 MAG, +4 AGI, Volare, Anti-Malocchio)." },
-        "demonic_embrace": { id: "demonic_embrace", name: "Abbraccio Demoniaco (Aura Nera)", slot: "armor", reqMana: "B", str: 7, agi: 2, mag: 5, con: -2, keywords: ["Volare", "Tocco Letale"], desc: "Richiede Mana Nero 💀 (+7 FOR, +5 MAG, Volare, Tocco Letale)." },
-        "rancor_aura": { id: "rancor_aura", name: "Rancore Primordiale (Aura Verde)", slot: "armor", reqMana: "G", str: 6, agi: 2, mag: 0, con: 6, keywords: ["Travolgere", "Rigenerazione"], desc: "Richiede Mana Verde 🌳 (+6 FOR, +6 COS, Travolgere)." },
+        // --- TESTA / ELMI (slot: "head") ---
+        champion_helm: { id: "champion_helm", name: "Elmo del Campione di Benalia", slot: "head", str: 1, agi: 0, mag: 1, con: 3, keywords: ["Cautela"] },
+        hood_assassin: { id: "hood_assassin", name: "Cappuccio dell'Ombra Dimir", slot: "head", str: 0, agi: 3, mag: 2, con: 1, keywords: ["Imbloccabile"] },
+        helm_of_the_host: { id: "helm_of_the_host", name: "Elmo delle Moltitudini", slot: "head", reqLegendary: true, str: 3, agi: 3, mag: 3, con: 4, keywords: ["Cautela", "Attacco Improvviso"] },
 
-        // ARTEFATTI E RELIQUIE (Slot: artifact)
-        "sol_ring": { id: "sol_ring", name: "Anello Solare (Sol Ring)", slot: "artifact", reqMana: null, str: 0, agi: 0, mag: 6, con: 2, keywords: [], desc: "Concentra il potere di una stella antica (+6 MAG, +2 COS)." },
-        "chromatic_lantern": { id: "chromatic_lantern", name: "Lanterna Cromatica", slot: "artifact", reqMana: null, str: 1, agi: 1, mag: 5, con: 3, keywords: ["Pentacolore"], desc: "Ti permette di incanalare tutti i colori (+5 MAG, +3 COS)." },
-        "the_one_ring": { id: "the_one_ring", name: "Amuleto di Acciaio Scuro", slot: "artifact", reqMana: null, str: 3, agi: 3, mag: 4, con: 5, keywords: ["Indistruttibile"], desc: "Protegge tutti i tuoi oggetti dalla distruzione (+3 FOR/AGI, +4 MAG, +5 COS)." },
-        "aetherflux_reservoir": { id: "aetherflux_reservoir", name: "Serbatoio di Flusso Etereo", slot: "artifact", reqMana: null, str: 0, agi: 0, mag: 9, con: 6, keywords: ["Legame Vitale"], desc: "Incanala l'etere vitale (+9 MAG, +6 COS, Legame Vitale)." },
-        "Sensei_top": { id: "Sensei_top", name: "Cappa delle Profezie del Sensei", slot: "artifact", reqMana: null, str: 0, agi: 5, mag: 5, con: 2, keywords: ["Preveggenza"], desc: "Antico artefatto di Kamigawa (+5 AGI, +5 MAG)." }
+        // --- CORPO / ARMATURE (slot: "body") ---
+        whisper_cloak: { id: "whisper_cloak", name: "Manto Bisbigliante di Seta", slot: "body", str: 0, agi: 3, mag: 2, con: 2, keywords: ["Imbloccabile"] },
+        celestial_armor: { id: "celestial_armor", name: "Corazza Piumata di Serra", slot: "body", reqMana: "W", str: 2, agi: 2, mag: 2, con: 5, keywords: ["Volare", "Cautela"] },
+        darksteel_plate: { id: "darksteel_plate", name: "Corazza di Darksteel", slot: "body", str: 2, agi: 0, mag: 0, con: 7, keywords: ["Indistruttibile"] },
+
+        // --- MANI / GUANTI & SCUDI (slot: "hands") ---
+        gauntlets_power: { id: "gauntlets_power", name: "Guanti del Potere Runico", slot: "hands", str: 3, agi: 1, mag: 3, con: 1, keywords: [] },
+        shield_kaldra: { id: "shield_kaldra", name: "Scudo di Kaldra", slot: "hands", str: 2, agi: 0, mag: 1, con: 5, keywords: ["Indistruttibile"] },
+        venom_bracers: { id: "venom_bracers", name: "Parabraccia delle Spire Golgari", slot: "hands", str: 1, agi: 3, mag: 1, con: 1, keywords: ["Tocco Letale"] },
+
+        // --- PIEDI / STIVALI (slot: "feet") ---
+        Swiftfoot_boots: { id: "Swiftfoot_boots", name: "Stivali Piedi Veloci", slot: "feet", str: 0, agi: 4, mag: 1, con: 1, keywords: ["Attacco Improvviso"] },
+        lightning_greaves: { id: "lightning_greaves", name: "Schinieri dei Fulmini", slot: "feet", str: 1, agi: 5, mag: 1, con: 2, keywords: ["Attacco Improvviso", "Imbloccabile"] },
+
+        // --- ARTEFATTI / RELIQUIE (slot: "artifact") ---
+        sol_ring: { id: "sol_ring", name: "Anello Solare (Sol Ring)", slot: "artifact", str: 2, agi: 2, mag: 4, con: 2, keywords: [] },
+        chromatic_lantern: { id: "chromatic_lantern", name: "Lanterna Cromatica", slot: "artifact", str: 2, agi: 2, mag: 5, con: 3, keywords: ["Cautela"] }
     };
 
     const RPG_STORY_NODES = {
         // ====================================================================
-        // ATTO I: LE CENERI DI DOMINARIA (Da Mortale a Creatura Leggendaria)
+        // ATTO I: LE OMBRE DI DOMINARIA (LIVELLI 1 - 2)
         // ====================================================================
-        "start": {
-            id: "start",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "1. La Locanda del Calice Infranto",
-            textSolo: "La pioggia acida batte sulle vetrate della locanda 'Il Calice Infranto', ai confini di Nuova Benalia. Viaggi in solitaria da settimane attraverso una Dominaria ferita dalle guerre. In un angolo in penombra, una donna dai capelli argentei e gli abiti da artigiana di Tolaria ti fa cenno di sederti.\n\n«Ti stavo osservando, viandante,» sussurra Jhoira poggiando sul tavolo una mappa Thran. «Un antico complesso sotterraneo sotto le Grotte di Koilos ha ripreso a pulsare. La Cabala e un manipolo di orrori phyrexiani superstiti vogliono impadronirsi del Nucleo al suo interno. Da solo potrai muoverti senza dare nell'occhio: recupera il Nucleo e ti ricompenserò con le reliquie dell'Accademia.»",
-            textParty: "La pioggia batte sulle vetrate della locanda 'Il Calice Infranto', ai confini di Nuova Benalia. La vostra compagnia di avventurieri siede attorno a un grande tavolo di quercia, attirando gli sguardi dei mercenari locali. Una donna dai capelli argentei e gli abiti di Tolaria si avvicina al vostro gruppo.\n\n«Il mio nome è Jhoira,» esordisce poggiando una mappa Thran davanti a voi. «Sotto le Grotte di Koilos si è risvegliato un antico complesso. La Cabala e vecchi residui phyrexiani hanno unito le forze per reclamare il Nucleo del Sylex. Una squadra ben assortita come la vostra è l'unica speranza per sfondare le loro linee.»\n\n[Nota per il Master: Fai presentare brevemente i personaggi al tavolo prima di scegliere come rispondere a Jhoira!]",
+        start: {
+            act: "Atto I — Dominaria: La Locanda di Nuova Benalia",
+            title: "La Chiamata alle Armi",
+            textSolo: "La pioggia batte sulle vetrate colorate della locanda 'Il Grifone Spezzato'. Stringi tra le mani il tuo equipaggiamento mentre un vecchio studioso di Tolaria srotola una mappa bruciacchiata sul tavolo.\n\n«Le Linee di Forza di Dominaria stanno impazzendo», sussurra. «Una reliquia caduta sulla Vetta di Shiv sta risvegliando antiche creature e corrotti automi di Phyrexia. Per raggiungere la montagna dovrai attraversare il Passo delle Rocce Rosse o la Foresta di Llanowar. Quale via scegli?»",
+            textParty: "La pioggia batte sulle vetrate della locanda 'Il Grifone Spezzato' mentre la vostra Compagnia si riunisce attorno al tavolo di quercia. Un anziano saggio di Tolaria srotola davanti a voi una mappa sigillata col mana.\n\n«Avventurieri, le Linee di Forza di Dominaria stanno collassando! Sulla Vetta di Shiv è caduto un frammento planare che sta aizzando orde di Goblin, Wurm e abomini di Phyrexia. Prima di tentare la scalata dovrete farvi strada tra le terre selvagge e liberare l'antico guardiano a Koilos. Come vi muovete?»",
             choices: [
-                { text: "Giura di proteggere Dominaria senza chiedere nulla in cambio (Karma Buono +1)", nextNode: "preparazione_benalia", rewards: { karma: 1, exp: 20 } },
-                { text: "Esigi un anticipo immediato per il rischio mortale (Karma Oscuro -1, Ottieni Spaccaossa)", nextNode: "preparazione_benalia", rewards: { karma: -1, exp: 20, loot: "bonesplitter" } },
-                { text: "[Solo] Analizza in silenzio i sigilli arcani sulla mappa (Prova di Magia CD 22)", onlySolo: true, type: "roll", stat: "mag", dc: 22, successNode: "mappa_decifrata", failNode: "preparazione_benalia", failText: "Le rune Thran sono troppo antiche, non riesci a tradurle tutte." },
-                { text: "[Gruppo] Collaborate per interrogare Jhoira e decifrare la mappa (Prova di Magia/Agilità CD 20)", onlyParty: true, type: "roll", stat: "mag", dc: 20, successNode: "mappa_decifrata", failNode: "preparazione_benalia", failText: "Nonostante gli sforzi del gruppo, alcune sezioni della mappa restano oscure." }
+                { text: "📋 Interroga il saggio e studia le pergamene arcane prima di partire", type: "roll", stat: "mag", dc: 21, successNode: "tolaria_lore", failNode: "road_departure", failText: "Le rune sono troppo antiche, decidete di mettervi subito in marcia.", rewards: { exp: 40, loot: "sol_ring" } },
+                { text: "🍺 Sfida a braccio di ferro il sergente mercenario per guadagnare rifornimenti", type: "roll", stat: "str", dc: 22, successNode: "tavern_brawl_win", failNode: "road_departure", failDamage: 2, failText: "Il sergente ha una presa d'acciaio! Uscite dalla locanda con il polso indolenzito.", rewards: { exp: 40, loot: "champion_helm" } },
+                { text: "🗡️ Esci subito nella notte e imbocca il Sentiero verso le Montagne", type: "move", nextNode: "road_departure" }
             ]
         },
-        "mappa_decifrata": {
-            id: "mappa_decifrata",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "1B. Il Segreto di Tolaria",
-            textSolo: "I tuoi occhi brillano mentre decifri il codice geometrico dei Thran! Individui un condotto secondario e una camera del tesoro dimenticata. Jhoira sorride ammirata: «Hai una mente rara. Prendi questo Anello Solare, ti servirà là sotto.»",
-            textParty: "Unendo le conoscenze arcane del vostro gruppo, svelate una rete di tunnel segreti incisi nella mappa! Jhoira batte le mani colpita: «Siete più svegli di quanto sperassi. Prendete questo Anello Solare dai forzieri di Tolaria come dotazione per il gruppo!»",
+
+        tolaria_lore: {
+            act: "Atto I — Dominaria: Il Segreto di Tolaria",
+            title: "L'Anello di Luce",
+            text: "Decifrando i glifi di Tolaria scoprite che la reliquia caduta contiene una Scintilla sopita. Colpito dalla vostra saggezza, lo studioso vi consegna un antico Anello Solare (Sol Ring) per illuminare il vostro cammino (+40 EXP e Loot nello zaino!).\n\nUscite dalla locanda pronti ad affrontare le terre selvagge.",
             choices: [
-                { text: "Equipaggia l'Anello Solare e dirigiti alla piazza d'armi di Benalia", nextNode: "preparazione_benalia", rewards: { exp: 35, loot: "sol_ring" } }
+                { text: "➔ Imbocca il Sentiero del Passo Montano", type: "move", nextNode: "road_departure" }
             ]
         },
-        "preparazione_benalia": {
-            id: "preparazione_benalia",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "2. L'Avamposto di Nuova Benalia",
-            textSolo: "Prima di lasciare l'avamposto fortificato, passi accanto alla forgia dei cavalieri di Benalia e a una tenda di mercanti d'ombre. Un capitano umano dal mantello lacerato, Danitha Capashen, sta cercando qualcuno che testi la propria forza o che aiuti i feriti.",
-            textParty: "Uscendo dalla locanda, il vostro gruppo attraversa il cortile della guarnigione di Nuova Benalia. La comandante Danitha Capashen sta organizzando le difese: potete aiutarla, sfidare i suoi campioni in un duello d'addestramento o sgattaiolare nel mercato nero.",
+
+        tavern_brawl_win: {
+            act: "Atto I — Dominaria: Rispetto Guadagnato",
+            title: "Il Trofeo del Sergente",
+            text: "Con un urlo poderoso schiacciate il braccio del veterano sul tavolo di quercia! Tutta la locanda esplode in un applauso. Il sergente, ridendo, si toglie l'Elmo del Campione di Benalia e ve lo lancia (+40 EXP e Elmo nello zaino!).\n\nÈ il momento di partire nella notte.",
             choices: [
-                { text: "Aiuta i guaritori di Benalia a curare i soldati feriti (Karma +1, Cura tutta la salute, +25 EXP)", nextNode: "bivio_viaggio", rewards: { karma: 1, heal: 30, exp: 25 } },
-                { text: "Sfida un campione di Benalia in duello d'onore per vincere i suoi stivali (Prova di Forza CD 23)", type: "roll", stat: "str", dc: 23, successNode: "duello_benalia_vinto", failNode: "bivio_viaggio", failDamage: 3, failText: "Il cavaliere ti atterra con una spallata, ma ti lascia partire con onore." },
-                { text: "Ruba di soppiatto un Manto di Setabruna dal mercato nero (Karma -1, Prova di Agilità CD 23)", type: "roll", stat: "agi", dc: 23, successNode: "furto_benalia_vinto", failNode: "bivio_viaggio", failDamage: 4, rewards: { karma: -1 }, failText: "Le guardie ti scoprono! Fuggi fuori dalle mura rimediando una freccia di striscio." }
+                { text: "➔ Imbocca il Sentiero del Passo Montano", type: "move", nextNode: "road_departure" }
             ]
         },
-        "duello_benalia_vinto": {
-            id: "duello_benalia_vinto",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "Onore delle Armi",
-            textSolo: "Con un colpo magistrale disarmi il cavaliere sotto gli occhi di Danitha! Come promesso, ti vengono consegnati gli Stivali Piedi Veloci.",
-            textParty: "Il vostro campione abbatte la guardia scelta di Benalia tra gli applausi della guarnigione! Danitha vi consegna gli Stivali Piedi Veloci come premio.",
+
+        road_departure: {
+            act: "Atto I — Il Sentiero delle Rocce Rosse",
+            title: "Imboscata sul Passo!",
+            textSolo: "Ti lasci alle spalle le mura di Benalia. Mentre sali lungo una gola rocciosa illuminata dai lampi, una gragnola di frecce nere si conficca nel terreno ai tuoi piedi! Dalle rocce balza fuori un'Orda di Goblin Predoni guidata da un capoguerra con un'ascia Spaccaossa!",
+            textParty: "Vi lasciate alle spalle le mura di Benalia. Mentre la compagnia attraversa una stretta gola rocciosa, risuonano corni da guerra sgraziati! Dalle rocce sopra di voi balza fuori un'Orda di Goblin Predoni pronta a massacrarvi per derubarvi dell'equipaggiamento!",
             choices: [
-                { text: "Raccogli gli Stivali Piedi Veloci e parti verso Koilos", nextNode: "bivio_viaggio", rewards: { exp: 40, loot: "swiftfoot_boots" } }
+                { text: "⚔️ Sguaina le armi e affronta l'Orda di Goblin in Battaglia a Turni!", type: "combat", monster: "goblin_pack", winNode: "goblin_aftermath" },
+                { text: "🏹 Scocca un colpo preventivo dall'ombra per seminare il panico (AGI)", type: "roll", stat: "agi", dc: 24, successNode: "goblin_ambush_skip", failNode: "goblin_forced_fight", failDamage: 4, failText: "I Goblin ti vedono e ti feriscono prima che inizi la mischia!", rewards: { exp: 50, loot: "hood_assassin" } },
+                { text: "🦅 [Volare] Sorvola il canyon dall'alto evitando l'imboscata", type: "move", reqKeyword: "Volare", nextNode: "crossroads_wilds", rewards: { exp: 40 } }
             ]
         },
-        "furto_benalia_vinto": {
-            id: "furto_benalia_vinto",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "Mano Invisibile",
-            textSolo: "Come un'ombra scivoli tra i banchi del mercato e afferri il Manto di Setabruna senza che nessuno se ne accorga!",
-            textParty: "Mentre parte del gruppo distrae il mercante con una rissa simulata, il più furtivo di voi sottrae il Manto di Setabruna!",
+
+        goblin_forced_fight: {
+            act: "Atto I — Il Sentiero delle Rocce Rosse",
+            title: "Circondati dai Goblin!",
+            text: "L'effetto sorpresa è fallito e i Goblin vi stringono d'assedio con le lame sguainate! Non c'è altra scelta se non combattere fino all'ultimo sangue!",
             choices: [
-                { text: "Avvolgiti nel Manto di Setabruna (+5 AGI, Imbloccabile) e lascia la città", nextNode: "bivio_viaggio", rewards: { karma: -1, exp: 40, loot: "whispersilk_cloak" } }
+                { text: "⚔️ Entra nell'Arena e combatti l'Orda di Goblin!", type: "combat", monster: "goblin_pack", winNode: "goblin_aftermath" }
             ]
         },
-        "bivio_viaggio": {
-            id: "bivio_viaggio",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "3. Il Triplo Sentiero per Koilos",
-            textSolo: "Davanti a te si aprono tre vie per raggiungere le Grotte di Koilos:\n1) La Via Imperiale, presidiata da predoni Keldon e Goblin.\n2) Le Paludi di Urborg, infestate da non-morti ma ricche di antiche tombe.\n3) Il Picco delle Linee di Forza, dove sorge un Santuario dei Cinque Mana.",
-            textParty: "La vostra compagnia giunge a una biforcazione. Il Master può far discutere il gruppo su quale rotta intraprendere:\n1) Sfondare il blocco dei predoni Keldon sulla Via Imperiale.\n2) Attraversare le tetre Paludi di Urborg.\n3) Salire al Santuario dei Cinque Mana per legare nuovi colori di mana.",
+
+        goblin_ambush_skip: {
+            act: "Atto I — Il Sentiero delle Rocce Rosse",
+            title: "Colpo Letale nell'Ombra",
+            text: "Con una manovra fulminea disarmate il capoguerra Goblin al primo colpo! Il resto della banda fugge urlando giù per il burrone abbandonando un Cappuccio dell'Ombra (+50 EXP!). Il sentiero ora si apre verso un grande bivio.",
             choices: [
-                { text: "Prendi la Via Imperiale e affronta i predoni Keldon e Goblin", nextNode: "imboscata_predoni" },
-                { text: "Addentrati nelle Paludi di Urborg tra nebbie e reliquie", nextNode: "paludi_urborg" },
-                { text: "Sali al Santuario del Mana per espandere i tuoi colori (Multicolore)", nextNode: "santuario_mana" },
-                { text: "[Abilità Volare / Imbloccabile] Oltrepassa ogni blocco senza combattere!", reqKeywordAny: ["Volare", "Imbloccabile"], nextNode: "enigma_thran", rewards: { exp: 40 } }
+                { text: "➔ Prosegui fino al Bivio delle Terre Selvagge", type: "move", nextNode: "crossroads_wilds" }
             ]
         },
-        "santuario_mana": {
-            id: "santuario_mana",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "4A. L'Obelisco dei Cinque Soli",
-            textSolo: "Sali in solitudine fino al cerchio megalitico. L'Obelisco Thran brilla dei cinque colori del Mana: toccandolo puoi aggiungere un nuovo colore alla tua Identità (permettendoti di usare armi e aure di quel colore) e acquisire un dono innato.",
-            textParty: "Il gruppo raggiunge la vetta ventosa dove svetta l'Obelisco dei Cinque Soli. L'energia arcana avvolge la compagnia, permettendovi di sintonizzare il vostro legame con una nuova fonte di Mana!",
+
+        goblin_aftermath: {
+            act: "Atto I — Il Sentiero delle Rocce Rosse",
+            title: "Il Campo di Battaglia",
+            text: "Gli ultimi Goblin fuggono tra le rocce lasciando sul terreno le loro armi e una sacca di erbe curative. Dopo aver ripreso fiato, proseguite fino al grande bivio che divide la Foresta di Llanowar dalle Paludi di Urborg.",
             choices: [
-                { text: "☀️ Legati al Mana Bianco (+10 PV, Karma +1, ricevi Manto Celestiale)", nextNode: "enigma_thran", rewards: { addMana: "W", heal: 10, karma: 1, loot: "celestial_mantle", exp: 35 } },
-                { text: "💧 Legati al Mana Blu (+40 EXP, ricevi Veste dell'Arcimago)", nextNode: "enigma_thran", rewards: { addMana: "U", loot: "curiosity_aura", exp: 40 } },
-                { text: "💀 Legati al Mana Nero (Karma -1, ricevi Abbraccio Demoniaco)", nextNode: "enigma_thran", rewards: { addMana: "B", karma: -1, loot: "demonic_embrace", exp: 35 } },
-                { text: "🔥 Legati al Mana Rosso (Ottieni 'Rapidità' e +35 EXP)", nextNode: "enigma_thran", rewards: { addMana: "R", addKeyword: "Rapidità", exp: 35 } },
-                { text: "🌳 Legati al Mana Verde (Ricevi Rancore Primordiale e 'Travolgere')", nextNode: "enigma_thran", rewards: { addMana: "G", loot: "rancor_aura", addKeyword: "Travolgere", exp: 35 } }
+                { text: "💚 Fasciate le ferite col bottino (+6 PV a tutti) e avanzate al bivio", type: "move", nextNode: "crossroads_wilds", rewards: { heal: 6 } }
             ]
         },
-        "imboscata_predoni": {
-            id: "imboscata_predoni",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "4B. L'Assedio dei Keldon",
-            textSolo: "Un gigantesco capoguerra Keldon, scortato da una muta di Goblin Lanciadardi, ti sbarra il passo! Essendo da solo, cercano di accerchiarti rapidamente.",
-            textParty: "Un intero drappello di guerra Keldon con catapulte goblin sbarra il ponte! «Uccideteli tutti e prendete i loro artefatti!» urla il capoguerra brandendo un maglio infuocato.",
+
+        crossroads_wilds: {
+            act: "Atto I — Il Bivio di Dominaria",
+            title: "Tre Strade verso Koilos",
+            text: "Davanti a voi si aprono tre sentieri per raggiungere le Caverne di Koilos:\n\n1. **La Foresta di Llanowar (Verde):** Un intrico di alberi colossali dove dimorano Elfi, Troll rigeneranti e giganteschi Wurm.\n2. **Le Cripte di Urborg (Nero):** Una landa nebbiosa infestata da Zombie e dominata da un antico Signore dei Non Morti.\n3. **I Picchi dei Grifoni (Bianco/Blu):** Una cresta spazzata dal vento dove sorge un Santuario del Mana custodito dai Grifoni di Serra.",
             choices: [
-                { text: "[Solo] Duella frontalmente col capoguerra Keldon (Prova di Forza CD 25)", onlySolo: true, type: "roll", stat: "str", dc: 25, successNode: "predoni_vinti", failNode: "predoni_ferito", failDamage: 6, critFailDestroySlot: "weapon" },
-                { text: "[Solo] Bersaglia i barili di polvere goblin con la magia (Prova di Magia CD 24)", onlySolo: true, type: "roll", stat: "mag", dc: 24, successNode: "predoni_vinti", failNode: "predoni_ferito", failDamage: 6 },
-                { text: "[Gruppo] Carica Combinata: prima linea contro il Keldon, incantatori sui Goblin (Prova CD 22)", onlyParty: true, type: "roll", stat: "str", dc: 22, successNode: "predoni_vinti", failNode: "predoni_ferito", failDamage: 4 },
-                { text: "[Gruppo] Imboscata Tattica sui fianchi del ponte (Prova di Agilità CD 22)", onlyParty: true, type: "roll", stat: "agi", dc: 22, successNode: "predoni_vinti", failNode: "predoni_ferito", failDamage: 4 }
+                { text: "🌳 Entra nella Foresta di Llanowar", type: "move", nextNode: "llanowar_entry" },
+                { text: "💀 Attraversa le Cripte Nebbiose di Urborg", type: "move", nextNode: "urborg_entry" },
+                { text: "☀️ Scala i Picchi dei Grifoni di Serra", type: "move", nextNode: "serra_peaks_entry" }
             ]
         },
-        "predoni_vinti": {
-            id: "predoni_vinti",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "Il Bottino del Capoguerra",
-            textSolo: "Il capoguerra crolla a terra sconfitto! Nel suo carro corazzato trovi armi di fattura straordinaria.",
-            textParty: "La vostra azione coordinata spazza via la banda di predoni! Tra i resti dell'accampamento trovate un forziere blindato.",
+
+        // --- RAMO 1: FORESTA DI LLANOWAR ---
+        llanowar_entry: {
+            act: "Atto I — Foresta di Llanowar",
+            title: "Il Ruggito tra le Fronde",
+            text: "La luce filtra appena tra le fronde millenarie di Llanowar. Improvvisamente il terreno trema: dal sottobosco emerge un gigantesco **Wurm Corazzato (7/6)** che divora gli alberi sul suo cammino, mentre su un ponte di radici un **Troll di Thrun** sbarra il passaggio verso il Santuario Verde!",
             choices: [
-                { text: "Prendi il Martello da Guerra Lossodonte (+5 FOR, Travolgere, Legame Vitale)", nextNode: "enigma_thran", rewards: { exp: 55, loot: "loxodon_warhammer" } },
-                { text: "Prendi gli Schinieri dei Fulmini (+7 AGI, Rapidità)", nextNode: "enigma_thran", rewards: { exp: 55, loot: "lightning_greaves" } }
+                { text: "⚔️ Affronta il colossale Wurm Corazzato in Battaglia a Turni!", type: "combat", monster: "craw_wurm", winNode: "llanowar_shrine" },
+                { text: "⚔️ Sfida il Troll di Thrun sul ponte di radici!", type: "combat", monster: "llanowar_troll", winNode: "llanowar_shrine" },
+                { text: "🌿 Comunica con lo spirito della foresta per calmare le bestie (MAG)", type: "roll", stat: "mag", dc: 25, successNode: "llanowar_shrine", failNode: "llanowar_troll_ambush", failDamage: 5, failText: "Il Troll non ascolta la tua magia e ti scaraventa a terra!", rewards: { exp: 70, karma: 1 } }
             ]
         },
-        "predoni_ferito": {
-            id: "predoni_ferito",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "Oltre le Linee Nemiche",
-            textSolo: "Ferito ma indomito, ti lanci oltre la scarpata sfuggendo all'accerchiamento e raggiungendo i cancelli esterni di Koilos.",
-            textParty: "Lo scontro è brutale e vi costa sangue, ma riuscite a sfondare il blocco e a raggiungere i cancelli esterni di Koilos.",
+
+        llanowar_troll_ambush: {
+            act: "Atto I — Foresta di Llanowar",
+            title: "La Furia del Troll",
+            text: "Il Troll di Thrun ruggisce agitando una clava di pietra viva! Dovete abbatterlo per passare!",
             choices: [
-                { text: "Tampona le ferite e prosegui verso le porte Thran", nextNode: "enigma_thran", rewards: { exp: 25 } }
+                { text: "⚔️ Combatti il Troll di Thrun nell'Arena!", type: "combat", monster: "llanowar_troll", winNode: "llanowar_shrine" }
             ]
         },
-        "paludi_urborg": {
-            id: "paludi_urborg",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "4C. Il Cavaliere Nero di Urborg",
-            textSolo: "Cammini sugli isolotti di torba nera di Urborg. Dalle nebbie emerge uno Spettro della Cabala in armatura d'ossidiana che punta la sua lancia gelida contro il tuo cuore!",
-            textParty: "La nebbia di Urborg circonda la vostra compagnia. Dal pantano sorgono scheletri corazzati guidati da uno Spettro della Cabala su un destriero d'ombra!",
+
+        llanowar_shrine: {
+            act: "Atto I — Il Cuore di Llanowar",
+            title: "L'Altare di Gaea",
+            text: "Superato il pericolo, raggiungete una radura sacra dove sgorga una fonte di puro Mana Verde. Gli arcidruidi elfici riconoscono il vostro valore e vi offrono la benedizione della natura prima che proseguiate verso le rovine di Koilos.",
             choices: [
-                { text: "Affronta lo Spettro resistendo al suo tocco necrotico (Prova di Costituzione CD 24)", type: "roll", stat: "con", dc: 24, successNode: "tesoro_urborg", failNode: "predoni_ferito", failDamage: 6 },
-                { text: "Dissolvi lo spirito con un dardo di pura volontà arcana (Prova di Magia CD 24)", type: "roll", stat: "mag", dc: 24, successNode: "tesoro_urborg", failNode: "predoni_ferito", failDamage: 6 },
-                { text: "Stringi un patto oscuro con lo Spettro (Karma -2, ottieni Lancia d'Ombra e 'Tocco Letale')", nextNode: "enigma_thran", rewards: { karma: -2, addKeyword: "Tocco Letale", loot: "shadowspear", exp: 50 } }
+                { text: "🌳 Assorbi il Mana Verde (+Mana G, +Travolgere, +10 PV a tutti)", type: "move", nextNode: "koilos_gates", rewards: { addMana: "G", addKeyword: "Travolgere", heal: 10, exp: 60 } },
+                { text: "🧤 Prendi i Guanti del Potere Runico custoditi sull'altare", type: "move", nextNode: "koilos_gates", rewards: { loot: "gauntlets_power", exp: 60 } }
             ]
         },
-        "tesoro_urborg": {
-            id: "tesoro_urborg",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "Il Sarcofago degli Antichi",
-            textSolo: "Lo Spettro si dissolve in cenere. Nel mausoleo alle sue spalle scopri due reliquie intatte.",
-            textParty: "Abbattuto lo Spettro e la sua scorta non-morta, il gruppo apre il sarcofago sigillato nella palude.",
+
+        // --- RAMO 2: CRIPTE DI URBORG ---
+        urborg_entry: {
+            act: "Atto I — Le Paludi di Urborg",
+            title: "L'Armata del Signore dei Non Morti",
+            text: "Miasmi sulfurei si alzano dalle acque nere di Urborg. Dalle tombe scoperchiate emergono decine di mani scheletriche: in cima a un mausoleo gotico, il **Signore dei Non Morti** alza la sua falce nera ordinando alla sua orda di Zombie di farvi a pezzi!",
             choices: [
-                { text: "Indossa la Corazza di Acciaio Scuro (+9 COS, Indistruttibile)", nextNode: "enigma_thran", rewards: { exp: 55, loot: "darksteel_plate" } },
-                { text: "Impugna la Spada di Fuoco e Ghiaccio (+5 FOR, +5 MAG, Doppio Attacco)", nextNode: "enigma_thran", rewards: { exp: 55, loot: "sword_fire_ice" } }
+                { text: "⚔️ Carica l'orda e affronta il Signore dei Non Morti nell'Arena!", type: "combat", monster: "undead_lord", winNode: "urborg_vault" },
+                { text: "💀 Usa la Necromanzia o il Mana per piegare gli Zombie al tuo volere (MAG)", type: "roll", stat: "mag", dc: 26, successNode: "urborg_vault", failNode: "urborg_forced_combat", failDamage: 5, failText: "Il potere oscuro ti respinge, gli Zombie ti circondano!", rewards: { exp: 80, karma: -1, addKeyword: "Tocco Letale" } }
             ]
         },
-        "enigma_thran": {
-            id: "enigma_thran",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "5. L'Enigma del Portale Thran",
-            textSolo: "Sei finalmente davanti al portale sigillato delle Grotte di Koilos. Sulla porta di pietra fluttuano tre glifi luminosi con un'iscrizione: «Prima della Frattura, due pietre divisero due fratelli sulla verde isola che fu incenerita dal Sylex. Quale isola vide la fine della Guerra dei Fratelli?»",
-            textParty: "Il vostro gruppo si trova davanti al gigantesco portale Thran di Koilos. Un guardiano olografico pone un enigma a tutta la compagnia: «Quale isola sacra agli elfi fu polverizzata dal Sylex di Urza alla fine della Guerra dei Fratelli?»",
+
+        urborg_forced_combat: {
+            act: "Atto I — Le Paludi di Urborg",
+            title: "Assedio Non Morto",
+            text: "Gli Zombie vi afferrano dalle acque putride! Dovete sconfiggere il loro padrone per spezzare l'incantesimo!",
             choices: [
-                { text: "Pronuncia: «Argoth!» (Risposta Esatta - Il portale si apre e ti benedice!)", nextNode: "ingresso_koilos", rewards: { exp: 50, heal: 15, loot: "chromatic_lantern" } },
-                { text: "Pronuncia: «Tolaria!» (Risposta Errata - Scatta una scarica difensiva, -5 PV)", nextNode: "ingresso_koilos", rewards: { damage: 5, exp: 10 } },
-                { text: "Pronuncia: «Shiv!» (Risposta Errata - Scatta una scarica difensiva, -5 PV)", nextNode: "ingresso_koilos", rewards: { damage: 5, exp: 10 } },
-                { text: "Forza gli ingranaggi del portale con la pura potenza fisica (Prova di Forza CD 26)", type: "roll", stat: "str", dc: 26, successNode: "ingresso_koilos", failNode: "ingresso_koilos", failDamage: 5, rewards: { exp: 40 } }
+                { text: "⚔️ Combatti il Signore dei Non Morti!", type: "combat", monster: "undead_lord", winNode: "urborg_vault" }
             ]
         },
-        "ingresso_koilos": {
-            id: "ingresso_koilos",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "6. Karn e l'Obliteratore Phyrexiano",
-            textSolo: "Entri nella Sala del Nucleo. Al centro della volta, il leggendario golem d'argento Karn è immobilizzato da catene d'olio nero generate da un mostruoso Obliteratore Phyrexiano!\n\n«Viandante!» tuona Karn. «Non lasciare che tocchi il Nucleo Thran! Colpiscilo ora che i suoi scudi sono rivolti verso di me!»",
-            textParty: "Irrompete nella Sala del Nucleo. Il golem d'argento Karn è intrappolato da filamenti biomeccanici mentre un colossale Obliteratore Phyrexiano si prepara a corrompere il Nucleo!\n\n«Eroi di Dominaria!» tuona Karn. «Unite i vostri attacchi! Da soli verrete disintegrati, ma insieme potete abbatterlo!»",
+
+        urborg_vault: {
+            act: "Atto I — Il Mausoleo di Urborg",
+            title: "Il Trono d'Ossidiana",
+            text: "Sconfitto il Signore dei Non Morti, il mausoleo si apre rivelando un nucleo di Mana Nero e antiche reliquie Golgari e Dimir.",
             choices: [
-                { text: "[Abilità Travolgere / Tocco Letale / Doppio Attacco] Usa la tua abilità letale per squarciare il nucleo dell'Obliteratore!", reqKeywordAny: ["Travolgere", "Tocco Letale", "Doppio Attacco"], nextNode: "vittoria_koilos", rewards: { exp: 80 } },
-                { text: "Scontro Titanico in Mischia (Prova Epica di Forza CD 28)", type: "roll", stat: "str", dc: 28, successNode: "vittoria_koilos", failNode: "koilos_quasi_morto", failDamage: 8, critFailDestroySlot: "weapon" },
-                { text: "Sovraccarico Arcano sul flusso del Sylex (Prova Epica di Magia CD 28)", type: "roll", stat: "mag", dc: 28, successNode: "vittoria_koilos", failNode: "koilos_quasi_morto", failDamage: 8 },
-                { text: "Acrobazia tra le lame per recidere i condotti d'olio (Prova Epica di Agilità CD 28)", type: "roll", stat: "agi", dc: 28, successNode: "vittoria_koilos", failNode: "koilos_quasi_morto", failDamage: 8 }
+                { text: "💀 Assorbi il Mana Nero (+Mana B, +Legame Vitale, +80 EXP)", type: "move", nextNode: "koilos_gates", rewards: { addMana: "B", addKeyword: "Legame Vitale", exp: 80, karma: -1 } },
+                { text: "🧤 Raccogli i Parabraccia Velenosi (+Tocco Letale) e purifica la cripta", type: "move", nextNode: "koilos_gates", rewards: { loot: "venom_bracers", exp: 80, karma: 1 } }
             ]
         },
-        "koilos_quasi_morto": {
-            id: "koilos_quasi_morto",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "Il Prezzo del Sacrificio",
-            textSolo: "L'Obliteratore ti trafigge la spalla scaraventandoti contro l'altare! Mentre la vista ti si annebbia, Karn spezza una delle sue catene e blocca gli artigli del mostro: «Ora, finiscilo!»",
-            textParty: "L'onda d'urto dell'Obliteratore mette in ginocchio la compagnia! Ma Karn riesce a liberare un braccio d'argento e immobilizza la bestia: «Colpitelo adesso, con tutto ciò che avete!»",
+
+        // --- RAMO 3: PICCHI DI SERRA ---
+        serra_peaks_entry: {
+            act: "Atto I — I Picchi di Serra",
+            title: "La Sentinella Alata",
+            text: "Salendo lungo le scalinate di marmo bianco sospese tra le nuvole, un **Grifone d'Argento Ribelle**, impazzito per le anomalie del mana, piomba dal cielo per difendere il tempio!",
             choices: [
-                { text: "Sferra il colpo finale nel cuore dell'Obliteratore!", nextNode: "vittoria_koilos", rewards: { exp: 60 } }
+                { text: "⚔️ Affronta il Grifone d'Argento in Combattimento a Turni!", type: "combat", monster: "serra_griffin", winNode: "serra_sanctum" },
+                { text: "☀️ Intona un inno di pace per placare la fiera celeste (COS/FOR)", type: "roll", stat: "con", dc: 25, successNode: "serra_sanctum", failNode: "serra_peaks_entry", failDamage: 4, failText: "Il Grifone ti colpisce con gli artigli d'argento!", rewards: { exp: 75, karma: 2 } }
             ]
         },
-        "vittoria_koilos": {
-            id: "vittoria_koilos",
-            act: "Atto I: Le Ceneri di Dominaria",
-            title: "7. Ascensione a Creatura Leggendaria!",
-            textSolo: "L'Obliteratore esplode in una pioggia di scorie inerti! Karn si china davanti a te: «Oggi il tuo nome entra nel mito di Dominaria. Non sei più un semplice avventuriero: sei una Leggenda.»\n\n👑 OTTIENI IL TITOLO DI 'CREATURA LEGGENDARIA' (+5 a tutte le statistiche, +10 PV Max!). Sul piedistallo risplendono due armi mitiche.",
-            textParty: "Il boss crolla sconfitto! Karn libera la sua energia curativa sul gruppo: «Le vostre gesta verranno tramandate per secoli. Siete diventati Eroi Leggendari di Dominaria!»\n\n👑 OTTIENI IL TITOLO DI 'CREATURA LEGGENDARIA' (+5 a tutte le statistiche, +10 PV Max!).",
+
+        serra_sanctum: {
+            act: "Atto I — Il Santuario delle Nuvole",
+            title: "La Grazia di Serra",
+            text: "All'interno del tempio celeste, i fasci di luce bianca e blu rigenerano le vostre forze prima della discesa verso le Caverne di Koilos.",
             choices: [
-                { text: "Reclama la Lama Nera Riforgiata (Blackblade, +10 FOR, Indistruttibile) e tocca il Nucleo", nextNode: "trauma_scintilla", rewards: { makeLegendary: true, loot: "blackblade", heal: 25, exp: 100 } },
-                { text: "Reclama la Fenditura Cinerea (Embercleave, +8 FOR, Doppio Attacco) e tocca il Nucleo", nextNode: "trauma_scintilla", rewards: { makeLegendary: true, addMana: "R", loot: "embercleave", heal: 25, exp: 100 } }
-            ]
-        },
-        "trauma_scintilla": {
-            id: "trauma_scintilla",
-            act: "Il Risveglio Cosmico",
-            title: "8. Il Trauma e l'Accensione della Scintilla!",
-            textSolo: "Appena afferri il Nucleo di Koilos, una faglia temporale repressa da millenni detona! Il pavimento scompare, la realtà si lacera e un dolore inimmaginabile ti squarcia l'anima. Stai per essere cancellato dall'esistenza... quando nel profondo del tuo essere esplode un fuoco antico.\n\nLA TUA SCINTILLA SI ACCENDE!",
-            textParty: "Quando toccate il Nucleo di Koilos, la camera collassa in una singolarità temporale! L'energia minaccia di polverizzare l'intera compagnia, ma nel momento di estremo pericolo mortale il legame tra le vostre anime innesca il miracolo più raro del Multiverso.\n\nLA SCINTILLA DI PLANESWALKER SI ACCENDE!",
-            choices: [
-                { text: "🔥 ASCENDI A PLANESWALKER E SALTA NELLA CIECA ETERNITÀ!", nextNode: "hub_cieca_eternita", rewards: { igniteSpark: true, heal: 50, exp: 100 } }
+                { text: "☀️ Ricevi la Benedizione di Serra (+Mana W, +Volare, +10 PV)", type: "move", nextNode: "koilos_gates", rewards: { addMana: "W", addKeyword: "Volare", heal: 10, exp: 70, karma: 1 } },
+                { text: "💧 Studia gli Archivi Celesti (+Mana U, +Bastone della Dominazione)", type: "move", nextNode: "koilos_gates", rewards: { addMana: "U", loot: "staff_domination", exp: 70 } }
             ]
         },
 
         // ====================================================================
-        // HUB INTERPLANARE: LA CIECA ETERNITÀ (Viaggio Libero tra i Piani)
+        // ATTO II: LE CAVERNE DI KOILOS E L'ASCENSIONE LEGGENDARIA (LIV 2 - 3)
         // ====================================================================
-        "hub_cieca_eternita": {
-            id: "hub_cieca_eternita",
-            act: "Hub Interplanare: La Cieca Eternità",
-            title: "🌌 Il Crocevia dei Mondi",
-            textSolo: "Fluttui nella Cieca Eternità come un vero Planeswalker! Non hai più bisogno di portali o dell'aiuto di nessuno per viaggiare tra i mondi. Senti però che un'anomalia oscura — un'eco distorta creata da antiche macchinazioni — sta minacciando diversi Piani.\n\nScegli verso quale Piano compiere il tuo Planeswalk (puoi visitarli tutti prima dello scontro finale!):",
-            textParty: "Viaggiate attraverso la Cieca Eternità! Grazie alla Scintilla accesa, potete spostarvi liberamente da un Piano all'altro. Quattro mondi brillano davanti a voi, ciascuno minacciato da una frattura dimensionale.\n\nVerso quale Piano guidate il gruppo?",
+        koilos_gates: {
+            act: "Atto II — Le Caverne di Koilos",
+            title: "Il Golem Incatenato e l'Obliteratore",
+            textSolo: "Scendi nelle profondità di Koilos. Al centro della sala dei Thran vedi il leggendario golem d'argento **Karn** imprigionato in catene di mana corrotto! A fargli da guardia c'è una creatura mostruosa: un **Obliteratore di Phyrexia** circondato da droni meccanici!",
+            textParty: "La vostra Compagnia penetra nelle profondità di Koilos. Al centro della sala dei Thran vedete il golem d'argento **Karn** incatenato da fasci di energia oscura! A sbarrarvi il passo si erge un terrificante **Obliteratore di Phyrexia**!",
             choices: [
-                { text: "🏙️ Viaggia su RAVNICA (La Città delle Dieci Gilde - Investigazione e Intrigo)", nextNode: "ravnica_arrivo" },
-                { text: "🌕 Viaggia su INNISTRAD (Orrore Gotico - Vampiri, Angeli e Luna d'Argento)", nextNode: "innistrad_arrivo" },
-                { text: "⛩️ Viaggia su KAMIGAWA (Tra Foreste Spirituali e Metropoli al Neon)", nextNode: "kamigawa_arrivo" },
-                { text: "💠 Viaggia su ZENDIKAR (Mondo Selvaggio - Edri Galleggianti e Rovine)", nextNode: "zendikar_arrivo" },
-                { text: "⚔️ [ATTO FINALE] Entra nella Faglia dell'Ecoverso (Consigliato Livello 4+)", nextNode: "finale_ingresso" }
+                { text: "⚔️ [BOSS] Attacca frontalmente l'Obliteratore di Phyrexia nell'Arena!", type: "combat", monster: "phyrexian_obliterator", winNode: "karn_freed_legendary" },
+                { text: "⚡ Sovraccarica i pilastri Thran per folgorare la guardia e liberare Karn (MAG)", type: "roll", stat: "mag", dc: 28, successNode: "karn_freed_legendary", failNode: "koilos_boss_forced", failDamage: 6, failText: "I pilastri esplodono ferendovi! L'Obliteratore avanza!", rewards: { exp: 120, loot: "shield_kaldra" } },
+                { text: "🗡️ [Imbloccabile] Scivola tra gli ingranaggi e spezza le catene di Karn (AGI)", type: "roll", reqKeyword: "Imbloccabile", stat: "agi", dc: 26, successNode: "karn_freed_legendary", failNode: "koilos_boss_forced", failDamage: 5, rewards: { exp: 120, loot: "lightning_greaves" } }
+            ]
+        },
+
+        koilos_boss_forced: {
+            act: "Atto II — Le Caverne di Koilos",
+            title: "Lo Scontro con l'Obliteratore!",
+            text: "L'Obliteratore di Phyrexia ruggisce facendo vibrare le pareti della caverna! Per salvare Karn e sopravvivere dovete abbatterlo in combattimento!",
+            choices: [
+                { text: "⚔️ Combatti l'Obliteratore di Phyrexia!", type: "combat", monster: "phyrexian_obliterator", winNode: "karn_freed_legendary" }
+            ]
+        },
+
+        karn_freed_legendary: {
+            act: "Atto II — La Rinascita degli Eroi",
+            title: "L'Investitura Leggendaria di Karn",
+            textSolo: "Le catene si infrangono e Karn si rialza in tutta la sua maestosità. Posa la sua enorme mano d'argento sulla tua spalla:\n\n«Hai salvato Dominaria dalla corruzione di Koilos. Da oggi il tuo nome sarà inciso nella storia del Multiverso come una **Creatura Leggendaria**! Ora sali sulla Vetta di Shiv: là ti attende il Drago Antico e l'Obelisco della Scintilla!»",
+            textParty: "Le catene si infrangono e Karn si rialza in tutta la sua maestosità. Posa lo sguardo su ciascuno dei membri della vostra Compagnia:\n\n«Avete combattuto come veri eroi. Conferisco a **tutta la vostra Compagnia** il rango di **Creature Leggendarie**! Ora scalate insieme la Vetta di Shiv: sconfiggete il Drago Antico e toccate l'Obelisco per risvegliare la Scintilla!»",
+            choices: [
+                { text: "👑 Ricevi il Grado di CREATURA LEGGENDARIA per tutto il Party e inizia la scalata di Shiv!", type: "move", nextNode: "shiv_ascent", rewards: { makeLegendary: true, heal: 15, exp: 100, loot: "helm_of_the_host" } }
             ]
         },
 
         // ====================================================================
-        // PIANO 1: RAVNICA (Città delle Gilde)
+        // ATTO III: LA VETTA DI SHIV E L'ACCENSIONE DELLA SCINTILLA (LIV 3 - 4+)
         // ====================================================================
-        "ravnica_arrivo": {
-            id: "ravnica_arrivo",
-            act: "Atto II: Intrighi su Ravnica",
-            title: "La Decima Circoscrizione",
-            textSolo: "Ti materializzi sui tetti bagnati dalla pioggia di Ravnica. L'assassina di fantasmi Kaya ti intercetta su un gargoyle di pietra: «Nuovo Planeswalker? Un artefatto della Lega Izzet è stato rubato e nascosto nei sotterranei Golgari da agenti della Casa Dimir. Aiutami a recuperarlo.»",
-            textParty: "Atterrate in un vicolo illuminato al gas nella Decima Circoscrizione di Ravnica. Kaya e il detective Alquist Proft vi vengono incontro: «Ci serve una squadra esterna alle Gilde. Un nucleo d'etere Izzet è finito nelle mani di spie Dimir e sciami Golgari. Come volete procedere?»",
+        shiv_ascent: {
+            act: "Atto III — I Vulcani di Shiv",
+            title: "Il Nido del Drago Antico",
+            text: "Il calore sulla Vetta di Shiv è insopportabile. Fiumi di magma rosso circondano l'Obelisco Planare. Prima che possiate avvicinarvi, un boato squarcia le nubi di cenere: il **Drago di Shiv Antico** atterra davanti all'Obelisco spiegando le sue ali di fuoco!",
             choices: [
-                { text: "Collabora con la Legione Boros per un'irruzione armata nei bassifondi (Forza CD 32)", type: "roll", stat: "str", dc: 32, successNode: "ravnica_scontro", failNode: "ravnica_scontro", failDamage: 5, rewards: { addMana: "W", karma: 1, exp: 40 } },
-                { text: "Infiltrati nei passaggi segreti della Casa Dimir (Agilità CD 32)", type: "roll", stat: "agi", dc: 32, successNode: "ravnica_scontro", failNode: "ravnica_scontro", failDamage: 5, rewards: { addMana: "U", exp: 40 } },
-                { text: "Analizza le tracce d'etere nei laboratori di Niv-Mizzet (Magia CD 32)", type: "roll", stat: "mag", dc: 32, successNode: "ravnica_scontro", failNode: "ravnica_scontro", failDamage: 5, rewards: { addMana: "R", exp: 40 } }
+                { text: "⚔️ [BOSS LEGGENDARIO] Sfida il Drago di Shiv nell'Arena (Ottenete la Blackblade!)", type: "combat", monster: "shivan_dragon", winNode: "obelisk_spark_trial" },
+                { text: "🔥 Assorbi la tempesta di fuoco col tuo corpo e avanza verso l'Obelisco (COS)", type: "roll", stat: "con", dc: 30, successNode: "obelisk_spark_trial", failNode: "shiv_dragon_forced", failDamage: 8, failText: "Il soffio di fuoco ti travolge! Devi affrontare il Drago!", rewards: { addMana: "R", exp: 150, loot: "sword_fire_ice" } }
             ]
         },
-        "ravnica_scontro": {
-            id: "ravnica_scontro",
-            act: "Atto II: Intrighi su Ravnica",
-            title: "La Cattedrale della Città Sepolta",
-            textSolo: "Scendi nell'Undercity e trovi un Mutaforma Dimir affiancato da una Gorgone Golgari intorno al Serbatoio di Flusso Etereo!",
-            textParty: "Nella Città Sepolta di Ravnica, la vostra compagnia viene accerchiata da assassini Dimir e troll Golgari che difendono il Serbatoio di Flusso Etereo!",
+
+        shiv_dragon_forced: {
+            act: "Atto III — I Vulcani di Shiv",
+            title: "Tra le Fiamme del Drago!",
+            text: "Il Drago di Shiv vi chiude ogni via di fuga! Impugnate le armi: solo sconfiggendolo potrete raggiungere l'Obelisco!",
             choices: [
-                { text: "[Abilità Volare / Anti-Malocchio] Neutralizza lo sguardo pietrificante e afferra l'artefatto!", reqKeywordAny: ["Volare", "Anti-Malocchio"], nextNode: "ravnica_vittoria", rewards: { exp: 70 } },
-                { text: "Combatti contro il Mutaforma e la Gorgone (Prova di Forza o Magia CD 35)", type: "roll", stat: "str", dc: 35, successNode: "ravnica_vittoria", failNode: "hub_cieca_eternita", failDamage: 8, failText: "La Gorgone ti costringe a un Planeswalk d'emergenza nella Cieca Eternità!" },
-                { text: "Sovraccarica il Serbatoio di Flusso Etereo contro i nemici (Prova di Magia CD 34)", type: "roll", stat: "mag", dc: 34, successNode: "ravnica_vittoria", failNode: "hub_cieca_eternita", failDamage: 8 }
+                { text: "⚔️ Affronta il Drago di Shiv Antico nell'Arena!", type: "combat", monster: "shivan_dragon", winNode: "obelisk_spark_trial" }
             ]
         },
-        "ravnica_vittoria": {
-            id: "ravnica_vittoria",
-            act: "Atto II: Intrighi su Ravnica",
-            title: "Il Dono delle Gilde",
-            textSolo: "Kaya ti ringrazia per aver salvato la Decima Circoscrizione e ti lascia scegliere una delle reliquie confiscate alle Gilde!",
-            textParty: "Le Gilde di Ravnica onorano la vostra squadra! Kaya vi consegna le reliquie recuperate dall'Undercity.",
+
+        obelisk_spark_trial: {
+            act: "Atto III — Il Cratere dell'Obelisco",
+            title: "Il Risveglio della Scintilla",
+            text: "Il Drago di Shiv giace sconfitto e la leggendaria **Blackblade Riforgiata** brilla tra le vostre mani. Davanti a voi pulsa l'Obelisco della Cieca Eternità.\n\nPer accendere la **Scintilla di Planeswalker** senza essere disintegrati dall'energia del Multiverso, dovete superare la Prova dell'Obelisco!",
             choices: [
-                { text: "Prendi il Serbatoio di Flusso Etereo (+9 MAG, +6 COS, Legame Vitale) e torna nell'Hub", nextNode: "hub_cieca_eternita", rewards: { exp: 90, loot: "aetherflux_reservoir", heal: 20 } },
-                { text: "Prendi la Spada di Abbondanza e Carestia (+5 FOR, +4 AGI, Tocco Letale) e torna nell'Hub", nextNode: "hub_cieca_eternita", rewards: { exp: 90, loot: "sword_feast_famine", heal: 20 } }
+                { text: "🔥 Afferra il Nucleo con la Forza del Campione (FOR CD 28)", type: "roll", stat: "str", dc: 28, successNode: "planeswalker_nexus", failNode: "obelisk_spark_trial", failDamage: 5, failText: "L'onda d'urto ti respinge! Concentrati e riprova!", rewards: { igniteSpark: true, exp: 150, heal: 20 } },
+                { text: "✨ Canalizza l'Obelisco con il Dominio Arcano (MAG CD 28)", type: "roll", stat: "mag", dc: 28, successNode: "planeswalker_nexus", failNode: "obelisk_spark_trial", failDamage: 5, failText: "Il flusso di mana è immenso! Riprova!", rewards: { igniteSpark: true, exp: 150, heal: 20 } },
+                { text: "⚡ Sincronizza il battito cardiaco con l'Eternità (AGI/COS CD 28)", type: "roll", stat: "agi", dc: 28, successNode: "planeswalker_nexus", failNode: "obelisk_spark_trial", failDamage: 5, failText: "Quasi ci sei! Tenta ancora!", rewards: { igniteSpark: true, exp: 150, heal: 20 } }
             ]
         },
 
         // ====================================================================
-        // PIANO 2: INNISTRAD (Orrore Gotico)
+        // ATTO IV: IL CROCEVIA DEI PLANESWALKER E LE 4 GRANDI SAGHE PLANARI
         // ====================================================================
-        "innistrad_arrivo": {
-            id: "innistrad_arrivo",
-            act: "Atto II: Ombre su Innistrad",
-            title: "La Notte di Thraben",
-            textSolo: "Cadi dal cielo nebbioso di Innistrad davanti alla cattedrale di Thraben. Thalia e l'angelo Sigarda stanno respingendo un'orda di Necro-Alchimisti e Vampiri del casato Voldaren che vogliono profanare le reliquie d'argento lunare.",
-            textParty: "La vostra compagnia compare sotto la Luna d'Argento di Innistrad. Thalia, con la spada sguainata, vi grida: «Viandanti! I Vampiri Voldaren e gli Skaab stanno sfondando le porte di Thraben! Scegliete da che parte stare!»",
+        planeswalker_nexus: {
+            act: "Atto IV — La Cieca Eternità",
+            title: "Il Crocevia del Multiverso",
+            text: "Siete diventati **Planeswalker Leggendari**! Fluttuando nel nexus stellato della Cieca Eternità, vedete quattro Piani minacciati dalle forze oscure e, al centro del vortice, la **Frattura Finale del Reame**.\n\nEsplorate i Piani per potenziare la Compagnia ai massimi livelli e raccogliere gli ultimi Artefatti, oppure varcate la Frattura Finale per concludere la Campagna!",
             choices: [
-                { text: "Schierati con Thalia e l'angelo Sigarda per difendere gli innocenti (Karma Buono +2, Prova Forza/Costituzione CD 34)", type: "roll", stat: "con", dc: 34, successNode: "innistrad_vittoria_luce", failNode: "hub_cieca_eternita", failDamage: 7, rewards: { karma: 2 } },
-                { text: "Tradisci i difensori e banchetta con i Vampiri Voldaren per assorbirne il sangue antico (Karma Oscuro -2, Prova Agilità/Magia CD 34)", type: "roll", stat: "agi", dc: 34, successNode: "innistrad_vittoria_oscura", failNode: "hub_cieca_eternita", failDamage: 7, rewards: { karma: -2 } }
+                { text: "🦇 Viaggia su INNISTRAD (Saga Gotica: I Vampiri di Voldaren & la Luna d'Argento)", type: "move", nextNode: "innistrad_ch1" },
+                { text: "🏛️ Viaggia su RAVNICA (Saga delle Gilde: Il Complotto della Cittadella)", type: "move", nextNode: "ravnica_ch1" },
+                { text: "⛩️ Viaggia su KAMIGAWA (Saga Cyber-Feudale: I Ninja di Towashi & lo Spirito Drago)", type: "move", nextNode: "kamigawa_ch1" },
+                { text: "💎 Viaggia su ZENDIKAR (Saga Selvaggia: Gli Edri Fluttuanti & la Furia del Mana)", type: "move", nextNode: "zendikar_ch1" },
+                { text: "🌌 [ATTO FINALE] Varca la Frattura verso la Battaglia Finale del Multiverso!", type: "move", nextNode: "finale_realm_gate" }
             ]
         },
-        "innistrad_vittoria_luce": {
-            id: "innistrad_vittoria_luce",
-            act: "Atto II: Ombre su Innistrad",
-            title: "La Benedizione dell'Airone",
-            textSolo: "Sigarda distende le sue ali dorate su di te: la luce lunare purifica il tuo spirito e potenzia le tue capacità difensive.",
-            textParty: "L'angelo Sigarda benedice l'intera compagnia per il coraggio dimostrato a Thraben!",
+
+        // --- SAGA DI INNISTRAD (2 CAPITOLI) ---
+        innistrad_ch1: {
+            act: "Saga di Innistrad — Capitolo 1",
+            title: "Il Castello di Stensia",
+            text: "Atterrate sotto la luna color sangue di Innistrad. Il villaggio di Gavony è assediato da una legione di Non Morti guidata dai nobili Vampiri Voldaren che hanno rapito l'Arcangelo custode!",
             choices: [
-                { text: "Apprendi 'Cautela' e 'Volare', cura tutta la salute e torna nella Cieca Eternità", nextNode: "hub_cieca_eternita", rewards: { karma: 1, addKeyword: "Volare", heal: 50, exp: 90 } }
+                { text: "⚔️ Stermina l'avanguardia del Signore dei Non Morti fuori dal castello!", type: "combat", monster: "undead_lord", winNode: "innistrad_ch2" },
+                { text: "🦇 Infiltrati dalle guglie del castello eludendo le guardie vampiriche (AGI)", type: "roll", stat: "agi", dc: 29, successNode: "innistrad_ch2", failNode: "innistrad_ch1", failDamage: 6, rewards: { exp: 120, loot: "whisper_cloak" } }
             ]
         },
-        "innistrad_vittoria_oscura": {
-            id: "innistrad_vittoria_oscura",
-            act: "Atto II: Ombre su Innistrad",
-            title: "Il Calice di Sangue",
-            textSolo: "Nel maniero Voldaren bevi dal calice cremisi: una furia immortale scorre ora nelle tue vene.",
-            textParty: "I nobili Voldaren accolgono il vostro gruppo nella corte oscura, donandovi il segreto del sangue immortale.",
+        innistrad_ch2: {
+            act: "Saga di Innistrad — Capitolo 2",
+            title: "Il Salone del Sangue",
+            text: "Nel salone centrale spezzate il rituale cremisi liberando il potere della Luna d'Argento! I signori vampiri si inchinano alla vostra potenza planare e vi cedono la Corazza di Darksteel!",
             choices: [
-                { text: "Apprendi 'Legame Vitale' e 'Tocco Letale' e torna nella Cieca Eternità", nextNode: "hub_cieca_eternita", rewards: { karma: -1, addKeyword: "Legame Vitale", addMana: "B", heal: 30, exp: 90 } }
+                { text: "🛡️ Raccogli la Corazza di Darksteel (+Indistruttibile, +150 EXP) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "darksteel_plate", exp: 150, heal: 15 } }
+            ]
+        },
+
+        // --- SAGA DI RAVNICA (2 CAPITOLI) ---
+        ravnica_ch1: {
+            act: "Saga di Ravnica — Capitolo 1",
+            title: "Intrigo nel Decimo Distretto",
+            text: "Le guglie infinite di Ravnica sono nel caos: agenti corrotti hanno trafugato il Patto delle Gilde e liberato un colosso biomeccanico nei sotterranei di Undercity!",
+            choices: [
+                { text: "🔮 Decifra i codici segreti di Casa Dimir e Niv-Mizzet (MAG)", type: "roll", stat: "mag", dc: 30, successNode: "ravnica_ch2", failNode: "ravnica_ch1", failDamage: 5, rewards: { exp: 130, addMana: "U" } },
+                { text: "⚔️ Sfonda il blocco stradale Gruul con la pura forza bruta (FOR)", type: "roll", stat: "str", dc: 30, successNode: "ravnica_ch2", failNode: "ravnica_ch1", failDamage: 5, rewards: { exp: 130, loot: "loxodon_warhammer" } }
+            ]
+        },
+        ravnica_ch2: {
+            act: "Saga di Ravnica — Capitolo 2",
+            title: "Il Guardiano della Camera delle Gilde",
+            text: "Raggiungete il cuore di Ravnica e abbattete l'automa traditore. Il Patto delle Gilde brilla sopra di voi donandovi la leggendaria **Lanterna Cromatica**, che vi permette di usare qualsiasi colore di Mana!",
+            choices: [
+                { text: "🌈 Ottieni la Lanterna Cromatica (+150 EXP, +15 PV) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "chromatic_lantern", exp: 150, heal: 15 } }
+            ]
+        },
+
+        // --- SAGA DI KAMIGAWA (2 CAPITOLI) ---
+        kamigawa_ch1: {
+            act: "Saga di Kamigawa — Capitolo 1",
+            title: "Le Luci al Neon di Towashi",
+            text: "Sotto i ciliegi cyber-luminescenti di Kamigawa, un clan di Ninja rinnegati e spiriti Kami corrotti sta dando la caccia all'antico Jitte di Umezawa!",
+            choices: [
+                { text: "🥷 Duella sui tetti di Towashi con velocità sovrumana (AGI)", type: "roll", stat: "agi", dc: 30, successNode: "kamigawa_ch2", failNode: "kamigawa_ch1", failDamage: 6, rewards: { exp: 140, addKeyword: "Attacco Improvviso" } },
+                { text: "⚔️ Affronta il Grifone/Kami Guardiano in Battaglia nell'Arena!", type: "combat", monster: "serra_griffin", winNode: "kamigawa_ch2" }
+            ]
+        },
+        kamigawa_ch2: {
+            act: "Saga di Kamigawa — Capitolo 2",
+            title: "Il Tempio di Boseiju",
+            text: "Al cospetto del grande albero di Boseiju, lo Spirito Drago vi consegna la leggendaria **Jitte di Umezawa** e infonde nuova linfa vitale in tutta la compagnia!",
+            choices: [
+                { text: "🗡️ Impugna la Jitte di Umezawa (+160 EXP, +15 PV) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "umezawa_jitte", exp: 160, heal: 15 } }
+            ]
+        },
+
+        // --- SAGA DI ZENDIKAR (2 CAPITOLI) ---
+        zendikar_ch1: {
+            act: "Saga di Zendikar — Capitolo 1",
+            title: "Il Torbido e la Furia dei Wurm",
+            text: "Su Zendikar la terra stessa è viva e ribelle! Mentre saltate tra gli Edri di pietra fluttuanti nel cielo, un mastodontico **Wurm Corazzato del Continente di Bala Ged** emerge dalle faglie!",
+            choices: [
+                { text: "⚔️ Abbatti il Wurm di Zendikar nell'Arena di Battaglia!", type: "combat", monster: "craw_wurm", winNode: "zendikar_ch2" },
+                { text: "🧗 Salta tra gli Edri in movimento evitando la frana (AGI)", type: "roll", stat: "agi", dc: 30, successNode: "zendikar_ch2", failNode: "zendikar_ch1", failDamage: 6, rewards: { exp: 140 } }
+            ]
+        },
+        zendikar_ch2: {
+            act: "Saga di Zendikar — Capitolo 2",
+            title: "L'Occhio di Ugin",
+            text: "Dentro la camera segreta dell'Occhio di Ugin trovate la **Corazza Piumata di Serra** e la **Spada di Fuoco e Ghiaccio**, pronte per la battaglia finale!",
+            choices: [
+                { text: "⚔️ Raccogli le Reliquie di Zendikar (+160 EXP, +20 PV) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "celestial_armor", exp: 160, heal: 20 } }
             ]
         },
 
         // ====================================================================
-        // PIANO 3: KAMIGAWA (Spiriti e Neon)
+        // ATTO V: IL REAME DELLA SINGOLARITÀ E IL VERO FINALE DELLA CAMPAGNA
         // ====================================================================
-        "kamigawa_arrivo": {
-            id: "kamigawa_arrivo",
-            act: "Atto II: I Kami di Kamigawa",
-            title: "I Tetti di Towashi e la Foresta di Jukai",
-            textSolo: "Atterri tra i ciliegi luminescenti di Kamigawa. Il giovane Nezumi Nashi (figlio adottivo della defunta Tamiyo) ti chiede aiuto: un Oni cibernetico corrotto ha rubato la Cappa delle Profezie del Sensei dal santuario di Boseiju!",
-            textParty: "Sbarcate tra le lanterne olografiche di Towashi. Il giovane Nezumi Nashi corre verso il vostro gruppo: «Vi prego, un Oni meccanico ha profanato l'albero sacro di Boseiju rubando le pergamene di mia madre Tamiyo!»",
+        finale_realm_gate: {
+            act: "Atto Finale — Il Cuore della Cieca Eternità",
+            title: "L'Assedio al Trono dell'Eternità",
+            textSolo: "Varchi la Frattura Finale. Davanti a te si erge la Cittadella della Singolarità, dove l'Avatar Draconico di Bolas e i Pretori di Phyrexia stanno fondendo tutti i Piani in un unico incubo. È il momento dello scontro decisivo per cui hai forgiato il tuo eroe!",
+            textParty: "La vostra Compagnia di Planeswalker varca insieme la Frattura Finale! Davanti a voi si erge la Cittadella della Singolarità: l'Avatar Draconico e le legioni di Phyrexia vi attendono per l'ultima, titanica battaglia che deciderà il destino del Multiverso!",
             choices: [
-                { text: "Insegui l'Oni sui tetti al neon di Otawara (Prova di Agilità CD 34)", type: "roll", stat: "agi", dc: 34, successNode: "kamigawa_vittoria", failNode: "hub_cieca_eternita", failDamage: 7 },
-                { text: "Invoca l'aiuto degli antichi spiriti Kami di Boseiju (Prova di Magia CD 34)", type: "roll", stat: "mag", dc: 34, successNode: "kamigawa_vittoria", failNode: "hub_cieca_eternita", failDamage: 7 }
-            ]
-        },
-        "kamigawa_vittoria": {
-            id: "kamigawa_vittoria",
-            act: "Atto II: I Kami di Kamigawa",
-            title: "L'Eredità di Tamiyo",
-            textSolo: "Sconfiggi l'Oni e restituisci le pergamene a Nashi. In segno di gratitudine eterna, Nashi ti dona la Cappa delle Profezie del Sensei e la Lama di Fuocospettrale!",
-            textParty: "L'Oni cade sotto i colpi della compagnia! Nashi, commosso, vi dona le reliquie custodite nel santuario.",
-            choices: [
-                { text: "Prendi la Cappa delle Profezie del Sensei (+5 AGI, +5 MAG) e torna nell'Hub", nextNode: "hub_cieca_eternita", rewards: { exp: 90, loot: "Sensei_top", heal: 25 } },
-                { text: "Prendi la Lama di Fuocospettrale (+3 FOR, +3 AGI, Attacco Improvviso) e torna nell'Hub", nextNode: "hub_cieca_eternita", rewards: { exp: 90, loot: "ghostfire_blade", heal: 25 } }
+                { text: "⚔️ [BATTAGLIA FINALE] Affronta l'Avatar Draconico Supremo nell'Arena!", type: "combat", monster: "shivan_dragon", winNode: "finale_climax_strike" },
+                { text: "🔥 Scatena una Tempesta Combinata con tutti i Colori di Mana (MAG CD 33)", type: "roll", stat: "mag", dc: 33, successNode: "victory_epilogue", failNode: "finale_climax_strike", failDamage: 8, failText: "Lo scudo nemico s'incrina ma resiste! Date il colpo di grazia!", rewards: { exp: 300 } }
             ]
         },
 
-        // ====================================================================
-        // PIANO 4: ZENDIKAR (Il Torbido e gli Edri)
-        // ====================================================================
-        "zendikar_arrivo": {
-            id: "zendikar_arrivo",
-            act: "Atto II: Il Torbido di Zendikar",
-            title: "Il Santuario dell'Occhio di Ugin",
-            textSolo: "Ti materializzi sulle isole fluttuanti di Zendikar mentre il 'Torbido' scuote le montagne! Nahiri e Nissa ti avvertono che un antico Guardiano Edro è impazzito a causa delle scosse planari.",
-            textParty: "Il vostro gruppo atterra su una piattaforma di pietra sospesa nel cielo di Zendikar. La terra trema mentre un colossale Guardiano Edro si solleva minacciando di far precipitare l'intera isola!",
+        finale_climax_strike: {
+            act: "Atto Finale — Il Colpo di Grazia",
+            title: "L'Ultima Scintilla",
+            text: "Il nemico supremo barcolla sull'orlo dell'abisso planare, con l'armatura infranta dai vostri colpi! Tutta l'energia del Multiverso converge nelle vostre armi per l'ultimo, definitivo assalto!",
             choices: [
-                { text: "Frantuma il nucleo dell'Edro con un attacco devastante (Prova di Forza CD 35)", type: "roll", stat: "str", dc: 35, successNode: "zendikar_vittoria", failNode: "hub_cieca_eternita", failDamage: 8, critFailDestroySlot: "armor" },
-                { text: "Ricanalizza le Linee di Forza di Zendikar (Prova di Costituzione/Magia CD 34)", type: "roll", stat: "con", dc: 34, successNode: "zendikar_vittoria", failNode: "hub_cieca_eternita", failDamage: 8 }
-            ]
-        },
-        "zendikar_vittoria": {
-            id: "zendikar_vittoria",
-            act: "Atto II: Il Torbido di Zendikar",
-            title: "Il Cuore di Acciaio Scuro",
-            textSolo: "All'interno dell'Edro stabilizzato trovi un Amuleto di Acciaio Scuro che rende indistruttibile il tuo intero equipaggiamento!",
-            textParty: "Stabilizzato l'Edro, la vostra compagnia estrae dal suo interno il leggendario Amuleto di Acciaio Scuro!",
-            choices: [
-                { text: "Prendi l'Amuleto di Acciaio Scuro (Indistruttibile) e torna nella Cieca Eternità", nextNode: "hub_cieca_eternita", rewards: { exp: 100, loot: "the_one_ring", addKeyword: "Indistruttibile", heal: 30 } }
+                { text: "👑 Vibra il Colpo Leggendario Finale e sigilla la Frattura! (FOR/MAG/AGI)", type: "roll", stat: "str", dc: 26, successNode: "victory_epilogue", failNode: "victory_epilogue", rewards: { exp: 300, heal: 50 } },
+                { text: "✨ Canalizza tutte le Scintille della Compagnia in un Raggio Purificatore!", type: "move", nextNode: "victory_epilogue", rewards: { exp: 300, heal: 50 } }
             ]
         },
 
-        // ====================================================================
-        // ATTO FINALE: LA FRATTURA DELLA REALTÀ (Il Duello Speculare)
-        // ====================================================================
-        "finale_ingresso": {
-            id: "finale_ingresso",
-            act: "Atto Finale: La Frattura della Realtà",
-            title: "L'Ecoverso e il Riflesso Perfetto",
-            textSolo: "Varchi la faglia al centro del Multiverso. Il paesaggio attorno a te è fatto di specchi di cristallo fluttuanti: sei nel cuore residuo dell'Ecoverso! Da uno specchio emerge una copia identica a te — il tuo 'Riflesso Perfetto', privo di cicatrici, dubbi o pietà — creata per sostituirti e cancellare la tua esistenza reale!",
-            textParty: "La vostra compagnia varca la faglia suprema! Vi ritrovate in una cattedrale di specchi sospesa nel cosmo: l'ultimo frammento dell'Ecoverso. Dalle pareti di cristallo emergono le versioni speculari, fredde e spietate di ciascuno di voi! Per salvare il Multiverso dovete sconfiggere i vostri stessi doppi!",
+        victory_epilogue: {
+            act: "🏆 EPILOGO — Leggende del Multiverso",
+            title: "I Custodi dell'Eternità",
+            textSolo: "Un'esplosione di luce dorata attraversa i Piani! La Cittadella della Singolarità si dissolve e le Linee di Forza di Dominaria, Innistrad, Ravnica, Kamigawa e Zendikar tornano a splendere in armonia.\n\n🏆 **HAI COMPLETATO LA CAMPAGNA!**\nIl tuo nome viene cantato dai bardi di ogni Piano come il più grande Planeswalker della storia. Puoi stampare la tua Scheda Personaggio definitiva come trofeo, oppure continuare a viaggiare liberamente nei Piani con il tuo eroe al massimo livello!",
+            textParty: "Un'esplosione di luce dorata attraversa tutti i Piani! La Cittadella della Singolarità crolla nell'abisso e il Multiverso è salvo grazie all'unione della vostra Compagnia!\n\n🏆 **AVETE COMPLETATO LA CAMPAGNA DI GRUPPO!**\nI vostri nomi sono scolpiti nell'eternità accanto a quelli di Urza, Serra e Karn. Potete ora aprire e stampare le vostre Schede Personaggio di alto livello come ricordo dell'impresa, o tornare nel Crocevia per affrontare nuove cacce ai mostri!",
             choices: [
-                { text: "Scontro Finale di Pura Potenza Fisica contro il tuo Riflesso (Prova Suprema di Forza CD 38)", type: "roll", stat: "str", dc: 38, successNode: "epilogo_vittoria", failNode: "finale_seconda_chance", failDamage: 10 },
-                { text: "Duello di Incantesimi nella Cieca Eternità (Prova Suprema di Magia CD 38)", type: "roll", stat: "mag", dc: 38, successNode: "epilogo_vittoria", failNode: "finale_seconda_chance", failDamage: 10 },
-                { text: "Velocità Assoluta per colpire il cuore di cristallo (Prova Suprema di Agilità CD 38)", type: "roll", stat: "agi", dc: 38, successNode: "epilogo_vittoria", failNode: "finale_seconda_chance", failDamage: 10 }
-            ]
-        },
-        "finale_seconda_chance": {
-            id: "finale_seconda_chance",
-            act: "Atto Finale: La Frattura della Realtà",
-            title: "La Vera Forza delle Cicatrici",
-            textSolo: "Il tuo Riflesso Perfetto ti atterra: «Io non ho mai fallito, per questo sono superiore a te!» Ma proprio il dolore delle tue ferite fa brillare la tua Scintilla più forte che mai: accetti le tue cicatrici e ti rialzi per un ultimo, disperato assalto!",
-            textParty: "I vostri cloni perfetti sembrano avere il sopravvento, ma non possiedono il legame forgiato dalle vostre battaglie! Unendo le vostre Scintille in un unico raggio, vi rialzate per il colpo finale!",
-            choices: [
-                { text: "🔥 SCATENA TUTTO IL POTERE DELLA SCINTILLA E INFRANGI L'ECOVERSO! (Prova Finale CD 30)", type: "roll", stat: "con", dc: 30, successNode: "epilogo_vittoria", failNode: "hub_cieca_eternita", failDamage: 5, failText: "Sei costretto a ritirarti nella Cieca Eternità per potenziarti ancora prima di riprovare!" }
-            ]
-        },
-        "epilogo_vittoria": {
-            id: "epilogo_vittoria",
-            act: "Epilogo: Leggenda del Multiverso",
-            title: "🏆 Il Custode dell'Eternità",
-            textSolo: "Con un boato che scuote i Piani, il tuo Riflesso Perfetto va in frantumi! L'anomalia dell'Ecoverso collassa definitivamente e i mondi tornano in equilibrio.\n\nDa semplice mortale su Dominaria, sei divenuto una Creatura Leggendaria e infine uno dei più grandi Planeswalker della storia di Magic. Puoi stampare la tua Scheda Definitiva da Campione o continuare a viaggiare tra i Piani!",
-            textParty: "I vostri cloni speculari si infrangono come vetro! La Frattura si rimargina e il Multiverso è salvo grazie alla vostra leggendaria compagnia di Planeswalker.\n\nPotete ora stampare le vostre Schede Personaggio definitive come ricordo dell'impresa o tornare nella Cieca Eternità per nuove avventure!",
-            choices: [
-                { text: "🌌 Torna nella Cieca Eternità (Modalità Libera Infinita +100 EXP)", nextNode: "hub_cieca_eternita", rewards: { exp: 100, heal: 100 } }
+                { text: "🌌 Torna al Crocevia Planare in Modalità Esplorazione Libera (Post-Game)", type: "move", nextNode: "planeswalker_nexus", rewards: { heal: 50 } },
+                { text: "🔄 Ricomincia il Viaggio dalla Locanda di Dominaria (New Game+ mantenendo Livello e Oggetti!)", type: "move", nextNode: "start", rewards: { heal: 50 } }
             ]
         }
     };
     // ============================================================================
-    // --- PARTE 2: CREATORE PERSONAGGIO, SCHEDA STAMPABILE E MOTORE DI GIOCO ---
-    // (100% Compatibile con Babel 6 - 6 Slot GDR, COS visibile, Dado Reale/Auto, Stampa Fix)
+    // --- PARTE 2: CREATORE PERSONAGGIO, SCHEDA STAMPABILE, ARENA COMBATTIMENTO E STORIA ---
+    // (100% Compatibile con Babel 6 - Stampa 1:1 Fixata, Ricompense Party, Arena Mostri, Scintilla Dinamica)
     // ============================================================================
     const RpgCharacterManager = ({ navigate }) => {
         const [party, setParty] = useState([]);
@@ -2085,8 +2068,13 @@
         
         // Modalità Dado: "auto" (tira il computer) | "manual" (tiri il dado vero sul tavolo e inserisci il numero)
         const [diceMode, setDiceMode] = useState("auto");
-        const [pendingRollChoice, setPendingRollChoice] = useState(null); // Scelta in attesa del dado manuale
+        const [pendingRollChoice, setPendingRollChoice] = useState(null);
         const [manualD20Input, setManualD20Input] = useState(10);
+
+        // STATO ARENA DI COMBATTIMENTO A TURNI CONTRO CREATURE DI MAGIC
+        const [combatState, setCombatState] = useState(null); 
+        // Struttura combatState: { name, maxHP, currentHP, dc, dmg, exp, loot, winNode, desc, log: [] }
+        const [pendingCombatAction, setPendingCombatAction] = useState(null);
 
         // Stati Form di Creazione Personaggio
         const [name, setName] = useState("");
@@ -2105,6 +2093,7 @@
         const [masterDc, setMasterDc] = useState(25);
         const [masterLootId, setMasterLootId] = useState("bonesplitter");
         const [masterNodeJump, setMasterNodeJump] = useState("start");
+        const [masterMonsterKey, setMasterMonsterKey] = useState("goblin_pack");
 
         const MANA_COLORS = [
             { id: "W", name: "Bianco (Legge, Luce, Protezione)", icon: "☀️", colorClass: "text-yellow-600", bgClass: "bg-yellow-100", borderClass: "border-yellow-600" },
@@ -2113,6 +2102,17 @@
             { id: "R", name: "Rosso (Fuoco, Furia, Impulso)", icon: "🔥", colorClass: "text-red-600", bgClass: "bg-red-100", borderClass: "border-red-600" },
             { id: "G", name: "Verde (Natura, Istinto, Forza)", icon: "🌳", colorClass: "text-green-600", bgClass: "bg-green-100", borderClass: "border-green-600" }
         ];
+
+        // BESTIARIO DI MAGIC INTEGRATO (Usato sia dai Nodi Storia che dagli Incontri Casuali / Master)
+        const MTG_BESTIARY = {
+            goblin_pack: { name: "Orda di Goblin Predoni", maxHP: 28, dc: 22, dmg: 4, exp: 60, loot: "bonesplitter", desc: "Una banda urlante di Goblin armata di lame arrugginite e granate improvvisate!" },
+            llanowar_troll: { name: "Troll di Thrun Rigenerante", maxHP: 42, dc: 25, dmg: 6, exp: 90, loot: "loxodon_warhammer", desc: "Un colosso muscoloso ricoperto di muschio e corteccia, quasi impossibile da abbattere!" },
+            craw_wurm: { name: "Wurm Corazzato delle Foreste (7/6)", maxHP: 55, dc: 26, dmg: 7, exp: 120, loot: "Swiftfoot_boots", desc: "Un gigantesco verme draconico che fa tremare la terra al suo passaggio!" },
+            undead_lord: { name: "Signore dei Non Morti & Orda Zombie", maxHP: 50, dc: 26, dmg: 6, exp: 110, loot: "whisper_cloak", desc: "Un negromante corazzato circondato da cadaveri rianimati dal mana nero!" },
+            serra_griffin: { name: "Grifone d'Argento Ribelle", maxHP: 38, dc: 24, dmg: 5, exp: 80, loot: "celestial_armor", desc: "Una fiera alata dalle piume metalliche che attacca in picchiata dai cieli!" },
+            phyrexian_obliterator: { name: "Obliteratore di Phyrexia (Boss)", maxHP: 75, dc: 29, dmg: 9, exp: 200, loot: "chromatic_lantern", isBoss: true, desc: "Un incubo biomeccanico di metallo nero e olio scintillante!" },
+            shivan_dragon: { name: "Drago di Shiv Antico (Boss Leggendario)", maxHP: 95, dc: 31, dmg: 10, exp: 300, loot: "blackblade", isBoss: true, desc: "Il sovrano incontrastato dei picchi vulcanici, avvolto da fiamme incandescenti!" }
+        };
 
         // I 6 SLOT DI EQUIPAGGIAMENTO GDR
         const EQUIP_SLOTS = [
@@ -2124,11 +2124,9 @@
             { key: "artifact", label: "Artefatto", icon: "💍", empty: "Nessuno" }
         ];
 
-        // RICONOSCIMENTO INTELLIGENTE DELLO SLOT ANATOMICO (Così gli Stivali non tolgono più la Veste!)
         const detectRealSlot = (item) => {
             if (!item) return "body";
             if (["weapon", "head", "body", "hands", "feet", "artifact"].includes(item.slot)) {
-                // Se era il generico "armor" del DB, lo non entra qui, ma se è già specifico controlliamo comunque il nome
                 if (item.slot !== "weapon" && item.slot !== "artifact") return item.slot;
             }
             const text = ((item.name || "") + " " + (item.id || "")).toLowerCase();
@@ -2143,10 +2141,9 @@
             }
             if (item.slot === "weapon") return "weapon";
             if (item.slot === "artifact") return "artifact";
-            return "body"; // Vesti, corazze, mantelli, armature
+            return "body";
         };
 
-        // RAZZE CON LISTA DELLE CLASSI CONSENTITE (Fedele alla Lore di Magic)
         const RACES = [
             { id: "umano", name: "Umano", str: 10, agi: 10, mag: 10, con: 20, allowedClasses: ["standard", "guerriero", "soldato", "cavaliere", "mago", "necromante", "chierico", "farabutto", "assassino", "artefice"], ability: "Versatilità Umana: +1 a tutti i tiri. Può trasformarsi in Angelo (Karma +3) o Demone (Karma -3)." },
             { id: "elfo", name: "Elfo", str: 8, agi: 12, mag: 12, con: 18, allowedClasses: ["standard", "guerriero", "sciamano", "mago", "farabutto", "assassino"], ability: "Sinergia Silvana: Ignora i terreni difficili e +2 alle prove nella natura." },
@@ -2178,7 +2175,6 @@
             { id: "artefice", name: "Artefice", strBonus: 1, agiBonus: 2, magBonus: 4, conBonus: 5, ability: "Mastro Forgiatore: I suoi oggetti sono indistruttibili ai fallimenti critici (1)." }
         ];
 
-        // DOTAZIONE INIZIALE SU MISURA A 6 SLOT
         const getStartingEquipment = (classId) => {
             const body = { id: "start_body", name: "Veste da Viaggio Rinforzata (+2 COS)", slot: "body", str: 0, agi: 0, mag: 0, con: 2 };
             const feet = { id: "start_feet", name: "Stivali di Cuoio (+1 AGI)", slot: "feet", str: 0, agi: 1, mag: 0, con: 0 };
@@ -2196,7 +2192,6 @@
             return { weapon: weapon, head: null, body: body, hands: null, feet: feet, artifact: null };
         };
 
-        // Migrazione automatica per i personaggi salvati col vecchio sistema a 3 slot
         const normalizeCharacterSlots = (char) => {
             if (!char) return null;
             let eq = char.equipped || {};
@@ -2218,7 +2213,6 @@
             };
         };
 
-        // ADATTATORE INTELLIGENTE DEL LOOT TROVATO NELLA STORIA (Classi + Slot Reale)
         const adaptLootForCharacter = (baseItem, char) => {
             if (!baseItem) return null;
             const realSlot = detectRealSlot(baseItem);
@@ -2240,7 +2234,6 @@
             return item;
         };
 
-        // Carica la compagnia o il singolo eroe salvato
         useEffect(() => {
             const savedParty = localStorage.getItem('rpg_party');
             if (savedParty) {
@@ -2285,7 +2278,6 @@
             localStorage.setItem('rpg_party', JSON.stringify(newParty));
         };
 
-        // Calcolo Statistiche Totali (su tutti i 6 slot!) e Keywords attive
         const getFinalStats = (char) => {
             let bonus = (char.level - 1) * 2;
             if (char.isLegendary) bonus += 5;
@@ -2331,7 +2323,6 @@
             };
         };
 
-        // Formatta i bonus di un oggetto per mostrarli chiaramente (es. "+2 AGI, +2 COS")
         const formatItemBonuses = (it) => {
             if (!it) return "";
             let b = [];
@@ -2386,7 +2377,6 @@
             }
         };
 
-        // CREAZIONE PERSONAGGIO
         const createCharacter = () => {
             if (!name || !selectedRace || !selectedClass || !selectedMana) return alert("Compila tutti i campi!");
             
@@ -2455,6 +2445,7 @@
                 localStorage.removeItem('rpg_character');
                 setParty([]);
                 setCharacter(null);
+                setCombatState(null);
                 setRpgView("create");
                 setLastRollInfo(null);
                 setEventBanner(null);
@@ -2480,7 +2471,6 @@
             }
         };
 
-        // EQUIPAGGIAMENTO OGGETTI A 6 SLOT CON RICALCOLO DINAMICO DELLA SALUTE/COS
         const equipItem = (rawItem) => {
             const realSlot = detectRealSlot(rawItem);
             const item = { ...rawItem, slot: realSlot };
@@ -2501,7 +2491,6 @@
             if (currentInSlot) updated.inventory.push(currentInSlot);
             updated.equipped = { ...updated.equipped, [realSlot]: item };
 
-            // Ricalcola COS e adegua i PV attuali se la COS è salita o scesa!
             const newStats = getFinalStats(updated);
             const hpDiff = newStats.maxHP - oldStats.maxHP;
             if (hpDiff > 0) {
@@ -2513,7 +2502,6 @@
             saveCharState(updated);
         };
 
-        // Rimuovi un oggetto da uno slot e rimettilo nello zaino
         const unequipSlot = (slotKey) => {
             let updated = normalizeCharacterSlots(character);
             const itemInSlot = updated.equipped[slotKey];
@@ -2529,95 +2517,241 @@
             saveCharState(updated);
         };
 
-        // GESTIONE RICOMPENSE, SALITA DI LIVELLO, LOOT ADATTIVO, TRASFORMAZIONE ANGELO/DEMONE E SCINTILLA
-        const applyRewardsAndMove = (charState, rewards, targetNodeId, extraBanner = "") => {
-            const nextNodeVal = targetNodeId || charState.currentNode;
-            let nextChar = normalizeCharacterSlots({ ...charState, currentNode: nextNodeVal });
-            let messages = [];
-            if (extraBanner) messages.push(extraBanner);
+        // ============================================================================
+        // GESTIONE RICOMPENSE CONDIVISE CON TUTTO IL GRUPPO (Party-Wide Rewards!)
+        // ============================================================================
+        const applySingleHeroRewards = (hero, rewards, isActiveHero, nextNodeVal) => {
+            let h = normalizeCharacterSlots({ ...hero, currentNode: nextNodeVal });
+            let msgs = [];
 
-            if (rewards) {
-                if (rewards.damage) {
-                    nextChar.currentHP = Math.max(1, nextChar.currentHP - rewards.damage);
-                    messages.push(`💥 Subisci ${rewards.damage} danni!`);
-                }
-                if (rewards.exp) {
-                    nextChar.exp = (nextChar.exp || 0) + rewards.exp;
-                    const newLvl = Math.floor(nextChar.exp / 100) + 1;
-                    if (newLvl > nextChar.level) {
-                        nextChar.level = newLvl;
-                        const newMax = getFinalStats(nextChar).maxHP;
-                        nextChar.currentHP = Math.min(newMax, nextChar.currentHP + 7);
-                        messages.push(`🎉 LIVELLO AUMENTATO! Sei salito al Livello ${newLvl}! (+2 a tutte le Statistiche e +7 PV!)`);
-                    }
-                }
-                if (rewards.karma) {
-                    nextChar.karma = (nextChar.karma || 0) + rewards.karma;
-                    if (nextChar.raceId === 'umano' && !nextChar.ascensionForm) {
-                        if (nextChar.karma >= 3) {
-                            nextChar.ascensionForm = 'angelo';
-                            if (!nextChar.mtgKeywords.includes("Volare")) nextChar.mtgKeywords.push("Volare");
-                            if (!nextChar.mtgKeywords.includes("Cautela")) nextChar.mtgKeywords.push("Cautela");
-                            messages.push("👼 ASCENSIONE ANGELICA! La tua benevolenza ti ha trasformato in un Angelo (+4 Stat, Volare, Cautela)!");
-                        } else if (nextChar.karma <= -3) {
-                            nextChar.ascensionForm = 'demone';
-                            if (!nextChar.mtgKeywords.includes("Volare")) nextChar.mtgKeywords.push("Volare");
-                            if (!nextChar.mtgKeywords.includes("Tocco Letale")) nextChar.mtgKeywords.push("Tocco Letale");
-                            messages.push("👿 ASCENSIONE DEMONIACA! Le tue scelte spietate ti hanno trasformato in un Demone (+4 Stat, Volare, Tocco Letale)!");
-                        }
-                    }
-                }
-                if (rewards.addMana && !nextChar.manaIdentity.includes(rewards.addMana)) {
-                    nextChar.manaIdentity = [...nextChar.manaIdentity, rewards.addMana];
-                    messages.push(`🌈 NUOVO COLORE DI MANA! Ora sei legato anche al mana ${rewards.addMana}!`);
-                }
-                if (rewards.addKeyword && !nextChar.mtgKeywords.includes(rewards.addKeyword)) {
-                    nextChar.mtgKeywords = [...nextChar.mtgKeywords, rewards.addKeyword];
-                    messages.push(`⚡ NUOVA ABILITÀ DI MAGIC: Hai ottenuto '${rewards.addKeyword}'!`);
-                }
-                if (rewards.loot && RPG_ITEMS_DB[rewards.loot]) {
-                    const rawItem = RPG_ITEMS_DB[rewards.loot];
-                    const itemObj = adaptLootForCharacter(rawItem, nextChar);
-                    const slotLabel = EQUIP_SLOTS.find(s => s.key === itemObj.slot);
-                    const alreadyInInv = nextChar.inventory.some(i => i.id === itemObj.id);
-                    const alreadyEq = Object.values(nextChar.equipped).some(eqIt => eqIt && eqIt.id === itemObj.id);
-                    if (!alreadyInInv && !alreadyEq) {
-                        nextChar.inventory = [...nextChar.inventory, itemObj];
-                        messages.push(`🎒 LOOT TROVATO: ${itemObj.name} (Slot: ${slotLabel ? slotLabel.label : itemObj.slot})! Cliccalo nello zaino per equipaggiarlo.`);
-                    }
-                }
-                if (rewards.makeLegendary && !nextChar.isLegendary) {
-                    nextChar.isLegendary = true;
-                    nextChar.currentHP += 10;
-                    messages.push("👑 TRAGUARDO EPICO: Ora sei una 'CREATURA LEGGENDARIA' (+5 a tutte le statistiche, +10 COS/Salute)!");
-                }
-                if (rewards.igniteSpark && !nextChar.sparkIgnited) {
-                    nextChar.sparkIgnited = true;
-                    nextChar.isPlaneswalker = true;
-                    nextChar.currentHP += 20;
-                    messages.push("🔥 LA SCINTILLA È ACCESA! Sei diventato un PLANESWALKER LEGGENDARIO (+15 Statistiche, Viaggio Planare sbloccato)!");
-                }
-                if (rewards.heal) {
-                    const max = getFinalStats(nextChar).maxHP;
-                    nextChar.currentHP = Math.min(max, nextChar.currentHP + rewards.heal);
-                    messages.push(`💚 Hai recuperato ${rewards.heal} Punti Vita!`);
+            if (!rewards) return { hero: h, msgs: msgs };
+
+            // Danni solo all'eroe attivo (a meno che non sia danno ad area partyDamage)
+            if (rewards.damage && isActiveHero) {
+                h.currentHP = Math.max(1, h.currentHP - rewards.damage);
+                msgs.push(`💥 ${h.name} subisce ${rewards.damage} danni!`);
+            }
+            if (rewards.partyDamage) {
+                h.currentHP = Math.max(1, h.currentHP - rewards.partyDamage);
+                if (isActiveHero) msgs.push(`💥 Tutta la compagnia subisce ${rewards.partyDamage} danni!`);
+            }
+
+            // ESP e Livello condivisi con TUTTA la compagnia!
+            if (rewards.exp) {
+                h.exp = (h.exp || 0) + rewards.exp;
+                const newLvl = Math.floor(h.exp / 120) + 1; // 120 EXP per livello (progressione più equilibrata!)
+                if (newLvl > h.level) {
+                    h.level = newLvl;
+                    const newMax = getFinalStats(h).maxHP;
+                    h.currentHP = Math.min(newMax, h.currentHP + 8);
+                    msgs.push(`🎉 ${h.name} sale al LIVELLO ${newLvl}! (+2 Stat, +8 PV)`);
                 }
             }
 
-            if (messages.length > 0) setEventBanner(messages.join("\n"));
+            // Karma e Ascensione condivisi con la compagnia
+            if (rewards.karma) {
+                h.karma = (h.karma || 0) + rewards.karma;
+                if (h.raceId === 'umano' && !h.ascensionForm) {
+                    if (h.karma >= 3) {
+                        h.ascensionForm = 'angelo';
+                        if (!h.mtgKeywords.includes("Volare")) h.mtgKeywords.push("Volare");
+                        if (!h.mtgKeywords.includes("Cautela")) h.mtgKeywords.push("Cautela");
+                        msgs.push(`👼 ASCENSIONE ANGELICA per ${h.name}!`);
+                    } else if (h.karma <= -3) {
+                        h.ascensionForm = 'demone';
+                        if (!h.mtgKeywords.includes("Volare")) h.mtgKeywords.push("Volare");
+                        if (!h.mtgKeywords.includes("Tocco Letale")) h.mtgKeywords.push("Tocco Letale");
+                        msgs.push(`👿 ASCENSIONE DEMONIACA per ${h.name}!`);
+                    }
+                }
+            }
+
+            // Mana e Abilità Magic condivisi con il gruppo
+            if (rewards.addMana && !h.manaIdentity.includes(rewards.addMana)) {
+                h.manaIdentity = [...h.manaIdentity, rewards.addMana];
+                if (isActiveHero) msgs.push(`🌈 La compagnia assorbe il Mana ${rewards.addMana}!`);
+            }
+            if (rewards.addKeyword && !h.mtgKeywords.includes(rewards.addKeyword)) {
+                h.mtgKeywords = [...h.mtgKeywords, rewards.addKeyword];
+                if (isActiveHero) msgs.push(`⚡ La compagnia ottiene l'abilità '${rewards.addKeyword}'!`);
+            }
+
+            // Loot fisico consegnato all'eroe attivo (adattato alla sua classe!)
+            if (isActiveHero && rewards.loot && RPG_ITEMS_DB[rewards.loot]) {
+                const rawItem = RPG_ITEMS_DB[rewards.loot];
+                const itemObj = adaptLootForCharacter(rawItem, h);
+                const slotLabel = EQUIP_SLOTS.find(s => s.key === itemObj.slot);
+                const alreadyInInv = h.inventory.some(i => i.id === itemObj.id);
+                const alreadyEq = Object.values(h.equipped).some(eqIt => eqIt && eqIt.id === itemObj.id);
+                if (!alreadyInInv && !alreadyEq) {
+                    h.inventory = [...h.inventory, itemObj];
+                    msgs.push(`🎒 ${h.name} ottiene: ${itemObj.name} (Slot: ${slotLabel ? slotLabel.label : itemObj.slot})!`);
+                }
+            }
+
+            // Titolo di Creatura Leggendaria assegnato a TUTTO il gruppo!
+            if (rewards.makeLegendary && !h.isLegendary) {
+                h.isLegendary = true;
+                h.currentHP += 10;
+                if (isActiveHero) msgs.push("👑 TRAGUARDO EPICO DI GRUPPO: Tutta la Compagnia diventa 'CREATURA LEGGENDARIA' (+5 a tutte le Statistiche, +10 COS/Salute)!");
+            }
+
+            // Accensione della Scintilla: richiede Livello >= 3 o Leggendario (oppure evento finale)
+            if (rewards.igniteSpark && !h.sparkIgnited) {
+                if (h.level >= 3 || h.isLegendary) {
+                    h.sparkIgnited = true;
+                    h.isPlaneswalker = true;
+                    h.currentHP += 20;
+                    msgs.push(`🔥 LA SCINTILLA DI ${h.name.toUpperCase()} SI ACCENDE! È ora un PLANESWALKER LEGGENDARIO (+15 Statistiche, Viaggio nel Multiverso attivo)!`);
+                } else {
+                    h.isLegendary = true;
+                    h.currentHP += 10;
+                    if (isActiveHero) msgs.push(`✨ L'energia planare vi investe! Siete ancora troppo giovani per la Scintilla (serve Livello 3+), ma diventate CREATURE LEGGENDARIE (+5 Stat)!`);
+                }
+            }
+
+            // Cure applicate a TUTTA la compagnia!
+            if (rewards.heal) {
+                const max = getFinalStats(h).maxHP;
+                h.currentHP = Math.min(max, h.currentHP + rewards.heal);
+                if (isActiveHero) msgs.push(`💚 Tutta la compagnia recupera ${rewards.heal} Punti Vita!`);
+            }
+
+            return { hero: h, msgs: msgs };
+        };
+
+        const applyRewardsAndMove = (charState, rewards, targetNodeId, extraBanner = "") => {
+            const nextNodeVal = targetNodeId || charState.currentNode;
+            let allMessages = [];
+            if (extraBanner) allMessages.push(extraBanner);
+
+            const currentPartyList = party.length > 0 ? party : [charState];
+            let updatedActiveHero = null;
+
+            const updatedPartyList = currentPartyList.map(member => {
+                const isAct = member.id === charState.id;
+                const baseMember = isAct ? charState : member;
+                const res = applySingleHeroRewards(baseMember, rewards, isAct, nextNodeVal);
+                if (res.msgs.length > 0) allMessages = [...allMessages, ...res.msgs];
+                if (isAct) updatedActiveHero = res.hero;
+                return res.hero;
+            });
+
+            if (!updatedActiveHero) updatedActiveHero = updatedPartyList[0];
+
+            if (allMessages.length > 0) setEventBanner(allMessages.join("\n"));
             else setEventBanner(null);
 
             setMasterNodeJump(nextNodeVal);
-            setCharacter(nextChar);
-            localStorage.setItem('rpg_character', JSON.stringify(nextChar));
-            const syncedParty = party.map(p => p.id === nextChar.id ? nextChar : { ...p, currentNode: nextNodeVal });
-            setParty(syncedParty);
-            localStorage.setItem('rpg_party', JSON.stringify(syncedParty));
+            setCharacter(updatedActiveHero);
+            setParty(updatedPartyList);
+            localStorage.setItem('rpg_character', JSON.stringify(updatedActiveHero));
+            localStorage.setItem('rpg_party', JSON.stringify(updatedPartyList));
 
             window.scrollTo(0, 0);
         };
 
-        // ESECUZIONE DEL CALCOLO TIRO D20 (Usato sia dal Dado Automatico che dal Dado Reale Manuale)
+        // ============================================================================
+        // ARENA DI COMBATTIMENTO A TURNI (CONTRO MOSTRI DI MAGIC)
+        // ============================================================================
+        const startMonsterEncounter = (monsterKey, customWinNode = null) => {
+            const mTemplate = MTG_BESTIARY[monsterKey] || MTG_BESTIARY["goblin_pack"];
+            const partyScale = playMode === "party" && party.length > 1 ? Math.min(2.2, 1 + (party.length - 1) * 0.35) : 1;
+            const scaledHP = Math.round(mTemplate.maxHP * partyScale);
+
+            setCombatState({
+                key: monsterKey,
+                name: mTemplate.name,
+                maxHP: scaledHP,
+                currentHP: scaledHP,
+                dc: mTemplate.dc,
+                dmg: mTemplate.dmg,
+                exp: mTemplate.exp,
+                loot: mTemplate.loot,
+                isBoss: mTemplate.isBoss || false,
+                winNode: customWinNode || character.currentNode,
+                desc: mTemplate.desc,
+                log: [`⚔️ INIZIO SCONTRO: ${mTemplate.name} (${scaledHP} PV) vi sbarra la strada!`]
+            });
+            setLastRollInfo(null);
+            setEventBanner(null);
+            window.scrollTo(0, 0);
+        };
+
+        const resolveCombatTurn = (actionStat, d20Value) => {
+            if (!combatState) return;
+            const d20 = Math.max(1, Math.min(20, parseInt(d20Value) || 10));
+            const stats = getFinalStats(character);
+            const statVal = stats[actionStat] || 10;
+            const humanBonus = character.raceId === 'umano' ? 1 : 0;
+            const firstStrikeBonus = stats.keywords.includes("Attacco Improvviso") ? 2 : 0;
+            const total = d20 + statVal + humanBonus + firstStrikeBonus;
+
+            const isCrit = d20 === 20;
+            const isFumble = d20 === 1;
+            const hit = isCrit || (!isFumble && total >= combatState.dc);
+
+            let newMonsterHP = combatState.currentHP;
+            let newHero = { ...character };
+            let turnLog = [...combatState.log];
+
+            if (hit) {
+                let playerDmg = Math.max(6, Math.round(statVal * 0.65) + Math.floor(d20 / 3));
+                if (isCrit) playerDmg *= 2;
+                if (stats.keywords.includes("Travolgere")) playerDmg += 4;
+                if (stats.keywords.includes("Tocco Letale") && !combatState.isBoss && isCrit) {
+                    playerDmg = newMonsterHP; // Tocco letale sul critico uccide i non-boss sul colpo!
+                }
+
+                newMonsterHP = Math.max(0, newMonsterHP - playerDmg);
+                turnLog.unshift(`✅ ${newHero.name} (Dado ${d20} + ${statVal} = ${total} vs CD ${combatState.dc}): Colpisce per ${playerDmg} danni!${isCrit ? " 🌟 CRITICO!" : ""}`);
+
+                if (isCrit && stats.keywords.includes("Legame Vitale")) {
+                    newHero.currentHP = Math.min(stats.maxHP, newHero.currentHP + 4);
+                    turnLog.unshift(`🩸 Legame Vitale cura ${newHero.name} di 4 PV!`);
+                }
+
+                // ACCENSIONE DINAMICA DELLA SCINTILLA SU CRITICO CONTRO UN BOSS O AD ALTO LIVELLO!
+                if (isCrit && !newHero.sparkIgnited && (newHero.level >= 3 || newHero.isLegendary || combatState.isBoss)) {
+                    newHero.sparkIgnited = true;
+                    newHero.isLegendary = true;
+                    newHero.currentHP += 20;
+                    turnLog.unshift(`🔥 MIRACOLO PLANARE! Con un 20 Naturale in battaglia, la SCINTILLA DI ${newHero.name.toUpperCase()} SI È ACCESA! Ora è un PLANESWALKER!`);
+                }
+            } else {
+                let enemyDmg = combatState.dmg;
+                if (isFumble) enemyDmg += 3;
+                if (newHero.raceId === 'nano') enemyDmg = Math.max(1, enemyDmg - 2);
+                if (stats.keywords.includes("Cautela")) enemyDmg = Math.max(1, enemyDmg - 2);
+
+                newHero.currentHP = Math.max(1, newHero.currentHP - enemyDmg);
+                turnLog.unshift(`❌ ${newHero.name} manca il bersaglio (Dado ${d20}, Tot ${total} vs CD ${combatState.dc})! ${combatState.name} contrattacca infliggendo ${enemyDmg} danni!`);
+            }
+
+            setPendingCombatAction(null);
+
+            // Controlla se il Mostro è sconfitto!
+            if (newMonsterHP <= 0) {
+                const winRewards = { exp: combatState.exp, loot: combatState.loot };
+                if (combatState.isBoss) winRewards.makeLegendary = true;
+                setCombatState(null);
+                applyRewardsAndMove(
+                    newHero,
+                    winRewards,
+                    combatState.winNode,
+                    `🏆 VITTORIA NELL'ARENA! Avete sconfitto ${combatState.name}! (+${combatState.exp} EXP a tutta la compagnia!)`
+                );
+            } else {
+                saveCharState(newHero);
+                setCombatState({
+                    ...combatState,
+                    currentHP: newMonsterHP,
+                    log: turnLog.slice(0, 6)
+                });
+            }
+        };
+
+        // ESECUZIONE DEL CALCOLO TIRO D20 NELLA STORIA
         const executeRollCalculation = (choice, d20Value) => {
             const d20 = Math.max(1, Math.min(20, parseInt(d20Value) || 10));
             const stats = getFinalStats(character);
@@ -2638,6 +2772,13 @@
                 if (stats.keywords.includes("Legame Vitale")) {
                     updatedChar.currentHP = Math.min(stats.maxHP, updatedChar.currentHP + 4);
                     rollNote += " (Legame Vitale ti cura di 4 PV!)";
+                }
+                // Se l'eroe è di livello >= 4 (o Leggendario) e fa un 20 Naturale in una prova difficile (CD >= 26), accende la Scintilla!
+                if (!updatedChar.sparkIgnited && (updatedChar.level >= 4 || updatedChar.isLegendary) && choice.dc >= 26) {
+                    updatedChar.sparkIgnited = true;
+                    updatedChar.isPlaneswalker = true;
+                    updatedChar.currentHP += 20;
+                    rollNote += ` 🔥 LA SCINTILLA DI ${updatedChar.name.toUpperCase()} SI ACCENDE GRAZIE AL COLPO CRITICO EPICO!`;
                 }
             } else if (isCritFail) {
                 rollNote = "💀 1 NATURALE! FALLIMENTO CRITICO!";
@@ -2674,10 +2815,15 @@
             applyRewardsAndMove(updatedChar, passed ? choice.rewards : null, targetNode, rollNote);
         };
 
-        // GESTIONE CLICK SCELTE (Smista tra Automatico e Dado Reale)
         const handleChoiceClick = (choice) => {
             if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); setIsSpeaking(false); }
             setLastRollInfo(null);
+
+            // Se la scelta avvia un combattimento a turni nell'Arena!
+            if (choice.type === 'combat' && choice.monster) {
+                startMonsterEncounter(choice.monster, choice.winNode || choice.nextNode);
+                return;
+            }
 
             if (choice.type !== 'roll') {
                 setPendingRollChoice(null);
@@ -2694,7 +2840,6 @@
             }
         };
 
-        // VOCE NARRANTE TTS
         const toggleSpeech = (textToRead) => {
             if (!('speechSynthesis' in window)) return alert("Sintesi vocale non supportata su questo browser.");
             if (isSpeaking) {
@@ -2711,8 +2856,10 @@
             }
         };
 
+        const partyHasPlaneswalker = party.some(p => p.sparkIgnited) || (character && character.sparkIgnited);
+
         // ====================================================================
-        // VISTA A: STORIA INTERATTIVA (SOLITARIO O GRUPPO D&D)
+        // VISTA A: STORIA INTERATTIVA + ARENA DI COMBATTIMENTO A TURNI
         // ====================================================================
         if (character && rpgView === "story") {
             const stats = getFinalStats(character);
@@ -2732,22 +2879,33 @@
                                 👥 Party ({party.length})
                             </button>
                             <button
+                                onClick={() => startMonsterEncounter( Object.keys(MTG_BESTIARY)[Math.floor(Math.random() * 5)], character.currentNode )}
+                                className="bg-red-700 hover:bg-red-600 text-white font-black px-3 py-2 rounded-lg text-xs shadow"
+                                title="Affronta una creatura errante di Magic per guadagnare EXP e Loot!"
+                            >
+                                ⚔️ Caccia Mostri
+                            </button>
+                            <button
                                 onClick={() => {
-                                    const max = stats.maxHP;
-                                    if (character.currentHP >= max) return alert("Hai già il massimo dei Punti Vita!");
-                                    saveCharState({ ...character, currentHP: Math.min(max, character.currentHP + 8) });
-                                    setEventBanner("⛺ Riposo Breve completato: hai recuperato +8 Punti Vita!");
+                                    applyRewardsAndMove(character, { heal: 8 }, character.currentNode, "⛺ Riposo Breve completato: tutta la compagnia recupera +8 Punti Vita!");
                                 }}
                                 className="bg-emerald-800 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg text-xs shadow"
-                                title="Accampati e recupera +8 PV"
                             >
                                 ⛺ Riposo (+8 PV)
                             </button>
+                            {partyHasPlaneswalker && (
+                                <button
+                                    onClick={() => applyRewardsAndMove(character, null, "planeswalker_nexus", "🌌 Viaggio Planare attivato! La Compagnia attraversa la Cieca Eternità!")}
+                                    className="bg-gradient-to-r from-orange-500 to-amber-500 text-black font-black px-3 py-2 rounded-lg text-xs shadow"
+                                >
+                                    🌌 Viaggia nei Piani
+                                </button>
+                            )}
                         </div>
 
                         {/* SELETTORE DADO AUTOMATICO vs DADO REALE DA TAVOLO */}
                         <div className="flex bg-gray-900 p-1 rounded-lg border border-amber-500/60">
-                            <button onClick={() => { setDiceMode("auto"); setPendingRollChoice(null); }} className={`px-2.5 py-1 rounded text-xs font-black transition-all ${diceMode === "auto" ? "bg-amber-500 text-black shadow" : "text-gray-400"}`}>
+                            <button onClick={() => { setDiceMode("auto"); setPendingRollChoice(null); setPendingCombatAction(null); }} className={`px-2.5 py-1 rounded text-xs font-black transition-all ${diceMode === "auto" ? "bg-amber-500 text-black shadow" : "text-gray-400"}`}>
                                 🤖 Dado Auto
                             </button>
                             <button onClick={() => setDiceMode("manual")} className={`px-2.5 py-1 rounded text-xs font-black transition-all ${diceMode === "manual" ? "bg-emerald-500 text-black shadow" : "text-gray-400"}`}>
@@ -2770,13 +2928,13 @@
                                     onClick={() => setCharacter(hero)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${character.id === hero.id ? "bg-amber-500 text-black shadow-md scale-105" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}
                                 >
-                                    🛡️ {hero.name} ({hero.currentHP} PV)
+                                    🛡️ {hero.name} (LIV {hero.level} • {hero.currentHP} PV) {hero.isLegendary ? "👑" : ""}{hero.sparkIgnited ? "🔥" : ""}
                                 </button>
                             ))}
                         </div>
                     )}
 
-                    {/* MINI-SCHEDA PERSONAGGIO IN ALTO CON TUTTE LE 5 STATISTICHE (INCLUSA COS!) */}
+                    {/* MINI-SCHEDA PERSONAGGIO IN ALTO CON TUTTE LE 5 STATISTICHE */}
                     <div className="bg-gray-900/95 border-2 border-amber-600/60 rounded-xl p-3 shadow-xl flex items-center gap-3">
                         <img src={avatarSrc} onError={(e) => handleImgError(e, character.raceId)} className="w-16 h-16 rounded-lg object-cover object-top border-2 border-amber-500 shrink-0" />
                         <div className="flex-1 min-w-0">
@@ -2786,7 +2944,7 @@
                                 {character.isLegendary && <span className="text-xs bg-yellow-900/60 text-yellow-300 px-1.5 py-0.5 rounded border border-yellow-500 font-bold">👑 Leggendario</span>}
                                 {character.sparkIgnited && <span className="text-xs bg-orange-900/60 text-orange-300 px-1.5 py-0.5 rounded border border-orange-500 font-bold">🔥 Planeswalker</span>}
                             </div>
-                            <p className="text-gray-400 text-xs truncate">{character.race} {character.classType} • EXP: {character.exp}</p>
+                            <p className="text-gray-400 text-xs truncate">{character.race} {character.classType} • EXP: {character.exp} (Prossimo Liv: {character.level * 120})</p>
                             <div className="grid grid-cols-5 gap-1 mt-1.5 text-center">
                                 <span className="bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-[10px] font-bold text-gray-300">FOR <b className="text-white">{stats.str}</b></span>
                                 <span className="bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-[10px] font-bold text-gray-300">AGI <b className="text-white">{stats.agi}</b></span>
@@ -2796,14 +2954,103 @@
                             </div>
                         </div>
                         {character.classId === 'chierico' && character.currentHP < stats.maxHP && (
-                            <button onClick={() => saveCharState({...character, currentHP: Math.min(stats.maxHP, character.currentHP + 5)})} className="bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-black px-2 py-2 rounded-lg shadow shrink-0">
+                            <button onClick={() => applyRewardsAndMove(character, { heal: 5 }, character.currentNode, `✨ Preghiera Curativa di ${character.name}: tutta la compagnia recupera +5 PV!`)} className="bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-black px-2 py-2 rounded-lg shadow shrink-0">
                                 ✨ Cura +5
                             </button>
                         )}
                     </div>
 
-                    {/* PANNELLO DADO REALE MANUALE (COMPARE QUANDO CLICCHI UNA PROVA IN MODALITÀ DADO REALE) */}
-                    {pendingRollChoice && (
+                    {/* ==================================================================== */}
+                    {/* ARENA DI COMBATTIMENTO A TURNI (SE C'È UNO SCONTRO ATTIVO)           */}
+                    {/* ==================================================================== */}
+                    {combatState && (
+                        <div className="bg-gradient-to-b from-red-950 via-gray-900 to-gray-950 border-4 border-red-500 rounded-2xl p-5 shadow-[0_0_30px_rgba(239,68,68,0.4)] animate-fade space-y-4">
+                            <div className="flex justify-between items-start gap-2 border-b border-red-800 pb-3">
+                                <div>
+                                    <span className="bg-red-600 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded">⚔️ SCONTRO A TURNI IN CORSO</span>
+                                    <h2 className="text-2xl font-black text-white mt-1">{combatState.name}</h2>
+                                    <p className="text-xs text-gray-300 italic">{combatState.desc}</p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                    <p className="text-xs font-bold text-red-300">Difesa Mostro: <b className="text-white">CD {combatState.dc}</b></p>
+                                    <p className="text-xs font-bold text-amber-300">Danno Attacco: <b className="text-white">{combatState.dmg} PV</b></p>
+                                </div>
+                            </div>
+
+                            {/* BARRA SALUTE DEL MOSTRO */}
+                            <div>
+                                <div className="flex justify-between text-xs font-black text-red-200 mb-1">
+                                    <span>❤️ PUNTI VITA NEMICO</span>
+                                    <span>{combatState.currentHP} / {combatState.maxHP} PV</span>
+                                </div>
+                                <div className="w-full h-5 bg-gray-800 rounded-full overflow-hidden border border-red-500 p-0.5">
+                                    <div 
+                                        className="h-full bg-gradient-to-r from-red-600 to-orange-500 rounded-full transition-all duration-300"
+                                        style={{ width: `${Math.max(0, Math.min(100, Math.round((combatState.currentHP / combatState.maxHP) * 100)))}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* SELETTORE DADO REALE NELL'ARENA */}
+                            {pendingCombatAction && (
+                                <div className="bg-indigo-950 border-2 border-emerald-400 rounded-xl p-3 text-center space-y-2">
+                                    <p className="text-xs font-black text-emerald-300 uppercase">
+                                        🎲 Tira il tuo D20 Reale per l'attacco su {pendingCombatAction.toUpperCase()}! Tocca il risultato:
+                                    </p>
+                                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-1">
+                                        {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20].map(n => (
+                                            <button key={n} onClick={() => resolveCombatTurn(pendingCombatAction, n)} className="bg-gray-900 hover:bg-emerald-600 text-white font-black text-xs py-2 rounded border border-gray-600">
+                                                {n}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* AZIONI DI COMBATTIMENTO DEL GIOCATORE ATTIVO */}
+                            <div className="space-y-2">
+                                <p className="text-xs font-black uppercase text-amber-400">Scegli la mossa del turno per {character.name}:</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    <button
+                                        onClick={() => diceMode === "manual" ? setPendingCombatAction("str") : resolveCombatTurn("str", Math.floor(Math.random()*20)+1)}
+                                        className="bg-red-900/80 hover:bg-red-800 border-2 border-red-500 p-3 rounded-xl text-left text-white font-bold text-xs shadow transition-all active:scale-95"
+                                    >
+                                        <span className="text-sm font-black block">⚔️ Assalto col Ferro (FOR)</span>
+                                        <span className="text-gray-300 text-[11px]">Bonus: +{stats.str} • Travolgere +4 Danni</span>
+                                    </button>
+                                    <button
+                                        onClick={() => diceMode === "manual" ? setPendingCombatAction("agi") : resolveCombatTurn("agi", Math.floor(Math.random()*20)+1)}
+                                        className="bg-emerald-900/80 hover:bg-emerald-800 border-2 border-emerald-500 p-3 rounded-xl text-left text-white font-bold text-xs shadow transition-all active:scale-95"
+                                    >
+                                        <span className="text-sm font-black block">🏹 Colpo Mirato / Furtivo (AGI)</span>
+                                        <span className="text-gray-300 text-[11px]">Bonus: +{stats.agi} • Precisione Letale</span>
+                                    </button>
+                                    <button
+                                        onClick={() => diceMode === "manual" ? setPendingCombatAction("mag") : resolveCombatTurn("mag", Math.floor(Math.random()*20)+1)}
+                                        className="bg-indigo-900/80 hover:bg-indigo-800 border-2 border-indigo-400 p-3 rounded-xl text-left text-white font-bold text-xs shadow transition-all active:scale-95"
+                                    >
+                                        <span className="text-sm font-black block">🔮 Incantesimo Mana (MAG)</span>
+                                        <span className="text-gray-300 text-[11px]">Bonus: +{stats.mag} • Scarica Arcana</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* DIARIO DEI TURNI DI COMBATTIMENTO */}
+                            <div className="bg-black/60 border border-gray-700 rounded-xl p-3 space-y-1 max-h-36 overflow-y-auto">
+                                {combatState.log.map((entry, idx) => (
+                                    <p key={idx} className={`text-xs font-bold ${idx === 0 ? "text-amber-300" : "text-gray-400"}`}>{entry}</p>
+                                ))}
+                            </div>
+
+                            <div className="flex justify-between items-center pt-1">
+                                <span className="text-[11px] text-gray-400">Suggerimento: se siete in gruppo, potete cambiare eroe attivo a ogni turno!</span>
+                                <button onClick={() => setCombatState(null)} className="text-xs text-red-400 underline font-bold">🏃 Fuggi dallo scontro</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* PANNELLO DADO REALE MANUALE PER LA STORIA */}
+                    {pendingRollChoice && !combatState && (
                         <div className="bg-indigo-950 border-4 border-emerald-400 rounded-2xl p-4 shadow-2xl animate-fade space-y-3 text-center">
                             <h3 className="text-emerald-300 font-black text-base uppercase">
                                 🎲 Tira il tuo Dado D20 Reale sul tavolo!
@@ -2811,7 +3058,6 @@
                             <p className="text-xs text-gray-200">
                                 Prova su <b className="text-amber-400">{pendingRollChoice.stat.toUpperCase()}</b> (Tuo Bonus: <b>+{stats[pendingRollChoice.stat] + (character.raceId === 'umano' ? 1 : 0) + (stats.keywords.includes("Attacco Improvviso") ? 2 : 0)}</b>) • Difficoltà da battere: <b className="text-white">CD {pendingRollChoice.dc}</b>
                             </p>
-                            <p className="text-xs text-emerald-200 font-bold">Tocca il numero uscito sul tuo dado (da 1 a 20):</p>
                             <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
                                 {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20].map(num => (
                                     <button
@@ -2832,7 +3078,7 @@
                     )}
 
                     {/* BOX RISULTATO TIRO D20 + ISPIRAZIONE MANA PER RILANCIARE */}
-                    {lastRollInfo && (
+                    {lastRollInfo && !combatState && (
                         <div className={`p-4 rounded-xl border-2 shadow-2xl animate-fade text-center space-y-2 ${lastRollInfo.passed ? "bg-emerald-950/90 border-emerald-500" : "bg-red-950/90 border-red-500"}`}>
                             <p className="text-xs font-black uppercase tracking-widest text-gray-300">
                                 🎲 Dado D20 ({lastRollInfo.d20}) + {lastRollInfo.statName} ({lastRollInfo.statVal}) = <span className="text-xl text-white">{lastRollInfo.total}</span> <span className="text-gray-400">(CD: {lastRollInfo.dc})</span>
@@ -2860,53 +3106,55 @@
                         </div>
                     )}
 
-                    {/* PERGAMENA DELLA SCENA CON SFONDO CUSTOM */}
-                    <div 
-                        className="bg-gray-900 border-2 border-amber-700/80 rounded-2xl p-5 sm:p-6 shadow-2xl bg-cover bg-center relative overflow-hidden"
-                        style={{ backgroundImage: "linear-gradient(rgba(10, 15, 25, 0.82), rgba(10, 15, 25, 0.90)), url('./rpg_bg.png')" }}
-                    >
-                        <div className="flex justify-between items-center mb-1">
-                            <p className="text-amber-500 text-xs font-black uppercase tracking-widest">{currentNodeObj.act}</p>
-                            <button 
-                                onClick={() => setPlayMode(playMode === "solo" ? "party" : "solo")}
-                                className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-amber-300 border border-gray-600"
-                            >
-                                {playMode === "solo" ? "👤 Solitario (Passa a Master)" : "🎲 Gruppo D&D (Console Attiva)"}
-                            </button>
-                        </div>
-                        <h2 className="text-2xl sm:text-3xl font-black text-white mb-4 border-b border-gray-700 pb-2" style={{ fontFamily: "Georgia, serif" }}>
-                            {currentNodeObj.title}
-                        </h2>
-                        <p className="text-gray-200 text-sm sm:text-base leading-relaxed whitespace-pre-wrap mb-6" style={{ fontFamily: "Georgia, serif" }}>
-                            {storyText}
-                        </p>
+                    {/* PERGAMENA DELLA SCENA (NASCOSTA DURANTE IL COMBATTIMENTO NELL'ARENA PER DARE FOCUS ALLO SCONTRO) */}
+                    {!combatState && (
+                        <div 
+                            className="bg-gray-900 border-2 border-amber-700/80 rounded-2xl p-5 sm:p-6 shadow-2xl bg-cover bg-center relative overflow-hidden"
+                            style={{ backgroundImage: "linear-gradient(rgba(10, 15, 25, 0.82), rgba(10, 15, 25, 0.90)), url('./rpg_bg.png')" }}
+                        >
+                            <div className="flex justify-between items-center mb-1">
+                                <p className="text-amber-500 text-xs font-black uppercase tracking-widest">{currentNodeObj.act}</p>
+                                <button 
+                                    onClick={() => setPlayMode(playMode === "solo" ? "party" : "solo")}
+                                    className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-amber-300 border border-gray-600"
+                                >
+                                    {playMode === "solo" ? "👤 Solitario (Passa a Master)" : "🎲 Gruppo D&D (Console Attiva)"}
+                                </button>
+                            </div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-white mb-4 border-b border-gray-700 pb-2" style={{ fontFamily: "Georgia, serif" }}>
+                                {currentNodeObj.title}
+                            </h2>
+                            <p className="text-gray-200 text-sm sm:text-base leading-relaxed whitespace-pre-wrap mb-6" style={{ fontFamily: "Georgia, serif" }}>
+                                {storyText}
+                            </p>
 
-                        {/* PULSANTI DELLE SCELTE */}
-                        <div className="space-y-3">
-                            <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">
-                                Scegli la tua azione ({character.name}) — [{diceMode === "manual" ? "🖐️ Dado Reale" : "🤖 Dado Auto"}]:
-                            </h4>
-                            {currentNodeObj.choices.map((ch, idx) => {
-                                if (ch.onlyParty && playMode !== "party") return null;
-                                if (ch.onlySolo && playMode !== "solo") return null;
-                                if (ch.reqKeyword && !stats.keywords.includes(ch.reqKeyword)) return null;
-                                if (ch.reqKeywordAny && !ch.reqKeywordAny.some(k => stats.keywords.includes(k))) return null;
+                            {/* PULSANTI DELLE SCELTE */}
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">
+                                    Scegli la tua azione ({character.name}) — [{diceMode === "manual" ? "🖐️ Dado Reale" : "🤖 Dado Auto"}]:
+                                </h4>
+                                {currentNodeObj.choices.map((ch, idx) => {
+                                    if (ch.onlyParty && playMode !== "party") return null;
+                                    if (ch.onlySolo && playMode !== "solo") return null;
+                                    if (ch.reqKeyword && !stats.keywords.includes(ch.reqKeyword)) return null;
+                                    if (ch.reqKeywordAny && !ch.reqKeywordAny.some(k => stats.keywords.includes(k))) return null;
 
-                                return (
-                                    <button
-                                        key={idx}
-                                        onClick={() => handleChoiceClick(ch)}
-                                        className="w-full text-left bg-gray-800 hover:bg-indigo-950 border-2 border-gray-600 hover:border-indigo-400 p-4 rounded-xl text-white font-bold text-sm sm:text-base shadow-md transition-all active:scale-95 flex justify-between items-center gap-2"
-                                    >
-                                        <span>{ch.text}</span>
-                                        <span className="text-xs font-black px-2 py-1 rounded bg-black/50 text-amber-400 shrink-0">
-                                            {ch.type === 'roll' ? `🎲 ${ch.stat.toUpperCase()} ${ch.dc}` : '➔'}
-                                        </span>
-                                    </button>
-                                );
-                            })}
+                                    return (
+                                        <button
+                                            key={idx}
+                                            onClick={() => handleChoiceClick(ch)}
+                                            className="w-full text-left bg-gray-800 hover:bg-indigo-950 border-2 border-gray-600 hover:border-indigo-400 p-4 rounded-xl text-white font-bold text-sm sm:text-base shadow-md transition-all active:scale-95 flex justify-between items-center gap-2"
+                                        >
+                                            <span>{ch.text}</span>
+                                            <span className="text-xs font-black px-2 py-1 rounded bg-black/50 text-amber-400 shrink-0">
+                                                {ch.type === 'combat' ? '⚔️ SCONTRO' : (ch.type === 'roll' ? `🎲 ${ch.stat.toUpperCase()} ${ch.dc}` : '➔')}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* CONSOLE DEL DUNGEON MASTER (SOLO SE IN MODALITÀ GRUPPO) */}
                     {playMode === "party" && (
@@ -2948,10 +3196,23 @@
                                 </button>
                             </div>
 
-                            {/* CURA, DANNI E LOOT RAPIDO */}
+                            {/* EVOCA MOSTRO NELL'ARENA (SCELTO DAL MASTER) */}
+                            <div className="flex flex-wrap gap-2 pt-2 border-t border-purple-800/60 items-center">
+                                <span className="text-[10px] font-black uppercase text-red-300">👹 Evoca Scontro:</span>
+                                <select value={masterMonsterKey} onChange={e => setMasterMonsterKey(e.target.value)} className="bg-gray-900 border border-red-500 rounded px-2 py-1.5 text-white text-xs font-bold flex-1">
+                                    {Object.keys(MTG_BESTIARY).map(k => (
+                                        <option key={k} value={k}>{MTG_BESTIARY[k].name} ({MTG_BESTIARY[k].maxHP} PV)</option>
+                                    ))}
+                                </select>
+                                <button onClick={() => startMonsterEncounter(masterMonsterKey, character.currentNode)} className="bg-red-700 hover:bg-red-600 text-white text-xs font-black px-3 py-1.5 rounded shadow">
+                                    ⚔️ Avvia Battaglia
+                                </button>
+                            </div>
+
+                            {/* CURA DI GRUPPO, DANNI E LOOT RAPIDO */}
                             <div className="flex flex-wrap gap-2 pt-2 border-t border-purple-800/60">
-                                <button onClick={() => saveCharState({ ...character, currentHP: Math.min(stats.maxHP, character.currentHP + 5) })} className="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded shadow">+5 PV</button>
-                                <button onClick={() => saveCharState({ ...character, currentHP: Math.max(1, character.currentHP - 5) })} className="bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded shadow">-5 PV</button>
+                                <button onClick={() => applyRewardsAndMove(character, { heal: 5 }, character.currentNode)} className="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded shadow">+5 PV a Tutti</button>
+                                <button onClick={() => applyRewardsAndMove(character, { partyDamage: 5 }, character.currentNode)} className="bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded shadow">-5 PV a Tutti</button>
                                 <select value={masterLootId} onChange={e => setMasterLootId(e.target.value)} className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white text-xs flex-1">
                                     {Object.values(RPG_ITEMS_DB).map(it => <option key={it.id} value={it.id}>{it.name}</option>)}
                                 </select>
@@ -2982,6 +3243,7 @@
                                         onClick={() => {
                                             if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); setIsSpeaking(false); }
                                             setLastRollInfo(null);
+                                            setCombatState(null);
                                             applyRewardsAndMove(character, null, masterNodeJump, `🧭 Il Master ha spostato la compagnia al capitolo: "${RPG_STORY_NODES[masterNodeJump] ? RPG_STORY_NODES[masterNodeJump].title : masterNodeJump}"`);
                                         }}
                                         className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black px-3 py-1.5 rounded-lg shadow shrink-0"
@@ -3033,7 +3295,7 @@
         }
 
         // ====================================================================
-        // VISTA B: SCHEDA PERSONAGGIO STAMPABILE (FORMATO FULL-ART VERTICALE A4 FIXATO)
+        // VISTA B: SCHEDA PERSONAGGIO STAMPABILE (PROPORZIONE 1:1 QUADRATA PERFETTA IN STAMPA!)
         // ====================================================================
         if (character && rpgView === "sheet") {
             const stats = getFinalStats(character);
@@ -3046,11 +3308,11 @@
             const avatarSrc = getAvatarSrc(character.raceId, character.classId, character.customAvatar, character.ascensionForm);
 
             return (
-                <div className="max-w-xl mx-auto p-3 sm:p-4 animate-fade pb-20">
-                    {/* CSS STAMPA A4 CORRETTO: NIENTE PIÙ PAGINA BIANCA E NIENTE ICONA RADIO! */}
+                <div className="max-w-md mx-auto p-3 sm:p-4 animate-fade pb-20">
+                    {/* CSS STAMPA A4 CALIBRATO SULLA PROPORZIONE QUADRATA 1:1 DELL'IMMAGINE! */}
                     <style>{`
                         @media print {
-                            @page { size: A4 portrait; margin: 6mm; }
+                            @page { size: A4 portrait; margin: 8mm; }
                             body {
                                 visibility: hidden !important;
                                 background: white !important;
@@ -3062,19 +3324,21 @@
                                 visibility: visible !important;
                             }
                             #print-area {
-                                position: absolute !important;
-                                left: 0 !important;
-                                top: 0 !important;
-                                width: 100% !important;
-                                max-width: 190mm !important;
-                                margin: 0 auto !important;
+                                position: fixed !important;
+                                left: 50% !important;
+                                top: 6mm !important;
+                                transform: translateX(-50%) !important;
+                                width: 138mm !important;
+                                max-width: 138mm !important;
                                 padding: 14px !important;
                                 border: 6px solid #111827 !important;
+                                border-radius: 18px !important;
                                 box-shadow: none !important;
                                 page-break-inside: avoid !important;
                             }
                             #print-art-box {
-                                height: 420px !important;
+                                width: 100% !important;
+                                height: 126mm !important;
                             }
                         }
                     `}</style>
@@ -3086,18 +3350,18 @@
                         </div>
                         <div className="flex gap-2">
                             <label className="bg-purple-700 hover:bg-purple-600 text-white font-bold px-3 py-2 rounded shadow cursor-pointer text-sm flex items-center gap-1">
-                                🖼️ Cambia Foto
+                                🖼️ Foto
                                 <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, true)} className="hidden" />
                             </label>
-                            <button onClick={() => window.print()} className="bg-blue-600 hover:bg-blue-500 text-white font-black px-4 py-2 rounded shadow text-sm">🖨️ Stampa Scheda A4</button>
+                            <button onClick={() => window.print()} className="bg-blue-600 hover:bg-blue-500 text-white font-black px-4 py-2 rounded shadow text-sm">🖨️ Stampa A4</button>
                             <button onClick={deleteCharacter} className="bg-red-800 hover:bg-red-700 text-white font-bold px-3 py-2 rounded shadow text-sm" title="Elimina Eroe">✖</button>
                         </div>
                     </div>
 
-                    {/* SELETTORE EROE NELLA SCHEDA (SE CI SONO PIÙ EROI NEL PARTY) */}
+                    {/* SELETTORE EROE NELLA SCHEDA */}
                     {party.length > 1 && (
                         <div className="no-print bg-gray-800 border border-gray-600 rounded-xl p-2.5 mb-4 flex items-center gap-2 overflow-x-auto">
-                            <span className="text-amber-400 font-black text-xs uppercase shrink-0">Vedi Scheda di:</span>
+                            <span className="text-amber-400 font-black text-xs uppercase shrink-0">Scheda di:</span>
                             {party.map((hero) => (
                                 <button
                                     key={hero.id}
@@ -3110,22 +3374,22 @@
                         </div>
                     )}
 
-                    <div id="print-area" className={`${mainMana.bgClass} text-black border-[6px] border-gray-900 rounded-2xl p-4 sm:p-5 shadow-2xl relative`} style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/aged-paper.png')" }}>
+                    <div id="print-area" className={`${mainMana.bgClass} text-black border-[6px] border-gray-900 rounded-2xl p-4 shadow-2xl relative`} style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/aged-paper.png')" }}>
                         
                         {character.isLegendary && !character.sparkIgnited && (
-                            <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 font-black uppercase px-4 py-1 rounded-full border-2 border-gray-900 shadow-md text-xs z-20">
+                            <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 font-black uppercase px-3 py-0.5 rounded-full border-2 border-gray-900 shadow-md text-[10px] z-20">
                                 👑 LEGGENDARIO
                             </div>
                         )}
                         {character.sparkIgnited && (
-                            <div className="absolute top-2 right-2 bg-gradient-to-r from-orange-500 to-yellow-400 text-black font-black uppercase px-4 py-1 rounded-full border-2 border-gray-900 shadow-[0_0_15px_rgba(245,158,11,0.8)] text-xs z-20">
+                            <div className="absolute top-2 right-2 bg-gradient-to-r from-orange-500 to-yellow-400 text-black font-black uppercase px-3 py-0.5 rounded-full border-2 border-gray-900 shadow text-[10px] z-20">
                                 🔥 PLANESWALKER
                             </div>
                         )}
                         
                         {/* INTESTAZIONE CARTA MAGIC */}
-                        <div className="bg-white/85 border-2 border-gray-900 rounded-xl px-4 py-2 mb-3 flex justify-between items-center shadow-sm">
-                            <h1 className="text-2xl sm:text-3xl font-black tracking-wide text-gray-900 truncate" style={{ fontFamily: "Georgia, serif" }}>{character.name}</h1>
+                        <div className="bg-white/90 border-2 border-gray-900 rounded-xl px-4 py-2 mb-3 flex justify-between items-center shadow-sm">
+                            <h1 className="text-2xl font-black tracking-wide text-gray-900 truncate" style={{ fontFamily: "Georgia, serif" }}>{character.name}</h1>
                             <div className="flex gap-1 shrink-0">
                                 {character.manaIdentity.map(mId => {
                                     const mObj = MANA_COLORS.find(mc => mc.id === mId);
@@ -3134,16 +3398,16 @@
                             </div>
                         </div>
 
-                        {/* ILLUSTRAZIONE VERTICALE FULL-ART E LINEA DI TIPO */}
-                        <div id="print-art-box" className="w-full h-80 sm:h-[420px] bg-gray-900 border-4 border-gray-900 rounded-xl overflow-hidden mb-3 shadow-inner relative">
+                        {/* ILLUSTRAZIONE QUADRATA 1:1 (MOSTRA SEMPRE IL 100% DELL'IMMAGINE SIA SU APP CHE IN STAMPA!) */}
+                        <div id="print-art-box" className="w-full aspect-square bg-gray-900 border-4 border-gray-900 rounded-xl overflow-hidden mb-3 shadow-inner relative">
                             <img 
                                 src={avatarSrc} 
                                 alt={character.name} 
                                 onError={(e) => handleImgError(e, character.raceId)}
-                                className="w-full h-full object-cover object-top" 
+                                className="w-full h-full object-cover object-center" 
                             />
                             <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 pt-8 flex justify-between items-end">
-                                <span className="text-white font-bold italic text-sm sm:text-base drop-shadow" style={{ fontFamily: "Georgia, serif" }}>
+                                <span className="text-white font-bold italic text-sm drop-shadow" style={{ fontFamily: "Georgia, serif" }}>
                                     {typeLine} — {character.race} {character.classType ? character.classType : ""} {character.ascensionForm ? `(${character.ascensionForm.toUpperCase()})` : ''}
                                 </span>
                                 <span className="bg-amber-500 text-black font-black px-2.5 py-0.5 rounded text-xs border border-black shadow shrink-0">
@@ -3153,39 +3417,39 @@
                         </div>
 
                         {/* 5 STATISTICHE VISIBILI (FOR, AGI, MAG, COS, SALUTE) */}
-                        <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mb-3 text-center">
-                            <div className="bg-white/85 border-2 border-gray-800 rounded-lg p-1.5 shadow-sm">
+                        <div className="grid grid-cols-5 gap-1.5 mb-3 text-center">
+                            <div className="bg-white/90 border-2 border-gray-800 rounded-lg p-1.5 shadow-sm">
                                 <p className="text-[9px] font-black uppercase text-gray-600">Forza</p>
-                                <p className="text-lg sm:text-2xl font-black text-gray-900">{stats.str}</p>
+                                <p className="text-xl font-black text-gray-900">{stats.str}</p>
                             </div>
-                            <div className="bg-white/85 border-2 border-gray-800 rounded-lg p-1.5 shadow-sm">
+                            <div className="bg-white/90 border-2 border-gray-800 rounded-lg p-1.5 shadow-sm">
                                 <p className="text-[9px] font-black uppercase text-gray-600">Agilità</p>
-                                <p className="text-lg sm:text-2xl font-black text-gray-900">{stats.agi}</p>
+                                <p className="text-xl font-black text-gray-900">{stats.agi}</p>
                             </div>
-                            <div className="bg-white/85 border-2 border-gray-800 rounded-lg p-1.5 shadow-sm">
+                            <div className="bg-white/90 border-2 border-gray-800 rounded-lg p-1.5 shadow-sm">
                                 <p className="text-[9px] font-black uppercase text-gray-600">Magia</p>
-                                <p className="text-lg sm:text-2xl font-black text-gray-900">{stats.mag}</p>
+                                <p className="text-xl font-black text-gray-900">{stats.mag}</p>
                             </div>
                             <div className="bg-amber-50 border-2 border-amber-800 rounded-lg p-1.5 shadow-sm">
                                 <p className="text-[9px] font-black uppercase text-amber-900">Costituz.</p>
-                                <p className="text-lg sm:text-2xl font-black text-amber-900">{stats.con}</p>
+                                <p className="text-xl font-black text-amber-900">{stats.con}</p>
                             </div>
                             <div className="bg-red-100 border-2 border-red-800 rounded-lg p-1.5 shadow-sm">
                                 <p className="text-[9px] font-black uppercase text-red-900">Salute</p>
-                                <p className="text-base sm:text-xl font-black text-red-700 whitespace-nowrap">{character.currentHP}/{stats.maxHP}</p>
+                                <p className="text-base font-black text-red-700 whitespace-nowrap">{character.currentHP}/{stats.maxHP}</p>
                             </div>
                         </div>
 
                         {/* ORACLE TEXT: PAROLE CHIAVE E ABILITÀ */}
-                        <div className="bg-white/85 border-2 border-gray-800 rounded-xl p-3 mb-3 shadow-inner space-y-1.5">
+                        <div className="bg-white/90 border-2 border-gray-800 rounded-xl p-3 mb-3 shadow-inner space-y-1.5">
                             {stats.keywords.length > 0 && (
-                                <p className="font-black text-indigo-900 text-xs sm:text-sm border-b border-gray-300 pb-1">
+                                <p className="font-black text-indigo-900 text-xs border-b border-gray-300 pb-1">
                                     ⚡ Abilità Magic: {stats.keywords.join(", ")}
                                 </p>
                             )}
                             <div>
-                                <h3 className="font-black text-gray-900 text-[11px] uppercase tracking-wider mb-0.5">Tratti Razza & Classe:</h3>
-                                <ul className="list-disc list-inside text-xs font-semibold space-y-0.5 text-gray-800">
+                                <h3 className="font-black text-gray-900 text-[10px] uppercase tracking-wider mb-0.5">Tratti Razza & Classe:</h3>
+                                <ul className="list-disc list-inside text-[11px] font-semibold space-y-0.5 text-gray-800">
                                     {character.abilities.map((ab, i) => <li key={i}>{ab}</li>)}
                                     {character.sparkIgnited && <li className="text-indigo-700 font-bold">Planeswalk: Può viaggiare liberamente tra i Piani del Multiverso.</li>}
                                 </ul>
@@ -3193,9 +3457,9 @@
                         </div>
 
                         {/* EQUIPAGGIAMENTO A 6 SLOT E ZAINO */}
-                        <div className="bg-white/75 p-3 rounded-xl border-2 border-gray-800 space-y-2">
-                            <h3 className="font-black text-gray-900 border-b border-gray-500 pb-0.5 text-xs uppercase">Equipaggiamento Attivo (6 Slot GDR)</h3>
-                            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-bold text-gray-900">
+                        <div className="bg-white/80 p-3 rounded-xl border-2 border-gray-800 space-y-2">
+                            <h3 className="font-black text-gray-900 border-b border-gray-500 pb-0.5 text-[11px] uppercase">Equipaggiamento Attivo (6 Slot GDR)</h3>
+                            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] font-bold text-gray-900">
                                 {EQUIP_SLOTS.map(sl => {
                                     const eqIt = character.equipped ? character.equipped[sl.key] : null;
                                     return (
@@ -3206,7 +3470,7 @@
                                 })}
                             </div>
                             <div className="no-print pt-2 border-t border-gray-400">
-                                <h3 className="font-black text-gray-900 mb-1 text-[11px] uppercase">Zaino (Clicca per Equipaggiare)</h3>
+                                <h3 className="font-black text-gray-900 mb-1 text-[10px] uppercase">Zaino (Clicca per Equipaggiare)</h3>
                                 {character.inventory.length === 0 ? (
                                     <p className="text-xs italic text-gray-600">Zaino vuoto.</p>
                                 ) : (
@@ -3302,10 +3566,10 @@
                 <hr className="border-gray-700 my-2" />
                 <h3 className="text-white font-bold text-sm">{party.length === 0 ? "Crea il tuo Eroe:" : "➕ Aggiungi un altro Eroe al Party:"}</h3>
 
-                {/* ANTEPRIMA VERTICALE PIÙ GRANDE */}
-                <div className="w-full h-56 bg-gray-900 rounded-xl border-2 border-amber-500/50 overflow-hidden relative shadow-inner flex items-center justify-center">
+                {/* ANTEPRIMA QUADRATA 1:1 */}
+                <div className="w-full aspect-square bg-gray-900 rounded-xl border-2 border-amber-500/50 overflow-hidden relative shadow-inner flex items-center justify-center">
                     {(selectedRace || customAvatar) ? (
-                        <img key={previewSrc} src={previewSrc} onError={(e) => handleImgError(e, selectedRace)} className="w-full h-full object-cover object-top animate-fade" alt="Preview" />
+                        <img key={previewSrc} src={previewSrc} onError={(e) => handleImgError(e, selectedRace)} className="w-full h-full object-cover object-center animate-fade" alt="Preview" />
                     ) : (
                         <p className="text-gray-500 text-xs font-bold text-center px-4">Scegli Razza e Classe per vedere l'anteprima del personaggio</p>
                     )}
