@@ -2074,7 +2074,7 @@
     };
     // ============================================================================
     // --- PARTE 2: CREATORE PERSONAGGIO, SCHEDA STAMPABILE E MOTORE DI GIOCO ---
-    // (100% Compatibile con Babel 6 - Zero Optional Chaining - ZERO TAGLI)
+    // (100% Compatibile con Babel 6 - 6 Slot GDR, COS visibile, Dado Reale/Auto, Stampa Fix)
     // ============================================================================
     const RpgCharacterManager = ({ navigate }) => {
         const [party, setParty] = useState([]);
@@ -2083,6 +2083,11 @@
         const [rpgView, setRpgView] = useState("create"); 
         const [playMode, setPlayMode] = useState("solo"); // "solo" (1 Giocatore) | "party" (Gruppo D&D)
         
+        // Modalità Dado: "auto" (tira il computer) | "manual" (tiri il dado vero sul tavolo e inserisci il numero)
+        const [diceMode, setDiceMode] = useState("auto");
+        const [pendingRollChoice, setPendingRollChoice] = useState(null); // Scelta in attesa del dado manuale
+        const [manualD20Input, setManualD20Input] = useState(10);
+
         // Stati Form di Creazione Personaggio
         const [name, setName] = useState("");
         const [selectedRace, setSelectedRace] = useState("");
@@ -2108,6 +2113,38 @@
             { id: "R", name: "Rosso (Fuoco, Furia, Impulso)", icon: "🔥", colorClass: "text-red-600", bgClass: "bg-red-100", borderClass: "border-red-600" },
             { id: "G", name: "Verde (Natura, Istinto, Forza)", icon: "🌳", colorClass: "text-green-600", bgClass: "bg-green-100", borderClass: "border-green-600" }
         ];
+
+        // I 6 SLOT DI EQUIPAGGIAMENTO GDR
+        const EQUIP_SLOTS = [
+            { key: "weapon", label: "Arma", icon: "⚔️", empty: "Mani Nude" },
+            { key: "head", label: "Testa", icon: "🪖", empty: "Nessun Elmo" },
+            { key: "body", label: "Corpo", icon: "🛡️", empty: "Abiti Comuni" },
+            { key: "hands", label: "Mani", icon: "🧤", empty: "Mani Libere" },
+            { key: "feet", label: "Piedi", icon: "🥾", empty: "Piedi Scalzi" },
+            { key: "artifact", label: "Artefatto", icon: "💍", empty: "Nessuno" }
+        ];
+
+        // RICONOSCIMENTO INTELLIGENTE DELLO SLOT ANATOMICO (Così gli Stivali non tolgono più la Veste!)
+        const detectRealSlot = (item) => {
+            if (!item) return "body";
+            if (["weapon", "head", "body", "hands", "feet", "artifact"].includes(item.slot)) {
+                // Se era il generico "armor" del DB, lo non entra qui, ma se è già specifico controlliamo comunque il nome
+                if (item.slot !== "weapon" && item.slot !== "artifact") return item.slot;
+            }
+            const text = ((item.name || "") + " " + (item.id || "")).toLowerCase();
+            if (text.indexOf("stival") !== -1 || text.indexOf("boot") !== -1 || text.indexOf("gambal") !== -1 || text.indexOf("schinier") !== -1 || text.indexOf("greaves") !== -1 || text.indexOf("piedi") !== -1 || text.indexOf("calzar") !== -1) {
+                return "feet";
+            }
+            if (text.indexOf("elmo") !== -1 || text.indexOf("helm") !== -1 || text.indexOf("coron") !== -1 || text.indexOf("crown") !== -1 || text.indexOf("cappucc") !== -1 || text.indexOf("diadem") !== -1 || text.indexOf("mascher") !== -1 || text.indexOf("testa") !== -1) {
+                return "head";
+            }
+            if (text.indexOf("guant") !== -1 || text.indexOf("glove") !== -1 || text.indexOf("gauntlet") !== -1 || text.indexOf("braccial") !== -1 || text.indexOf("scudo") !== -1 || text.indexOf("shield") !== -1 || text.indexOf("mani") !== -1) {
+                return "hands";
+            }
+            if (item.slot === "weapon") return "weapon";
+            if (item.slot === "artifact") return "artifact";
+            return "body"; // Vesti, corazze, mantelli, armature
+        };
 
         // RAZZE CON LISTA DELLE CLASSI CONSENTITE (Fedele alla Lore di Magic)
         const RACES = [
@@ -2141,9 +2178,10 @@
             { id: "artefice", name: "Artefice", strBonus: 1, agiBonus: 2, magBonus: 4, conBonus: 5, ability: "Mastro Forgiatore: I suoi oggetti sono indistruttibili ai fallimenti critici (1)." }
         ];
 
-        // DOTAZIONE INIZIALE SU MISURA IN BASE ALLA CLASSE SCELTA
-        const getStartingEquipment = (classId, raceName) => {
-            const armor = { id: "start_armor", name: "Veste da Viaggio Rinforzata (+2 COS)", slot: "armor", str: 0, agi: 0, mag: 0, con: 2 };
+        // DOTAZIONE INIZIALE SU MISURA A 6 SLOT
+        const getStartingEquipment = (classId) => {
+            const body = { id: "start_body", name: "Veste da Viaggio Rinforzata (+2 COS)", slot: "body", str: 0, agi: 0, mag: 0, con: 2 };
+            const feet = { id: "start_feet", name: "Stivali di Cuoio (+1 AGI)", slot: "feet", str: 0, agi: 1, mag: 0, con: 0 };
             let weapon = { id: "start_wpn", name: "Spada Corta del Viandante (+1 FOR, +1 AGI)", slot: "weapon", str: 1, agi: 1, mag: 0, con: 0 };
 
             if (["mago", "necromante", "sciamano"].includes(classId)) {
@@ -2155,17 +2193,39 @@
             } else if (["chierico", "artefice"].includes(classId)) {
                 weapon = { id: "start_scepter", name: "Scettro Runico Consacrato (+1 FOR, +2 MAG)", slot: "weapon", str: 1, agi: 0, mag: 2, con: 0 };
             }
-            return { weapon: weapon, armor: armor, artifact: null };
+            return { weapon: weapon, head: null, body: body, hands: null, feet: feet, artifact: null };
         };
 
-        // ADATTATORE INTELLIGENTE DEL LOOT TROVATO NELLA STORIA IN BASE ALLA CLASSE
+        // Migrazione automatica per i personaggi salvati col vecchio sistema a 3 slot
+        const normalizeCharacterSlots = (char) => {
+            if (!char) return null;
+            let eq = char.equipped || {};
+            if (eq.armor && !eq.body) {
+                const realSlot = detectRealSlot(eq.armor);
+                eq[realSlot] = { ...eq.armor, slot: realSlot };
+                delete eq.armor;
+            }
+            return {
+                ...char,
+                equipped: {
+                    weapon: eq.weapon || null,
+                    head: eq.head || null,
+                    body: eq.body || null,
+                    hands: eq.hands || null,
+                    feet: eq.feet || null,
+                    artifact: eq.artifact || null
+                }
+            };
+        };
+
+        // ADATTATORE INTELLIGENTE DEL LOOT TROVATO NELLA STORIA (Classi + Slot Reale)
         const adaptLootForCharacter = (baseItem, char) => {
             if (!baseItem) return null;
-            let item = { ...baseItem };
+            const realSlot = detectRealSlot(baseItem);
+            let item = { ...baseItem, slot: realSlot };
             const isCaster = ["mago", "necromante", "sciamano", "chierico", "artefice"].includes(char.classId);
             const isAgile = ["farabutto", "assassino", "ninja"].includes(char.classId);
 
-            // Se l'oggetto trovato è un'arma puramente fisica ma l'eroe è un Mago o un Agile, adatta l'oggetto!
             if (item.slot === "weapon" && (item.str || 0) > 0 && (item.mag || 0) === 0 && (item.agi || 0) === 0) {
                 if (isCaster) {
                     item.mag = item.str;
@@ -2185,7 +2245,7 @@
             const savedParty = localStorage.getItem('rpg_party');
             if (savedParty) {
                 try {
-                    const parsed = JSON.parse(savedParty);
+                    const parsed = JSON.parse(savedParty).map(normalizeCharacterSlots);
                     setParty(parsed);
                     if (parsed.length > 0) {
                         setCharacter(parsed[0]);
@@ -2197,7 +2257,7 @@
                 const savedChar = localStorage.getItem('rpg_character');
                 if (savedChar) {
                     try {
-                        const single = JSON.parse(savedChar);
+                        const single = normalizeCharacterSlots(JSON.parse(savedChar));
                         setParty([single]);
                         setCharacter(single);
                         if (single.playMode) setPlayMode(single.playMode);
@@ -2225,7 +2285,7 @@
             localStorage.setItem('rpg_party', JSON.stringify(newParty));
         };
 
-        // Calcolo Statistiche Totali e Keywords attive
+        // Calcolo Statistiche Totali (su tutti i 6 slot!) e Keywords attive
         const getFinalStats = (char) => {
             let bonus = (char.level - 1) * 2;
             if (char.isLegendary) bonus += 5;
@@ -2236,7 +2296,7 @@
             let activeKeywords = char.mtgKeywords ? [...char.mtgKeywords] : [];
 
             if (char.equipped) {
-                ['weapon', 'armor', 'artifact'].forEach(slot => {
+                ['weapon', 'head', 'body', 'hands', 'feet', 'artifact', 'armor'].forEach(slot => {
                     const item = char.equipped[slot];
                     if (item) {
                         eqStr += (item.str || 0);
@@ -2250,7 +2310,6 @@
                 });
             }
 
-            // Bonus passivi di Razza e Classe
             let raceBonusStr = char.raceId === 'leonin' ? 2 : 0;
             if (char.raceId === 'goblin') raceBonusStr += (playMode === 'party' ? 4 : 2);
             const raceBonusAgi = char.raceId === 'ratto' ? 2 : 0;
@@ -2259,14 +2318,29 @@
             const classAgi = (char.classId === 'farabutto' || char.classId === 'assassino') ? 2 : (char.classId === 'standard' ? 1 : 0);
             const classMag = (char.classId === 'mago' ? 2 : ((char.classId === 'sciamano' || char.classId === 'standard') ? 1 : 0));
 
+            const totalCon = char.baseStats.con + ((char.level - 1) * 2) + eqCon + (char.isLegendary ? 10 : 0) + (char.sparkIgnited ? 20 : 0);
+            const maxHP = totalCon + (char.level * 5);
+
             return {
                 str: char.baseStats.str + bonus + eqStr + raceBonusStr + classStr,
                 agi: char.baseStats.agi + bonus + eqAgi + raceBonusAgi + classAgi,
                 mag: char.baseStats.mag + bonus + eqMag + classMag,
-                con: char.baseStats.con + (char.level * 2) + eqCon + (char.isLegendary ? 10 : 0) + (char.sparkIgnited ? 20 : 0),
-                maxHP: char.baseStats.con + (char.level * 5) + eqCon + (char.isLegendary ? 10 : 0) + (char.sparkIgnited ? 20 : 0),
+                con: totalCon,
+                maxHP: maxHP,
                 keywords: activeKeywords
             };
+        };
+
+        // Formatta i bonus di un oggetto per mostrarli chiaramente (es. "+2 AGI, +2 COS")
+        const formatItemBonuses = (it) => {
+            if (!it) return "";
+            let b = [];
+            if (it.str) b.push(`+${it.str} FOR`);
+            if (it.agi) b.push(`+${it.agi} AGI`);
+            if (it.mag) b.push(`+${it.mag} MAG`);
+            if (it.con) b.push(`+${it.con} COS`);
+            if (it.keywords && it.keywords.length > 0) b.push(it.keywords.join(", "));
+            return b.length > 0 ? ` [${b.join(", ")}]` : "";
         };
 
         const handleImageUpload = (e, isExistingChar = false) => {
@@ -2295,7 +2369,6 @@
             }
         };
 
-        // GESTIONE IMMAGINI (Se la classe è 'standard', usa direttamente rpg_<razza>.png!)
         const getAvatarSrc = (rId, cId, customImg, ascensionForm = null) => {
             if (customImg) return customImg;
             if (ascensionForm === 'angelo') return './rpg_umano_angelo.png';
@@ -2305,7 +2378,6 @@
             return './mtg-bg.jpg';
         };
 
-        // Cambio Razza nel form: verifica che la classe selezionata sia valida per la nuova razza
         const handleRaceChange = (newRaceId) => {
             setSelectedRace(newRaceId);
             const rObj = RACES.find(r => r.id === newRaceId);
@@ -2314,7 +2386,7 @@
             }
         };
 
-        // CREAZIONE PERSONAGGIO (CON SUPPORTO MULTI-EROE E EQUIPAGGIAMENTO INIZIALE DI CLASSE)
+        // CREAZIONE PERSONAGGIO
         const createCharacter = () => {
             if (!name || !selectedRace || !selectedClass || !selectedMana) return alert("Compila tutti i campi!");
             
@@ -2331,8 +2403,9 @@
             if (rData.id === 'volpe' || cData.id === 'soldato') initialKeywords.push("Cautela");
             if (cData.id === 'cavaliere' || cData.id === 'assassino') initialKeywords.push("Attacco Improvviso");
 
-            const startEquip = getStartingEquipment(cData.id, rData.name);
-            const startHP = rData.con + cData.conBonus + 5 + (startEquip.armor ? startEquip.armor.con : 0);
+            const startEquip = getStartingEquipment(cData.id);
+            const baseCon = rData.con + cData.conBonus;
+            const startHP = baseCon + (startEquip.body ? startEquip.body.con : 0) + 5;
 
             const newHero = {
                 id: 'char-' + Date.now(),
@@ -2355,7 +2428,7 @@
                     str: rData.str + cData.strBonus,
                     agi: rData.agi + cData.agiBonus,
                     mag: rData.mag + cData.magBonus,
-                    con: rData.con + cData.conBonus,
+                    con: baseCon,
                 },
                 currentHP: startHP,
                 abilities: [rData.ability, cData.ability],
@@ -2367,13 +2440,12 @@
             const updatedParty = playMode === 'party' ? [...party, newHero] : [newHero];
             savePartyState(updatedParty);
             
-            // Reset campi form per un eventuale secondo eroe
             setName(""); setSelectedRace(""); setSelectedClass("standard"); setSelectedMana(""); setCustomAvatar(null);
 
             if (playMode === 'solo') {
                 setRpgView("sheet");
             } else {
-                alert(`🛡️ Eroe "${newHero.name}" aggiunto alla compagnia con il suo equipaggiamento di classe! Puoi creare un altro eroe qui sotto oppure cliccare su "AVVIA LA STORIA CON LA COMPAGNIA".`);
+                alert(`🛡️ Eroe "${newHero.name}" aggiunto alla compagnia! Puoi creare un altro eroe qui sotto oppure cliccare su "AVVIA LA STORIA CON LA COMPAGNIA".`);
             }
         };
 
@@ -2408,8 +2480,11 @@
             }
         };
 
-        // EQUIPAGGIAMENTO OGGETTI DALLO ZAINO
-        const equipItem = (item) => {
+        // EQUIPAGGIAMENTO OGGETTI A 6 SLOT CON RICALCOLO DINAMICO DELLA SALUTE/COS
+        const equipItem = (rawItem) => {
+            const realSlot = detectRealSlot(rawItem);
+            const item = { ...rawItem, slot: realSlot };
+
             const hasLantern = character.equipped && character.equipped.artifact && character.equipped.artifact.id === 'chromatic_lantern';
             if (item.reqMana && !character.manaIdentity.includes(item.reqMana) && !hasLantern) {
                 return alert(`Non possiedi il Mana ${item.reqMana} richiesto per usare '${item.name}'! Visita un Santuario del Mana per sbloccare questo colore.`);
@@ -2417,18 +2492,47 @@
             if (item.reqLegendary && !character.isLegendary) {
                 return alert("Questo artefatto può essere impugnato solo da una Creatura Leggendaria!");
             }
-            let updated = { ...character };
-            const currentInSlot = updated.equipped[item.slot];
+
+            const oldStats = getFinalStats(character);
+            let updated = normalizeCharacterSlots(character);
+            const currentInSlot = updated.equipped[realSlot];
+
             updated.inventory = updated.inventory.filter(i => i.id !== item.id);
             if (currentInSlot) updated.inventory.push(currentInSlot);
-            updated.equipped = { ...updated.equipped, [item.slot]: item };
+            updated.equipped = { ...updated.equipped, [realSlot]: item };
+
+            // Ricalcola COS e adegua i PV attuali se la COS è salita o scesa!
+            const newStats = getFinalStats(updated);
+            const hpDiff = newStats.maxHP - oldStats.maxHP;
+            if (hpDiff > 0) {
+                updated.currentHP = Math.min(newStats.maxHP, updated.currentHP + hpDiff);
+            } else if (updated.currentHP > newStats.maxHP) {
+                updated.currentHP = newStats.maxHP;
+            }
+
+            saveCharState(updated);
+        };
+
+        // Rimuovi un oggetto da uno slot e rimettilo nello zaino
+        const unequipSlot = (slotKey) => {
+            let updated = normalizeCharacterSlots(character);
+            const itemInSlot = updated.equipped[slotKey];
+            if (!itemInSlot) return;
+
+            updated.equipped = { ...updated.equipped, [slotKey]: null };
+            updated.inventory = [...updated.inventory, itemInSlot];
+
+            const newStats = getFinalStats(updated);
+            if (updated.currentHP > newStats.maxHP) {
+                updated.currentHP = newStats.maxHP;
+            }
             saveCharState(updated);
         };
 
         // GESTIONE RICOMPENSE, SALITA DI LIVELLO, LOOT ADATTIVO, TRASFORMAZIONE ANGELO/DEMONE E SCINTILLA
         const applyRewardsAndMove = (charState, rewards, targetNodeId, extraBanner = "") => {
             const nextNodeVal = targetNodeId || charState.currentNode;
-            let nextChar = { ...charState, currentNode: nextNodeVal };
+            let nextChar = normalizeCharacterSlots({ ...charState, currentNode: nextNodeVal });
             let messages = [];
             if (extraBanner) messages.push(extraBanner);
 
@@ -2442,7 +2546,9 @@
                     const newLvl = Math.floor(nextChar.exp / 100) + 1;
                     if (newLvl > nextChar.level) {
                         nextChar.level = newLvl;
-                        messages.push(`🎉 LIVELLO AUMENTATO! Sei salito al Livello ${newLvl}! (+2 a tutte le Statistiche!)`);
+                        const newMax = getFinalStats(nextChar).maxHP;
+                        nextChar.currentHP = Math.min(newMax, nextChar.currentHP + 7);
+                        messages.push(`🎉 LIVELLO AUMENTATO! Sei salito al Livello ${newLvl}! (+2 a tutte le Statistiche e +7 PV!)`);
                     }
                 }
                 if (rewards.karma) {
@@ -2472,19 +2578,23 @@
                 if (rewards.loot && RPG_ITEMS_DB[rewards.loot]) {
                     const rawItem = RPG_ITEMS_DB[rewards.loot];
                     const itemObj = adaptLootForCharacter(rawItem, nextChar);
-                    const alreadyHas = nextChar.inventory.some(i => i.id === itemObj.id) || (nextChar.equipped && nextChar.equipped[itemObj.slot] && nextChar.equipped[itemObj.slot].id === itemObj.id);
-                    if (!alreadyHas) {
+                    const slotLabel = EQUIP_SLOTS.find(s => s.key === itemObj.slot);
+                    const alreadyInInv = nextChar.inventory.some(i => i.id === itemObj.id);
+                    const alreadyEq = Object.values(nextChar.equipped).some(eqIt => eqIt && eqIt.id === itemObj.id);
+                    if (!alreadyInInv && !alreadyEq) {
                         nextChar.inventory = [...nextChar.inventory, itemObj];
-                        messages.push(`🎒 LOOT TROVATO: ${itemObj.name}! (Cliccalo nello zaino in basso per equipaggiarlo)`);
+                        messages.push(`🎒 LOOT TROVATO: ${itemObj.name} (Slot: ${slotLabel ? slotLabel.label : itemObj.slot})! Cliccalo nello zaino per equipaggiarlo.`);
                     }
                 }
                 if (rewards.makeLegendary && !nextChar.isLegendary) {
                     nextChar.isLegendary = true;
-                    messages.push("👑 TRAGUARDO EPICO: Ora sei una 'CREATURA LEGGENDARIA' (+5 a tutte le statistiche, +10 Salute Max)!");
+                    nextChar.currentHP += 10;
+                    messages.push("👑 TRAGUARDO EPICO: Ora sei una 'CREATURA LEGGENDARIA' (+5 a tutte le statistiche, +10 COS/Salute)!");
                 }
                 if (rewards.igniteSpark && !nextChar.sparkIgnited) {
                     nextChar.sparkIgnited = true;
                     nextChar.isPlaneswalker = true;
+                    nextChar.currentHP += 20;
                     messages.push("🔥 LA SCINTILLA È ACCESA! Sei diventato un PLANESWALKER LEGGENDARIO (+15 Statistiche, Viaggio Planare sbloccato)!");
                 }
                 if (rewards.heal) {
@@ -2507,18 +2617,10 @@
             window.scrollTo(0, 0);
         };
 
-        // GESTIONE CLICK SCELTE E LANCIO DADO D20
-        const handleChoiceClick = (choice) => {
-            if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); setIsSpeaking(false); }
-            setLastRollInfo(null);
-
-            if (choice.type !== 'roll') {
-                applyRewardsAndMove(character, choice.rewards, choice.nextNode);
-                return;
-            }
-
+        // ESECUZIONE DEL CALCOLO TIRO D20 (Usato sia dal Dado Automatico che dal Dado Reale Manuale)
+        const executeRollCalculation = (choice, d20Value) => {
+            const d20 = Math.max(1, Math.min(20, parseInt(d20Value) || 10));
             const stats = getFinalStats(character);
-            const d20 = Math.floor(Math.random() * 20) + 1;
             const statVal = stats[choice.stat] || 10;
             const humanBonus = character.raceId === 'umano' ? 1 : 0;
             const firstStrikeBonus = stats.keywords.includes("Attacco Improvviso") ? 2 : 0;
@@ -2528,7 +2630,7 @@
             const isCritFail = d20 === 1;
             const passed = isCritSuccess || (!isCritFail && total >= choice.dc);
 
-            let updatedChar = { ...character };
+            let updatedChar = normalizeCharacterSlots(character);
             let rollNote = "";
 
             if (isCritSuccess) {
@@ -2563,11 +2665,33 @@
                 total: total,
                 dc: choice.dc,
                 passed: passed,
+                choiceBackup: choice,
                 note: rollNote || (passed ? "✅ Prova Superata con successo!" : (choice.failText || "❌ Prova Fallita!"))
             });
 
+            setPendingRollChoice(null);
             const targetNode = passed ? choice.successNode : choice.failNode;
             applyRewardsAndMove(updatedChar, passed ? choice.rewards : null, targetNode, rollNote);
+        };
+
+        // GESTIONE CLICK SCELTE (Smista tra Automatico e Dado Reale)
+        const handleChoiceClick = (choice) => {
+            if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); setIsSpeaking(false); }
+            setLastRollInfo(null);
+
+            if (choice.type !== 'roll') {
+                setPendingRollChoice(null);
+                applyRewardsAndMove(character, choice.rewards, choice.nextNode);
+                return;
+            }
+
+            if (diceMode === "manual") {
+                setPendingRollChoice(choice);
+                window.scrollTo(0, 0);
+            } else {
+                const randomD20 = Math.floor(Math.random() * 20) + 1;
+                executeRollCalculation(choice, randomD20);
+            }
         };
 
         // VOCE NARRANTE TTS
@@ -2600,27 +2724,39 @@
                 <div className="max-w-3xl mx-auto p-2 sm:p-4 animate-fade pb-24 space-y-4">
                     {/* BARRA COMANDI SUPERIORE */}
                     <div className="bg-gray-800 p-3 rounded-xl border border-gray-600 flex flex-wrap justify-between items-center gap-2 shadow-lg">
-                        <div className="flex gap-2">
+                        <div className="flex gap-1.5 flex-wrap">
                             <button onClick={() => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); setRpgView("sheet"); }} className="bg-amber-500 hover:bg-amber-400 text-black font-black px-3 py-2 rounded-lg text-xs shadow">
                                 🪪 Scheda & Stampa
                             </button>
                             <button onClick={() => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); setRpgView("create"); }} className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-3 py-2 rounded-lg text-xs shadow">
-                                👥 Compagnia ({party.length})
+                                👥 Party ({party.length})
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const max = stats.maxHP;
+                                    if (character.currentHP >= max) return alert("Hai già il massimo dei Punti Vita!");
+                                    saveCharState({ ...character, currentHP: Math.min(max, character.currentHP + 8) });
+                                    setEventBanner("⛺ Riposo Breve completato: hai recuperato +8 Punti Vita!");
+                                }}
+                                className="bg-emerald-800 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg text-xs shadow"
+                                title="Accampati e recupera +8 PV"
+                            >
+                                ⛺ Riposo (+8 PV)
                             </button>
                         </div>
 
-                        {/* SELETTORE SOLITARIO / GRUPPO SEMPRE ACCESSIBILE */}
-                        <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
-                            <button onClick={() => { setPlayMode("solo"); saveCharState({...character, playMode: "solo"}); }} className={`px-3 py-1 rounded text-xs font-black transition-all ${playMode === "solo" ? "bg-indigo-600 text-white shadow" : "text-gray-400"}`}>
-                                👤 Solitario
+                        {/* SELETTORE DADO AUTOMATICO vs DADO REALE DA TAVOLO */}
+                        <div className="flex bg-gray-900 p-1 rounded-lg border border-amber-500/60">
+                            <button onClick={() => { setDiceMode("auto"); setPendingRollChoice(null); }} className={`px-2.5 py-1 rounded text-xs font-black transition-all ${diceMode === "auto" ? "bg-amber-500 text-black shadow" : "text-gray-400"}`}>
+                                🤖 Dado Auto
                             </button>
-                            <button onClick={() => { setPlayMode("party"); saveCharState({...character, playMode: "party"}); }} className={`px-3 py-1 rounded text-xs font-black transition-all ${playMode === "party" ? "bg-purple-600 text-white shadow" : "text-gray-400"}`}>
-                                🎲 Gruppo / Master
+                            <button onClick={() => setDiceMode("manual")} className={`px-2.5 py-1 rounded text-xs font-black transition-all ${diceMode === "manual" ? "bg-emerald-500 text-black shadow" : "text-gray-400"}`}>
+                                🖐️ Dado Reale
                             </button>
                         </div>
 
                         <button onClick={() => toggleSpeech(`${currentNodeObj.title}. ${storyText}`)} className={`px-3 py-2 rounded-lg font-black text-xs shadow border ${isSpeaking ? "bg-red-700 border-red-400 text-white animate-pulse" : "bg-gray-700 border-gray-500 text-gray-200"}`}>
-                            {isSpeaking ? "🛑 Ferma Voce" : "🎙️ Voce Narrante"}
+                            {isSpeaking ? "🛑 Ferma" : "🎙️ Narra"}
                         </button>
                     </div>
 
@@ -2640,7 +2776,7 @@
                         </div>
                     )}
 
-                    {/* MINI-SCHEDA PERSONAGGIO IN ALTO */}
+                    {/* MINI-SCHEDA PERSONAGGIO IN ALTO CON TUTTE LE 5 STATISTICHE (INCLUSA COS!) */}
                     <div className="bg-gray-900/95 border-2 border-amber-600/60 rounded-xl p-3 shadow-xl flex items-center gap-3">
                         <img src={avatarSrc} onError={(e) => handleImgError(e, character.raceId)} className="w-16 h-16 rounded-lg object-cover object-top border-2 border-amber-500 shrink-0" />
                         <div className="flex-1 min-w-0">
@@ -2651,10 +2787,11 @@
                                 {character.sparkIgnited && <span className="text-xs bg-orange-900/60 text-orange-300 px-1.5 py-0.5 rounded border border-orange-500 font-bold">🔥 Planeswalker</span>}
                             </div>
                             <p className="text-gray-400 text-xs truncate">{character.race} {character.classType} • EXP: {character.exp}</p>
-                            <div className="grid grid-cols-4 gap-1 mt-1.5 text-center">
+                            <div className="grid grid-cols-5 gap-1 mt-1.5 text-center">
                                 <span className="bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-[10px] font-bold text-gray-300">FOR <b className="text-white">{stats.str}</b></span>
                                 <span className="bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-[10px] font-bold text-gray-300">AGI <b className="text-white">{stats.agi}</b></span>
                                 <span className="bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-[10px] font-bold text-gray-300">MAG <b className="text-white">{stats.mag}</b></span>
+                                <span className="bg-gray-800 border border-amber-700/60 rounded px-1 py-0.5 text-[10px] font-bold text-amber-300">COS <b className="text-white">{stats.con}</b></span>
                                 <span className="bg-red-950 border border-red-700 rounded px-1 py-0.5 text-[10px] font-black text-red-300">❤️ {character.currentHP}/{stats.maxHP}</span>
                             </div>
                         </div>
@@ -2665,13 +2802,54 @@
                         )}
                     </div>
 
-                    {/* BOX RISULTATO TIRO D20 */}
+                    {/* PANNELLO DADO REALE MANUALE (COMPARE QUANDO CLICCHI UNA PROVA IN MODALITÀ DADO REALE) */}
+                    {pendingRollChoice && (
+                        <div className="bg-indigo-950 border-4 border-emerald-400 rounded-2xl p-4 shadow-2xl animate-fade space-y-3 text-center">
+                            <h3 className="text-emerald-300 font-black text-base uppercase">
+                                🎲 Tira il tuo Dado D20 Reale sul tavolo!
+                            </h3>
+                            <p className="text-xs text-gray-200">
+                                Prova su <b className="text-amber-400">{pendingRollChoice.stat.toUpperCase()}</b> (Tuo Bonus: <b>+{stats[pendingRollChoice.stat] + (character.raceId === 'umano' ? 1 : 0) + (stats.keywords.includes("Attacco Improvviso") ? 2 : 0)}</b>) • Difficoltà da battere: <b className="text-white">CD {pendingRollChoice.dc}</b>
+                            </p>
+                            <p className="text-xs text-emerald-200 font-bold">Tocca il numero uscito sul tuo dado (da 1 a 20):</p>
+                            <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
+                                {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20].map(num => (
+                                    <button
+                                        key={num}
+                                        onClick={() => executeRollCalculation(pendingRollChoice, num)}
+                                        className={`py-2 rounded-lg font-black text-sm border transition-all active:scale-95 ${
+                                            num === 20 ? "bg-amber-500 text-black border-white shadow-[0_0_10px_rgba(245,158,11,0.8)]" :
+                                            num === 1 ? "bg-red-900 text-white border-red-400" :
+                                            "bg-gray-900 hover:bg-emerald-600 text-white border-gray-600"
+                                        }`}
+                                    >
+                                        {num}
+                                    </button>
+                                ))}
+                            </div>
+                            <button onClick={() => setPendingRollChoice(null)} className="text-xs text-gray-400 underline pt-1">Annulla tiro</button>
+                        </div>
+                    )}
+
+                    {/* BOX RISULTATO TIRO D20 + ISPIRAZIONE MANA PER RILANCIARE */}
                     {lastRollInfo && (
-                        <div className={`p-4 rounded-xl border-2 shadow-2xl animate-fade text-center ${lastRollInfo.passed ? "bg-emerald-950/90 border-emerald-500" : "bg-red-950/90 border-red-500"}`}>
-                            <p className="text-xs font-black uppercase tracking-widest text-gray-300 mb-1">
+                        <div className={`p-4 rounded-xl border-2 shadow-2xl animate-fade text-center space-y-2 ${lastRollInfo.passed ? "bg-emerald-950/90 border-emerald-500" : "bg-red-950/90 border-red-500"}`}>
+                            <p className="text-xs font-black uppercase tracking-widest text-gray-300">
                                 🎲 Dado D20 ({lastRollInfo.d20}) + {lastRollInfo.statName} ({lastRollInfo.statVal}) = <span className="text-xl text-white">{lastRollInfo.total}</span> <span className="text-gray-400">(CD: {lastRollInfo.dc})</span>
                             </p>
                             <p className="font-black text-sm sm:text-base text-white">{lastRollInfo.note}</p>
+                            {!lastRollInfo.passed && lastRollInfo.choiceBackup && character.currentHP > 3 && (
+                                <button
+                                    onClick={() => {
+                                        const costChar = { ...character, currentHP: Math.max(1, character.currentHP - 2) };
+                                        saveCharState(costChar);
+                                        handleChoiceClick(lastRollInfo.choiceBackup);
+                                    }}
+                                    className="mt-2 bg-amber-500 hover:bg-amber-400 text-black font-black text-xs px-4 py-1.5 rounded-lg shadow"
+                                >
+                                    🔥 Ispirazione del Mana: Rilancia il D20! (Costa 2 PV)
+                                </button>
+                            )}
                         </div>
                     )}
 
@@ -2689,9 +2867,12 @@
                     >
                         <div className="flex justify-between items-center mb-1">
                             <p className="text-amber-500 text-xs font-black uppercase tracking-widest">{currentNodeObj.act}</p>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-800 text-gray-300 border border-gray-700">
-                                {playMode === "solo" ? "👤 Modalità Solitario" : "🎲 Modalità Gruppo D&D"}
-                            </span>
+                            <button 
+                                onClick={() => setPlayMode(playMode === "solo" ? "party" : "solo")}
+                                className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-amber-300 border border-gray-600"
+                            >
+                                {playMode === "solo" ? "👤 Solitario (Passa a Master)" : "🎲 Gruppo D&D (Console Attiva)"}
+                            </button>
                         </div>
                         <h2 className="text-2xl sm:text-3xl font-black text-white mb-4 border-b border-gray-700 pb-2" style={{ fontFamily: "Georgia, serif" }}>
                             {currentNodeObj.title}
@@ -2702,7 +2883,9 @@
 
                         {/* PULSANTI DELLE SCELTE */}
                         <div className="space-y-3">
-                            <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">Scegli la tua azione ({character.name}):</h4>
+                            <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">
+                                Scegli la tua azione ({character.name}) — [{diceMode === "manual" ? "🖐️ Dado Reale" : "🤖 Dado Auto"}]:
+                            </h4>
                             {currentNodeObj.choices.map((ch, idx) => {
                                 if (ch.onlyParty && playMode !== "party") return null;
                                 if (ch.onlySolo && playMode !== "solo") return null;
@@ -2731,10 +2914,7 @@
                             <h3 className="text-purple-300 font-black text-sm uppercase tracking-wider">
                                 🎭 Console del Master (Eroe attivo: {character.name})
                             </h3>
-                            <p className="text-xs text-gray-300">
-                                Quando un giocatore al tavolo inventa un'azione libera, seleziona il suo eroe nella barra in alto, scegli la statistica da mettere alla prova, tira il D20 e poi clicca uno dei bivi della storia!
-                            </p>
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 <select value={masterStat} onChange={e => setMasterStat(e.target.value)} className="bg-gray-900 border border-purple-500 rounded-lg p-2 text-white text-xs font-bold">
                                     <option value="str">Forza (FOR)</option>
                                     <option value="agi">Agilità (AGI)</option>
@@ -2747,9 +2927,13 @@
                                     <option value={30}>Difficile (CD 30)</option>
                                     <option value={35}>Epica (CD 35)</option>
                                 </select>
+                                <div className="flex items-center gap-1 bg-gray-900 border border-purple-500 rounded-lg px-2 py-1">
+                                    <span className="text-[10px] text-gray-400 font-bold">Dado Reale:</span>
+                                    <input type="number" min={1} max={20} value={manualD20Input} onChange={e => setManualD20Input(e.target.value)} className="w-full bg-transparent text-white font-black text-xs text-center outline-none" />
+                                </div>
                                 <button
                                     onClick={() => {
-                                        const d20 = Math.floor(Math.random() * 20) + 1;
+                                        const d20 = diceMode === "manual" ? (parseInt(manualD20Input) || 10) : (Math.floor(Math.random() * 20) + 1);
                                         const sVal = stats[masterStat];
                                         const tot = d20 + sVal;
                                         setLastRollInfo({
@@ -2760,7 +2944,7 @@
                                     }}
                                     className="bg-purple-600 hover:bg-purple-500 text-white font-black rounded-lg text-xs py-2 shadow"
                                 >
-                                    🎲 Tira D20 Master
+                                    🎲 {diceMode === "manual" ? `Usa Dado (${manualD20Input})` : "Tira D20 Auto"}
                                 </button>
                             </div>
 
@@ -2809,21 +2993,36 @@
                         </div>
                     )}
 
-                    {/* ZAINO ED EQUIPAGGIAMENTO RAPIDO SOTTO LA STORIA */}
+                    {/* EQUIPAGGIAMENTO A 6 SLOT E ZAINO SOTTO LA STORIA */}
                     <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-lg">
-                        <h4 className="text-xs font-black uppercase text-amber-400 mb-2">🎒 Equipaggiamento Attivo & Zaino ({character.name})</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-bold text-gray-300 mb-3">
-                            <div className="bg-gray-900 p-2 rounded border border-gray-700">⚔️ Arma: <span className="text-white">{character.equipped.weapon ? character.equipped.weapon.name : "Mani Nude"}</span></div>
-                            <div className="bg-gray-900 p-2 rounded border border-gray-700">🛡️ Armatura: <span className="text-white">{character.equipped.armor ? character.equipped.armor.name : "Abiti Comuni"}</span></div>
-                            <div className="bg-gray-900 p-2 rounded border border-gray-700">💍 Artefatto: <span className="text-white">{character.equipped.artifact ? character.equipped.artifact.name : "Nessuno"}</span></div>
+                        <h4 className="text-xs font-black uppercase text-amber-400 mb-2">🎒 Equipaggiamento GDR a 6 Slot ({character.name}) — Tocca uno slot per rimuovere</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs font-bold text-gray-300 mb-3">
+                            {EQUIP_SLOTS.map(sl => {
+                                const eqItem = character.equipped ? character.equipped[sl.key] : null;
+                                return (
+                                    <div 
+                                        key={sl.key} 
+                                        onClick={() => eqItem && unequipSlot(sl.key)}
+                                        className={`bg-gray-900 p-2 rounded border ${eqItem ? "border-amber-500/60 cursor-pointer hover:bg-gray-800" : "border-gray-700"}`}
+                                    >
+                                        {sl.icon} {sl.label}: <span className="text-white">{eqItem ? eqItem.name : sl.empty}</span>
+                                        {eqItem && <span className="text-amber-400 text-[10px] block">{formatItemBonuses(eqItem)}</span>}
+                                    </div>
+                                );
+                            })}
                         </div>
+                        <h5 className="text-[11px] font-black uppercase text-indigo-300 mb-1.5">Zaino Oggetti (Clicca per equipaggiare nello slot corrispondente):</h5>
                         {character.inventory.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
-                                {character.inventory.map((it, idx) => (
-                                    <button key={idx} onClick={() => equipItem(it)} className="bg-indigo-900/80 hover:bg-indigo-700 border border-indigo-400 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow">
-                                        Equipaggia: {it.name}
-                                    </button>
-                                ))}
+                                {character.inventory.map((it, idx) => {
+                                    const rSlot = detectRealSlot(it);
+                                    const slObj = EQUIP_SLOTS.find(s => s.key === rSlot);
+                                    return (
+                                        <button key={idx} onClick={() => equipItem(it)} className="bg-indigo-900/80 hover:bg-indigo-700 border border-indigo-400 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow">
+                                            {slObj ? slObj.icon : "🎒"} Equipaggia ({slObj ? slObj.label : rSlot}): {it.name}{formatItemBonuses(it)}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         ) : (
                             <p className="text-xs text-gray-500 italic">Nessun oggetto di riserva nello zaino.</p>
@@ -2834,7 +3033,7 @@
         }
 
         // ====================================================================
-        // VISTA B: SCHEDA PERSONAGGIO STAMPABILE (FORMATO FULL-ART VERTICALE A4)
+        // VISTA B: SCHEDA PERSONAGGIO STAMPABILE (FORMATO FULL-ART VERTICALE A4 FIXATO)
         // ====================================================================
         if (character && rpgView === "sheet") {
             const stats = getFinalStats(character);
@@ -2848,23 +3047,34 @@
 
             return (
                 <div className="max-w-xl mx-auto p-3 sm:p-4 animate-fade pb-20">
-                    {/* CSS DEDICATO ALLA STAMPA A4 PER RENDERE L'IMMAGINE GRANDE, VERTICALE E PULITA */}
+                    {/* CSS STAMPA A4 CORRETTO: NIENTE PIÙ PAGINA BIANCA E NIENTE ICONA RADIO! */}
                     <style>{`
                         @media print {
-                            @page { size: A4 portrait; margin: 8mm; }
-                            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background: white !important; }
-                            .no-print, button, audio, [class*="fixed"] { display: none !important; }
+                            @page { size: A4 portrait; margin: 6mm; }
+                            body {
+                                visibility: hidden !important;
+                                background: white !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                            }
+                            .no-print { display: none !important; }
+                            #print-area, #print-area * {
+                                visibility: visible !important;
+                            }
                             #print-area {
+                                position: absolute !important;
+                                left: 0 !important;
+                                top: 0 !important;
                                 width: 100% !important;
-                                max-width: 185mm !important;
+                                max-width: 190mm !important;
                                 margin: 0 auto !important;
                                 padding: 14px !important;
-                                border-width: 6px !important;
+                                border: 6px solid #111827 !important;
                                 box-shadow: none !important;
                                 page-break-inside: avoid !important;
                             }
                             #print-art-box {
-                                height: 440px !important;
+                                height: 420px !important;
                             }
                         }
                     `}</style>
@@ -2942,73 +3152,84 @@
                             </div>
                         </div>
 
-                        {/* STATISTICHE (FONT CALIBRATO PER NON SBORDARE MAI) */}
-                        <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-3 text-center">
-                            <div className="bg-white/85 border-2 border-gray-800 rounded-lg p-2 shadow-sm">
-                                <p className="text-[10px] font-black uppercase text-gray-600">Forza</p>
-                                <p className="text-xl sm:text-2xl font-black text-gray-900">{stats.str}</p>
+                        {/* 5 STATISTICHE VISIBILI (FOR, AGI, MAG, COS, SALUTE) */}
+                        <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mb-3 text-center">
+                            <div className="bg-white/85 border-2 border-gray-800 rounded-lg p-1.5 shadow-sm">
+                                <p className="text-[9px] font-black uppercase text-gray-600">Forza</p>
+                                <p className="text-lg sm:text-2xl font-black text-gray-900">{stats.str}</p>
                             </div>
-                            <div className="bg-white/85 border-2 border-gray-800 rounded-lg p-2 shadow-sm">
-                                <p className="text-[10px] font-black uppercase text-gray-600">Agilità</p>
-                                <p className="text-xl sm:text-2xl font-black text-gray-900">{stats.agi}</p>
+                            <div className="bg-white/85 border-2 border-gray-800 rounded-lg p-1.5 shadow-sm">
+                                <p className="text-[9px] font-black uppercase text-gray-600">Agilità</p>
+                                <p className="text-lg sm:text-2xl font-black text-gray-900">{stats.agi}</p>
                             </div>
-                            <div className="bg-white/85 border-2 border-gray-800 rounded-lg p-2 shadow-sm">
-                                <p className="text-[10px] font-black uppercase text-gray-600">Magia</p>
-                                <p className="text-xl sm:text-2xl font-black text-gray-900">{stats.mag}</p>
+                            <div className="bg-white/85 border-2 border-gray-800 rounded-lg p-1.5 shadow-sm">
+                                <p className="text-[9px] font-black uppercase text-gray-600">Magia</p>
+                                <p className="text-lg sm:text-2xl font-black text-gray-900">{stats.mag}</p>
                             </div>
-                            <div className="bg-red-100 border-2 border-red-800 rounded-lg p-2 shadow-sm">
-                                <p className="text-[10px] font-black uppercase text-red-900">Salute</p>
-                                <p className="text-lg sm:text-2xl font-black text-red-700 whitespace-nowrap">{character.currentHP}/{stats.maxHP}</p>
+                            <div className="bg-amber-50 border-2 border-amber-800 rounded-lg p-1.5 shadow-sm">
+                                <p className="text-[9px] font-black uppercase text-amber-900">Costituz.</p>
+                                <p className="text-lg sm:text-2xl font-black text-amber-900">{stats.con}</p>
+                            </div>
+                            <div className="bg-red-100 border-2 border-red-800 rounded-lg p-1.5 shadow-sm">
+                                <p className="text-[9px] font-black uppercase text-red-900">Salute</p>
+                                <p className="text-base sm:text-xl font-black text-red-700 whitespace-nowrap">{character.currentHP}/{stats.maxHP}</p>
                             </div>
                         </div>
 
                         {/* ORACLE TEXT: PAROLE CHIAVE E ABILITÀ */}
-                        <div className="bg-white/85 border-2 border-gray-800 rounded-xl p-3.5 mb-3 shadow-inner space-y-2">
+                        <div className="bg-white/85 border-2 border-gray-800 rounded-xl p-3 mb-3 shadow-inner space-y-1.5">
                             {stats.keywords.length > 0 && (
                                 <p className="font-black text-indigo-900 text-xs sm:text-sm border-b border-gray-300 pb-1">
                                     ⚡ Abilità Magic: {stats.keywords.join(", ")}
                                 </p>
                             )}
                             <div>
-                                <h3 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-1">Tratti Razza & Classe:</h3>
-                                <ul className="list-disc list-inside text-xs font-semibold space-y-1 text-gray-800">
+                                <h3 className="font-black text-gray-900 text-[11px] uppercase tracking-wider mb-0.5">Tratti Razza & Classe:</h3>
+                                <ul className="list-disc list-inside text-xs font-semibold space-y-0.5 text-gray-800">
                                     {character.abilities.map((ab, i) => <li key={i}>{ab}</li>)}
                                     {character.sparkIgnited && <li className="text-indigo-700 font-bold">Planeswalk: Può viaggiare liberamente tra i Piani del Multiverso.</li>}
                                 </ul>
                             </div>
                         </div>
 
-                        {/* EQUIPAGGIAMENTO E ZAINO */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white/70 p-3 rounded-xl border-2 border-gray-800">
-                            <div>
-                                <h3 className="font-black text-gray-900 border-b border-gray-500 mb-1 text-xs uppercase">Equipaggiamento</h3>
-                                <div className="space-y-1 text-xs font-bold text-gray-800">
-                                    <p>⚔️ Arma: {character.equipped.weapon ? character.equipped.weapon.name : "Mani Nude"}</p>
-                                    <p>🛡️ Armatura: {character.equipped.armor ? character.equipped.armor.name : "Abiti Comuni"}</p>
-                                    <p>💍 Artefatto: {character.equipped.artifact ? character.equipped.artifact.name : "Nessuno"}</p>
-                                </div>
+                        {/* EQUIPAGGIAMENTO A 6 SLOT E ZAINO */}
+                        <div className="bg-white/75 p-3 rounded-xl border-2 border-gray-800 space-y-2">
+                            <h3 className="font-black text-gray-900 border-b border-gray-500 pb-0.5 text-xs uppercase">Equipaggiamento Attivo (6 Slot GDR)</h3>
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-bold text-gray-900">
+                                {EQUIP_SLOTS.map(sl => {
+                                    const eqIt = character.equipped ? character.equipped[sl.key] : null;
+                                    return (
+                                        <p key={sl.key} className="truncate">
+                                            {sl.icon} <b>{sl.label}:</b> {eqIt ? eqIt.name : sl.empty}
+                                        </p>
+                                    );
+                                })}
                             </div>
-                            <div>
-                                <h3 className="font-black text-gray-900 border-b border-gray-500 mb-1 text-xs uppercase">Zaino (Clicca per Equipaggiare)</h3>
+                            <div className="no-print pt-2 border-t border-gray-400">
+                                <h3 className="font-black text-gray-900 mb-1 text-[11px] uppercase">Zaino (Clicca per Equipaggiare)</h3>
                                 {character.inventory.length === 0 ? (
                                     <p className="text-xs italic text-gray-600">Zaino vuoto.</p>
                                 ) : (
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                        {character.inventory.map((item, i) => (
-                                            <button key={i} onClick={() => equipItem(item)} className="bg-amber-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow">
-                                                + {item.name}
-                                            </button>
-                                        ))}
+                                    <div className="flex flex-wrap gap-1">
+                                        {character.inventory.map((item, i) => {
+                                            const rSlot = detectRealSlot(item);
+                                            const slObj = EQUIP_SLOTS.find(s => s.key === rSlot);
+                                            return (
+                                                <button key={i} onClick={() => equipItem(item)} className="bg-amber-800 hover:bg-amber-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow">
+                                                    {slObj ? slObj.icon : "+"} {item.name}{formatItemBonuses(item)}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
                         </div>
-                        
-                        <div className="mt-5 text-center no-print">
-                            <button onClick={() => setRpgView("story")} className="bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 px-8 rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.5)] transition-all text-xl w-full border border-indigo-400">
-                                📖 ENTRA NELLA STORIA ({character.currentNode === "start" ? "Inizia Campagna" : "Continua Avventura"})
-                            </button>
-                        </div>
+                    </div>
+
+                    <div className="mt-5 text-center no-print">
+                        <button onClick={() => setRpgView("story")} className="bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 px-8 rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.5)] transition-all text-xl w-full border border-indigo-400">
+                            📖 ENTRA NELLA STORIA ({character.currentNode === "start" ? "Inizia Campagna" : "Continua Avventura"})
+                        </button>
                     </div>
                 </div>
             );
