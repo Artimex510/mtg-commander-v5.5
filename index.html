@@ -2056,8 +2056,8 @@
         }
     };
     // ============================================================================
-    // --- PARTE 2: CREATORE PERSONAGGIO, SCHEDA STAMPABILE, ARENA COMBATTIMENTO E STORIA ---
-    // (100% Compatibile con Babel 6 - Formato Nativo 2:3 Ritratto 667x1000 senza tagli!)
+    // --- PARTE 2: CREATORE COMPAGNIA, SCHEDA 2:3, INIZIATIVA D&D, ORO, TESORI E STORIA ---
+    // (100% Compatibile con Babel 6 - Zero Optional Chaining - Turni D&D Reali & Mercante)
     // ============================================================================
     const RpgCharacterManager = ({ navigate }) => {
         const [party, setParty] = useState([]);
@@ -2071,7 +2071,13 @@
         const [pendingRollChoice, setPendingRollChoice] = useState(null);
         const [manualD20Input, setManualD20Input] = useState(10);
 
-        // STATO ARENA DI COMBATTIMENTO A TURNI CONTRO CREATURE DI MAGIC
+        // Bonus temporaneo dato dal sacrificio di una Pedina Tesoro (+5 al prossimo tiro / +8 danni)
+        const [treasureBoostActive, setTreasureBoostActive] = useState(false);
+        // Apertura Bottega del Mercante Planare
+        const [showMerchant, setShowMerchant] = useState(false);
+
+        // STATO ARENA DI COMBATTIMENTO CON INIZIATIVA D&D E ORDINE DI TURNO
+        // phase: "initiative" (raccolta dadi iniziativa eroi) | "battle" (combattimento a turni ordinati)
         const [combatState, setCombatState] = useState(null); 
         const [pendingCombatAction, setPendingCombatAction] = useState(null);
 
@@ -2102,16 +2108,39 @@
             { id: "G", name: "Verde (Natura, Istinto, Forza)", icon: "🌳", colorClass: "text-green-600", bgClass: "bg-green-100", borderClass: "border-green-600" }
         ];
 
-        // BESTIARIO DI MAGIC INTEGRATO
+        // BESTIARIO DI MAGIC INTEGRATO (Con Bonus Iniziativa, Oro, Pedine Tesoro e Attacchi Speciali)
         const MTG_BESTIARY = {
-            goblin_pack: { name: "Orda di Goblin Predoni", maxHP: 28, dc: 22, dmg: 4, exp: 60, loot: "bonesplitter", desc: "Una banda urlante di Goblin armata di lame arrugginite e granate improvvisate!" },
-            llanowar_troll: { name: "Troll di Thrun Rigenerante", maxHP: 42, dc: 25, dmg: 6, exp: 90, loot: "loxodon_warhammer", desc: "Un colosso muscoloso ricoperto di muschio e corteccia, quasi impossibile da abbattere!" },
-            craw_wurm: { name: "Wurm Corazzato delle Foreste (7/6)", maxHP: 55, dc: 26, dmg: 7, exp: 120, loot: "Swiftfoot_boots", desc: "Un gigantesco verme draconico che fa tremare la terra al suo passaggio!" },
-            undead_lord: { name: "Signore dei Non Morti & Orda Zombie", maxHP: 50, dc: 26, dmg: 6, exp: 110, loot: "whisper_cloak", desc: "Un negromante corazzato circondato da cadaveri rianimati dal mana nero!" },
-            serra_griffin: { name: "Grifone d'Argento Ribelle", maxHP: 38, dc: 24, dmg: 5, exp: 80, loot: "celestial_armor", desc: "Una fiera alata dalle piume metalliche che attacca in picchiata dai cieli!" },
-            phyrexian_obliterator: { name: "Obliteratore di Phyrexia (Boss)", maxHP: 75, dc: 29, dmg: 9, exp: 200, loot: "chromatic_lantern", isBoss: true, desc: "Un incubo biomeccanico di metallo nero e olio scintillante!" },
-            shivan_dragon: { name: "Drago di Shiv Antico (Boss Leggendario)", maxHP: 95, dc: 31, dmg: 10, exp: 300, loot: "blackblade", isBoss: true, desc: "Il sovrano incontrastato dei picchi vulcanici, avvolto da fiamme incandescenti!" }
+            goblin_pack: { name: "Orda di Goblin Predoni", maxHP: 30, initBonus: 5, dc: 22, dmg: 4, exp: 60, gold: 35, treasures: 1, loot: "bonesplitter", desc: "Una banda urlante di Goblin armata di lame arrugginite e sacchi di monete rubate!" },
+            bandit_rogues: { name: "Banda di Tagliagole Dimir", maxHP: 36, initBonus: 7, dc: 24, dmg: 5, exp: 75, gold: 55, treasures: 2, loot: "hood_assassin", desc: "Assassini e ladri incappucciati rapidissimi nell'agire per primi!" },
+            llanowar_troll: { name: "Troll di Thrun Rigenerante", maxHP: 45, initBonus: 2, dc: 25, dmg: 6, exp: 95, gold: 30, treasures: 1, loot: "loxodon_warhammer", desc: "Un colosso muscoloso ricoperto di muschio e corteccia, capace di rigenerarsi a ogni turno!" },
+            craw_wurm: { name: "Wurm Corazzato delle Foreste (7/6)", maxHP: 58, initBonus: 3, dc: 26, dmg: 7, exp: 120, gold: 45, treasures: 1, loot: "Swiftfoot_boots", desc: "Un gigantesco verme draconico che travolge ogni cosa sul suo cammino!" },
+            undead_lord: { name: "Signore dei Non Morti & Orda Zombie", maxHP: 52, initBonus: 4, dc: 26, dmg: 6, exp: 115, gold: 60, treasures: 2, loot: "whisper_cloak", desc: "Un negromante corazzato circondato da cadaveri rianimati e antichi tesori sepolti!" },
+            serra_griffin: { name: "Grifone d'Argento Ribelle", maxHP: 40, initBonus: 6, dc: 24, dmg: 5, exp: 85, gold: 40, treasures: 1, loot: "celestial_armor", desc: "Una fiera alata dalle piume metalliche che attacca in picchiata dai cieli!" },
+            phyrexian_obliterator: { name: "Obliteratore di Phyrexia (Boss)", maxHP: 78, initBonus: 6, dc: 29, dmg: 9, exp: 200, gold: 100, treasures: 3, loot: "chromatic_lantern", isBoss: true, desc: "Un incubo biomeccanico di metallo nero e olio scintillante!" },
+            shivan_dragon: { name: "Drago di Shiv Antico (Boss Leggendario)", maxHP: 98, initBonus: 8, dc: 31, dmg: 10, exp: 300, gold: 200, treasures: 4, loot: "blackblade", isBoss: true, desc: "Il sovrano dei picchi vulcanici, custode di un immenso tesoro draconico!" }
         };
+
+        // CATALOGO DEL MERCANTE PLANARE (Prezzi in Monete d'Oro)
+        const MERCHANT_SHOP = [
+            { type: "token", id: "buy_food", name: "🍖 Pedina Cibo (Food Token)", cost: 15, desc: "Sacrifica in qualsiasi momento per curare +6 PV." },
+            { type: "token", id: "buy_treasure", name: "💎 Pedina Tesoro (Treasure Token)", cost: 30, desc: "Sacrifica per +5 al Dado D20 o +8 Danni in battaglia." },
+            { type: "item", id: "bonesplitter", cost: 40 },
+            { type: "item", id: "champion_helm", cost: 50 },
+            { type: "item", id: "hood_assassin", cost: 55 },
+            { type: "item", id: "venom_bracers", cost: 60 },
+            { type: "item", id: "Swiftfoot_boots", cost: 65 },
+            { type: "item", id: "gauntlets_power", cost: 75 },
+            { type: "item", id: "whisper_cloak", cost: 80 },
+            { type: "item", id: "loxodon_warhammer", cost: 90 },
+            { type: "item", id: "sol_ring", cost: 100 },
+            { type: "item", id: "lightning_greaves", cost: 110 },
+            { type: "item", id: "shield_kaldra", cost: 120 },
+            { type: "item", id: "umezawa_jitte", cost: 140 },
+            { type: "item", id: "staff_domination", cost: 150 },
+            { type: "item", id: "sword_fire_ice", cost: 170 },
+            { type: "item", id: "darksteel_plate", cost: 180 },
+            { type: "item", id: "chromatic_lantern", cost: 200 }
+        ];
 
         // I 6 SLOT DI EQUIPAGGIAMENTO GDR
         const EQUIP_SLOTS = [
@@ -2168,10 +2197,10 @@
             { id: "necromante", name: "Necromante", strBonus: 0, agiBonus: 1, magBonus: 5, conBonus: 4, ability: "Signore dei Morti: Parte con 'Tocco Letale'." },
             { id: "chierico", name: "Chierico", strBonus: 1, agiBonus: 0, magBonus: 4, conBonus: 7, ability: "Preghiera Curativa: Può curare 5 PV extra in qualsiasi momento." },
             { id: "sciamano", name: "Sciamano", strBonus: 2, agiBonus: 2, magBonus: 4, conBonus: 5, ability: "Voce del Piano: Armonizza gli elementi (+1 a FOR e MAG)." },
-            { id: "farabutto", name: "Farabutto (Rogue)", strBonus: 1, agiBonus: 5, magBonus: 1, conBonus: 3, ability: "Passo d'Ombra: +2 a tutte le prove di Agilità." },
+            { id: "farabutto", name: "Farabutto (Rogue)", strBonus: 1, agiBonus: 5, magBonus: 1, conBonus: 3, ability: "Passo d'Ombra: +2 a tutte le prove di Agilità e +15 Oro iniziale." },
             { id: "assassino", name: "Assassino", strBonus: 3, agiBonus: 5, magBonus: 0, conBonus: 2, ability: "Lama Letale: Parte con 'Attacco Improvviso' e +2 AGI." },
             { id: "ninja", name: "Ninja", strBonus: 2, agiBonus: 6, magBonus: 2, conBonus: 2, ability: "Ninjutsu: Parte con 'Imbloccabile' e colpisce nell'ombra." },
-            { id: "artefice", name: "Artefice", strBonus: 1, agiBonus: 2, magBonus: 4, conBonus: 5, ability: "Mastro Forgiatore: I suoi oggetti sono indistruttibili ai fallimenti critici (1)." }
+            { id: "artefice", name: "Artefice", strBonus: 1, agiBonus: 2, magBonus: 4, conBonus: 5, ability: "Mastro Forgiatore: Parte con 2 Pedine Tesoro e i suoi oggetti sono indistruttibili ai fallimenti critici (1)." }
         ];
 
         const getStartingEquipment = (classId) => {
@@ -2201,6 +2230,9 @@
             }
             return {
                 ...char,
+                gold: typeof char.gold === 'number' ? char.gold : 30,
+                treasures: typeof char.treasures === 'number' ? char.treasures : 1,
+                food: typeof char.food === 'number' ? char.food : 1,
                 equipped: {
                     weapon: eq.weapon || null,
                     head: eq.head || null,
@@ -2261,18 +2293,20 @@
         }, []);
 
         const savePartyState = (newParty) => {
-            setParty(newParty);
-            localStorage.setItem('rpg_party', JSON.stringify(newParty));
-            if (newParty.length > 0) {
-                setCharacter(newParty[0]);
-                localStorage.setItem('rpg_character', JSON.stringify(newParty[0]));
+            const norm = newParty.map(normalizeCharacterSlots);
+            setParty(norm);
+            localStorage.setItem('rpg_party', JSON.stringify(norm));
+            if (norm.length > 0) {
+                setCharacter(norm[0]);
+                localStorage.setItem('rpg_character', JSON.stringify(norm[0]));
             }
         };
 
         const saveCharState = (updatedChar) => {
-            setCharacter(updatedChar);
-            localStorage.setItem('rpg_character', JSON.stringify(updatedChar));
-            const newParty = party.map(p => p.id === updatedChar.id ? updatedChar : p);
+            const normChar = normalizeCharacterSlots(updatedChar);
+            setCharacter(normChar);
+            localStorage.setItem('rpg_character', JSON.stringify(normChar));
+            const newParty = party.map(p => p.id === normChar.id ? normChar : p);
             setParty(newParty);
             localStorage.setItem('rpg_party', JSON.stringify(newParty));
         };
@@ -2409,6 +2443,9 @@
                 manaIdentity: [mData.id],
                 level: 1,
                 exp: 0,
+                gold: cData.id === 'farabutto' ? 45 : 30,
+                treasures: cData.id === 'artefice' ? 2 : 1,
+                food: 1,
                 karma: 0,
                 isLegendary: false,
                 sparkIgnited: false,
@@ -2434,7 +2471,7 @@
             if (playMode === 'solo') {
                 setRpgView("sheet");
             } else {
-                alert(`🛡️ Eroe "${newHero.name}" aggiunto alla compagnia! Puoi creare un altro eroe qui sotto oppure cliccare su "AVVIA LA STORIA CON LA COMPAGNIA".`);
+                alert(`🛡️ Eroe "${newHero.name}" aggiunto alla compagnia con ${newHero.gold} Monete d'Oro e ${newHero.treasures} Pedina Tesoro!`);
             }
         };
 
@@ -2470,13 +2507,77 @@
             }
         };
 
+        // SACRIFICA PEDINA CIBO (Food Token) -> +6 PV
+        const sacrificeFoodToken = () => {
+            const stats = getFinalStats(character);
+            if ((character.food || 0) <= 0) return alert("Non hai Pedine Cibo (🍖) nello zaino! Puoi comprarle dal Mercante.");
+            if (character.currentHP >= stats.maxHP) return alert("Hai già il massimo dei Punti Vita!");
+            const updated = {
+                ...character,
+                food: character.food - 1,
+                currentHP: Math.min(stats.maxHP, character.currentHP + 6)
+            };
+            saveCharState(updated);
+            setEventBanner(`🍖 ${character.name} sacrifica una Pedina Cibo e recupera +6 Punti Vita!`);
+        };
+
+        // SACRIFICA PEDINA TESORO (Treasure Token) -> +5 al prossimo D20 o +8 Danni in battaglia!
+        const sacrificeTreasureToken = () => {
+            if (treasureBoostActive) return alert("Hai già attivato una Pedina Tesoro per la prossima azione!");
+            if ((character.treasures || 0) <= 0) return alert("Non hai Pedine Tesoro (💎) disponibili!");
+            const updated = {
+                ...character,
+                treasures: character.treasures - 1
+            };
+            saveCharState(updated);
+            setTreasureBoostActive(true);
+            setEventBanner(`💎 ${character.name} tappa e sacrifica una Pedina Tesoro! Il tuo prossimo tiro D20 avrà +5 (e +8 danni se sei in combattimento)!`);
+        };
+
+        // ACQUISTO DAL MERCANTE PLANARE CON MONETE D'ORO
+        const buyFromMerchant = (shopEntry) => {
+            const currentGold = character.gold || 0;
+            if (currentGold < shopEntry.cost) {
+                return alert(`Oro insufficiente! Ti servono ${shopEntry.cost} Monete d'Oro (ne hai ${currentGold}).`);
+            }
+            let updated = { ...character, gold: currentGold - shopEntry.cost };
+            if (shopEntry.type === "token") {
+                if (shopEntry.id === "buy_food") {
+                    updated.food = (updated.food || 0) + 1;
+                    setEventBanner(`⚖️ Acquistata 1 Pedina Cibo (🍖) per ${shopEntry.cost} Monete d'Oro!`);
+                } else {
+                    updated.treasures = (updated.treasures || 0) + 1;
+                    setEventBanner(`⚖️ Acquistata 1 Pedina Tesoro (💎) per ${shopEntry.cost} Monete d'Oro!`);
+                }
+            } else if (RPG_ITEMS_DB[shopEntry.id]) {
+                const rawItem = RPG_ITEMS_DB[shopEntry.id];
+                const adapted = adaptLootForCharacter(rawItem, updated);
+                updated.inventory = [...updated.inventory, adapted];
+                setEventBanner(`⚖️ Hai acquistato "${adapted.name}" per ${shopEntry.cost} Monete d'Oro! (Cliccalo nello zaino per equipaggiarlo)`);
+            }
+            saveCharState(updated);
+        };
+
         const equipItem = (rawItem) => {
             const realSlot = detectRealSlot(rawItem);
             const item = { ...rawItem, slot: realSlot };
 
             const hasLantern = character.equipped && character.equipped.artifact && character.equipped.artifact.id === 'chromatic_lantern';
             if (item.reqMana && !character.manaIdentity.includes(item.reqMana) && !hasLantern) {
-                return alert(`Non possiedi il Mana ${item.reqMana} richiesto per usare '${item.name}'! Visita un Santuario del Mana per sbloccare questo colore.`);
+                if ((character.treasures || 0) >= 2) {
+                    if (window.confirm(`Non possiedi il Mana ${item.reqMana} richiesto per "${item.name}". Vuoi sacrificare 2 Pedine Tesoro (💎) per sbloccare permanentemente il Mana ${item.reqMana} ed equipaggiarlo?`)) {
+                        let unlockedChar = {
+                            ...character,
+                            treasures: character.treasures - 2,
+                            manaIdentity: [...character.manaIdentity, item.reqMana]
+                        };
+                        saveCharState(unlockedChar);
+                    } else {
+                        return;
+                    }
+                } else {
+                    return alert(`Non possiedi il Mana ${item.reqMana} richiesto per usare '${item.name}'! Visita un Santuario del Mana oppure accumula 2 Pedine Tesoro (💎) per sbloccarlo.`);
+                }
             }
             if (item.reqLegendary && !character.isLegendary) {
                 return alert("Questo artefatto può essere impugnato solo da una Creatura Leggendaria!");
@@ -2533,13 +2634,27 @@
 
             if (rewards.exp) {
                 h.exp = (h.exp || 0) + rewards.exp;
+                // Ogni avanzamento nella storia porta annesso un piccolo bottino in monete d'oro!
+                const bonusGold = rewards.gold || Math.max(10, Math.round(rewards.exp * 0.35));
+                h.gold = (h.gold || 0) + bonusGold;
+                if (isActiveHero) msgs.push(`🪙 +${bonusGold} Monete d'Oro ottenute!`);
+
                 const newLvl = Math.floor(h.exp / 120) + 1;
                 if (newLvl > h.level) {
                     h.level = newLvl;
+                    h.treasures = (h.treasures || 0) + 1;
                     const newMax = getFinalStats(h).maxHP;
                     h.currentHP = Math.min(newMax, h.currentHP + 8);
-                    msgs.push(`🎉 ${h.name} sale al LIVELLO ${newLvl}! (+2 Stat, +8 PV)`);
+                    msgs.push(`🎉 ${h.name} sale al LIVELLO ${newLvl}! (+2 Stat, +8 PV, +1 Pedina Tesoro 💎)`);
                 }
+            } else if (rewards.gold) {
+                h.gold = (h.gold || 0) + rewards.gold;
+                if (isActiveHero) msgs.push(`🪙 +${rewards.gold} Monete d'Oro!`);
+            }
+
+            if (rewards.treasures) {
+                h.treasures = (h.treasures || 0) + rewards.treasures;
+                if (isActiveHero) msgs.push(`💎 +${rewards.treasures} Pedine Tesoro ottenute!`);
             }
 
             if (rewards.karma) {
@@ -2639,12 +2754,76 @@
             window.scrollTo(0, 0);
         };
 
-        const startMonsterEncounter = (monsterKey, customWinNode = null) => {
-            const mTemplate = MTG_BESTIARY[monsterKey] || MTG_BESTIARY["goblin_pack"];
-            const partyScale = playMode === "party" && party.length > 1 ? Math.min(2.2, 1 + (party.length - 1) * 0.35) : 1;
-            const scaledHP = Math.round(mTemplate.maxHP * partyScale);
+        // ============================================================================
+        // NUOVO MOTORE DI COMBATTIMENTO CON LISTA D'INIZIATIVA D&D E DANNI PER EROE!
+        // ============================================================================
+        const buildTurnOrderAndStartBattle = (baseCombat, heroRollsMap) => {
+            const activeParty = party.length > 0 ? party : [character];
+            let order = [];
+
+            activeParty.forEach(h => {
+                const st = getFinalStats(h);
+                const d20 = heroRollsMap[h.id] || (Math.floor(Math.random() * 20) + 1);
+                const agiBonus = Math.floor(st.agi / 2);
+                const fsBonus = st.keywords.includes("Attacco Improvviso") ? 4 : 0;
+                const totInit = d20 + agiBonus + fsBonus;
+                order.push({
+                    type: "hero",
+                    id: h.id,
+                    name: h.name,
+                    d20: d20,
+                    initTotal: totInit
+                });
+            });
+
+            order.push({
+                type: "monster",
+                id: "monster_boss",
+                name: baseCombat.name,
+                d20: baseCombat.monsterInitD20,
+                initTotal: baseCombat.monsterInitTotal
+            });
+
+            // Ordina dal valore di iniziativa più alto al più basso!
+            order.sort((a, b) => b.initTotal - a.initTotal);
+
+            const orderSummary = order.map((o, idx) => `${idx + 1}° ${o.name} (${o.initTotal})`).join(" ➔ ");
+
+            // Se il primo in lista è un eroe, selezionalo automaticamente come character attivo!
+            if (order[0].type === "hero") {
+                const firstHero = activeParty.find(h => h.id === order[0].id);
+                if (firstHero) setCharacter(firstHero);
+            }
 
             setCombatState({
+                ...baseCombat,
+                phase: "battle",
+                turnOrder: order,
+                currentTurnIdx: 0,
+                round: 1,
+                log: [
+                    `🎲 INIZIATIVA STABILITA: ${orderSummary}`,
+                    `⚔️ ROUND 1: È il turno di ${order[0].name}!`,
+                    ...baseCombat.log
+                ]
+            });
+        };
+
+        const startMonsterEncounter = (monsterKey, customWinNode = null) => {
+            const mTemplate = MTG_BESTIARY[monsterKey] || MTG_BESTIARY["goblin_pack"];
+            const activeParty = party.length > 0 ? party : [character];
+            const partyScale = playMode === "party" && activeParty.length > 1 ? Math.min(2.4, 1 + (activeParty.length - 1) * 0.4) : 1;
+            const scaledHP = Math.round(mTemplate.maxHP * partyScale);
+
+            // Il mostro tira SEMPRE in automatico la sua Iniziativa!
+            const mD20 = Math.floor(Math.random() * 20) + 1;
+            const mInitBonus = mTemplate.initBonus || 4;
+            const mInitTotal = mD20 + mInitBonus;
+
+            let initialDamageMap = {};
+            activeParty.forEach(h => { initialDamageMap[h.id] = 0; });
+
+            const baseCombat = {
                 key: monsterKey,
                 name: mTemplate.name,
                 maxHP: scaledHP,
@@ -2652,36 +2831,172 @@
                 dc: mTemplate.dc,
                 dmg: mTemplate.dmg,
                 exp: mTemplate.exp,
+                gold: mTemplate.gold || 40,
+                treasures: mTemplate.treasures || 1,
                 loot: mTemplate.loot,
                 isBoss: mTemplate.isBoss || false,
                 winNode: customWinNode || character.currentNode,
                 desc: mTemplate.desc,
-                log: [`⚔️ INIZIO SCONTRO: ${mTemplate.name} (${scaledHP} PV) vi sbarra la strada!`]
-            });
+                monsterInitD20: mD20,
+                monsterInitTotal: mInitTotal,
+                damageDealtByHero: initialDamageMap,
+                initRolls: {},
+                initHeroIndex: 0,
+                phase: diceMode === "manual" ? "initiative" : "battle",
+                turnOrder: [],
+                currentTurnIdx: 0,
+                round: 1,
+                log: [`👹 ${mTemplate.name} (${scaledHP} PV) tira Iniziativa Automatica: D20 (${mD20}) + ${mInitBonus} = ${mInitTotal}!`]
+            };
+
             setLastRollInfo(null);
             setEventBanner(null);
+            setShowMerchant(false);
+
+            if (diceMode === "auto") {
+                // Tira l'iniziativa in automatico per tutti gli eroi e parte subito!
+                let autoMap = {};
+                activeParty.forEach(h => { autoMap[h.id] = Math.floor(Math.random() * 20) + 1; });
+                buildTurnOrderAndStartBattle(baseCombat, autoMap);
+            } else {
+                // Modalità Manuale: chiede il dado d'iniziativa del 1° eroe, poi del 2°, ecc.!
+                setCombatState(baseCombat);
+            }
             window.scrollTo(0, 0);
         };
 
+        // Registra il dado d'iniziativa manuale dell'eroe corrente e passa al prossimo amico!
+        const submitHeroInitiativeRoll = (d20Val) => {
+            if (!combatState || combatState.phase !== "initiative") return;
+            const activeParty = party.length > 0 ? party : [character];
+            const currentHero = activeParty[combatState.initHeroIndex];
+            const newRolls = { ...combatState.initRolls, [currentHero.id]: d20Val };
+
+            const nextIdx = combatState.initHeroIndex + 1;
+            if (nextIdx < activeParty.length) {
+                setCombatState({
+                    ...combatState,
+                    initRolls: newRolls,
+                    initHeroIndex: nextIdx
+                });
+            } else {
+                buildTurnOrderAndStartBattle(combatState, newRolls);
+            }
+        };
+
+        // Passa al combattente successivo nella Lista di Iniziativa!
+        const advanceToNextTurn = (updatedCombatState, updatedPartyList) => {
+            const order = updatedCombatState.turnOrder;
+            let nextIdx = updatedCombatState.currentTurnIdx + 1;
+            let nextRound = updatedCombatState.round;
+            let extraLog = [];
+
+            if (nextIdx >= order.length) {
+                nextIdx = 0;
+                nextRound += 1;
+                // Se è il Troll di Thrun, a fine round rigenera +3 PV!
+                if (updatedCombatState.key === "llanowar_troll" && updatedCombatState.currentHP > 0) {
+                    updatedCombatState.currentHP = Math.min(updatedCombatState.maxHP, updatedCombatState.currentHP + 3);
+                    extraLog.push(`🌿 Rigenerazione del Troll: ${updatedCombatState.name} recupera +3 PV a inizio Round ${nextRound}!`);
+                }
+            }
+
+            const nextCombatant = order[nextIdx];
+            if (nextCombatant.type === "hero") {
+                const foundHero = updatedPartyList.find(h => h.id === nextCombatant.id);
+                if (foundHero) {
+                    setCharacter(foundHero);
+                    localStorage.setItem('rpg_character', JSON.stringify(foundHero));
+                }
+            }
+
+            setCombatState({
+                ...updatedCombatState,
+                currentTurnIdx: nextIdx,
+                round: nextRound,
+                log: [...extraLog, `👉 Tocca ora a: ${nextCombatant.name}!`, ...updatedCombatState.log].slice(0, 8)
+            });
+        };
+
+        // ESECUZIONE DEL TURNO DEL MOSTRO (Attacca chi vuole tra gli eroi della Compagnia!)
+        const executeMonsterTurn = () => {
+            if (!combatState || combatState.phase !== "battle") return;
+            const currentPartyList = party.length > 0 ? [...party] : [{ ...character }];
+
+            // Il mostro sceglie il bersaglio! (25% attacco ad area se è un Boss, altrimenti sceglie un eroe casuale o il top damage dealer)
+            const mRoll = Math.floor(Math.random() * 20) + 1;
+            const isCrit = mRoll === 20;
+            const isMiss = mRoll <= 4; // Su 1-4 il mostro manca il colpo!
+            let turnLog = [...combatState.log];
+
+            if (isMiss) {
+                turnLog.unshift(`🛡️ ${combatState.name} lancia un attacco furioso (Dado ${mRoll}), ma la Compagnia schiva il colpo illesa!`);
+                advanceToNextTurn({ ...combatState, log: turnLog }, currentPartyList);
+                return;
+            }
+
+            // Attacco a soffio su tutto il party se è un Boss e tira >= 16!
+            if (combatState.isBoss && mRoll >= 16 && currentPartyList.length > 1) {
+                const aoeDmg = Math.max(3, Math.round(combatState.dmg * 0.7));
+                const nextParty = currentPartyList.map(h => ({
+                    ...h,
+                    currentHP: Math.max(1, h.currentHP - aoeDmg)
+                }));
+                savePartyState(nextParty);
+                turnLog.unshift(`🔥 ATTACCO DEVASTANTE AD AREA (Dado ${mRoll})! ${combatState.name} investe TUTTA la Compagnia infliggendo ${aoeDmg} danni a ciascuno!`);
+                advanceToNextTurn({ ...combatState, log: turnLog }, nextParty);
+                return;
+            }
+
+            // Altrimenti sceglie liberamente uno degli eroi come bersaglio!
+            const targetIdx = Math.floor(Math.random() * currentPartyList.length);
+            let targetHero = { ...currentPartyList[targetIdx] };
+            const targetStats = getFinalStats(targetHero);
+
+            let dmg = combatState.dmg + (isCrit ? 4 : 0);
+            if (targetHero.raceId === 'nano') dmg = Math.max(1, dmg - 2);
+            if (targetStats.keywords.includes("Cautela")) dmg = Math.max(1, dmg - 2);
+
+            targetHero.currentHP = Math.max(1, targetHero.currentHP - dmg);
+            currentPartyList[targetIdx] = targetHero;
+
+            setParty(currentPartyList);
+            localStorage.setItem('rpg_party', JSON.stringify(currentPartyList));
+            if (character.id === targetHero.id) {
+                setCharacter(targetHero);
+                localStorage.setItem('rpg_character', JSON.stringify(targetHero));
+            }
+
+            turnLog.unshift(`👹 ${combatState.name} sceglie di attaccare **${targetHero.name}** (Dado ${mRoll}${isCrit ? " CRITICO!" : ""}) e gli infligge ${dmg} danni! (${targetHero.name}: ${targetHero.currentHP} PV rimasti)`);
+            advanceToNextTurn({ ...combatState, log: turnLog }, currentPartyList);
+        };
+
+        // ESECUZIONE DEL TURNO DI ATTACCO DELL'EROE ATTIVO
         const resolveCombatTurn = (actionStat, d20Value) => {
-            if (!combatState) return;
-            const d20 = Math.max(1, Math.min(20, parseInt(d20Value) || 10));
+            if (!combatState || combatState.phase !== "battle") return;
+            const rawD20 = Math.max(1, Math.min(20, parseInt(d20Value) || 10));
+            const boostBonus = treasureBoostActive ? 5 : 0;
+            const boostDmg = treasureBoostActive ? 8 : 0;
+
             const stats = getFinalStats(character);
             const statVal = stats[actionStat] || 10;
             const humanBonus = character.raceId === 'umano' ? 1 : 0;
             const firstStrikeBonus = stats.keywords.includes("Attacco Improvviso") ? 2 : 0;
-            const total = d20 + statVal + humanBonus + firstStrikeBonus;
+            const total = rawD20 + boostBonus + statVal + humanBonus + firstStrikeBonus;
 
-            const isCrit = d20 === 20;
-            const isFumble = d20 === 1;
+            const isCrit = rawD20 === 20;
+            const isFumble = rawD20 === 1 && !treasureBoostActive;
             const hit = isCrit || (!isFumble && total >= combatState.dc);
 
             let newMonsterHP = combatState.currentHP;
             let newHero = { ...character };
             let turnLog = [...combatState.log];
+            let dmgMap = { ...(combatState.damageDealtByHero || {}) };
+
+            if (treasureBoostActive) setTreasureBoostActive(false);
 
             if (hit) {
-                let playerDmg = Math.max(6, Math.round(statVal * 0.65) + Math.floor(d20 / 3));
+                let playerDmg = Math.max(6, Math.round(statVal * 0.65) + Math.floor(rawD20 / 3)) + boostDmg;
                 if (isCrit) playerDmg *= 2;
                 if (stats.keywords.includes("Travolgere")) playerDmg += 4;
                 if (stats.keywords.includes("Tocco Letale") && !combatState.isBoss && isCrit) {
@@ -2689,7 +3004,9 @@
                 }
 
                 newMonsterHP = Math.max(0, newMonsterHP - playerDmg);
-                turnLog.unshift(`✅ ${newHero.name} (Dado ${d20} + ${statVal} = ${total} vs CD ${combatState.dc}): Colpisce per ${playerDmg} danni!${isCrit ? " 🌟 CRITICO!" : ""}`);
+                dmgMap[newHero.id] = (dmgMap[newHero.id] || 0) + playerDmg;
+
+                turnLog.unshift(`✅ ${newHero.name} attacca (Dado ${rawD20}${boostBonus ? "+5 Tesoro" : ""} + ${statVal} = ${total} vs CD ${combatState.dc}): Infligge **${playerDmg} danni**!${isCrit ? " 🌟 CRITICO!" : ""}`);
 
                 if (isCrit && stats.keywords.includes("Legame Vitale")) {
                     newHero.currentHP = Math.min(stats.maxHP, newHero.currentHP + 4);
@@ -2703,47 +3020,97 @@
                     turnLog.unshift(`🔥 MIRACOLO PLANARE! Con un 20 Naturale in battaglia, la SCINTILLA DI ${newHero.name.toUpperCase()} SI È ACCESA! Ora è un PLANESWALKER!`);
                 }
             } else {
-                let enemyDmg = combatState.dmg;
-                if (isFumble) enemyDmg += 3;
-                if (newHero.raceId === 'nano') enemyDmg = Math.max(1, enemyDmg - 2);
-                if (stats.keywords.includes("Cautela")) enemyDmg = Math.max(1, enemyDmg - 2);
-
-                newHero.currentHP = Math.max(1, newHero.currentHP - enemyDmg);
-                turnLog.unshift(`❌ ${newHero.name} manca il bersaglio (Dado ${d20}, Tot ${total} vs CD ${combatState.dc})! ${combatState.name} contrattacca infliggendo ${enemyDmg} danni!`);
+                if (isFumble) {
+                    newHero.currentHP = Math.max(1, newHero.currentHP - 3);
+                    turnLog.unshift(`💀 1 NATURALE di ${newHero.name}! Si sbilancia nell'attacco e subisce 3 danni!`);
+                } else {
+                    turnLog.unshift(`❌ ${newHero.name} manca il bersaglio (Dado ${rawD20}, Tot ${total} vs CD ${combatState.dc})!`);
+                }
             }
 
             setPendingCombatAction(null);
 
+            const updatedPartyList = (party.length > 0 ? party : [newHero]).map(p => p.id === newHero.id ? newHero : p);
+            setParty(updatedPartyList);
+            localStorage.setItem('rpg_party', JSON.stringify(updatedPartyList));
+            setCharacter(newHero);
+            localStorage.setItem('rpg_character', JSON.stringify(newHero));
+
+            // SE IL MOSTRO È SCONFITTO -> DISTRIBUZIONE RICOMPENSE IN BASE AI DANNI INFLITTI (MVP)!
             if (newMonsterHP <= 0) {
-                const winRewards = { exp: combatState.exp, loot: combatState.loot };
+                let mvpHeroId = newHero.id;
+                let maxDmgDealt = -1;
+                let dmgReportLines = [];
+
+                updatedPartyList.forEach(h => {
+                    const d = dmgMap[h.id] || 0;
+                    dmgReportLines.push(`${h.name}: ${d} danni`);
+                    if (d > maxDmgDealt) {
+                        maxDmgDealt = d;
+                        mvpHeroId = h.id;
+                    }
+                });
+
+                const mvpHeroObj = updatedPartyList.find(h => h.id === mvpHeroId) || newHero;
+                const bonusMvpExp = Math.round(combatState.exp * 0.25);
+                const bonusMvpGold = Math.round((combatState.gold || 30) * 0.5);
+
+                // Assegna il bonus MVP a chi ha fatto più danni!
+                const partyWithMvp = updatedPartyList.map(h => {
+                    if (h.id === mvpHeroId) {
+                        return {
+                            ...h,
+                            exp: (h.exp || 0) + bonusMvpExp,
+                            gold: (h.gold || 0) + bonusMvpGold,
+                            treasures: (h.treasures || 0) + 1
+                        };
+                    }
+                    return h;
+                });
+                setParty(partyWithMvp);
+
+                const winRewards = {
+                    exp: combatState.exp,
+                    gold: combatState.gold || 35,
+                    treasures: combatState.treasures || 1,
+                    loot: combatState.loot
+                };
                 if (combatState.isBoss) winRewards.makeLegendary = true;
+
+                const targetWinNode = combatState.winNode;
                 setCombatState(null);
+
+                const currentUpdatedActive = partyWithMvp.find(h => h.id === newHero.id) || partyWithMvp[0];
                 applyRewardsAndMove(
-                    newHero,
+                    currentUpdatedActive,
                     winRewards,
-                    combatState.winNode,
-                    `🏆 VITTORIA NELL'ARENA! Avete sconfitto ${combatState.name}! (+${combatState.exp} EXP a tutta la compagnia!)`
+                    targetWinNode,
+                    `🏆 VITTORIA CONTRO ${combatState.name.toUpperCase()}!\n📊 Danni inflitti: ${dmgReportLines.join(" | ")}\n🥇 MVP dello Scontro: **${mvpHeroObj.name}** (+${bonusMvpExp} EXP extra, +${bonusMvpGold} Oro extra e +1 Pedina Tesoro 💎!)`
                 );
             } else {
-                saveCharState(newHero);
-                setCombatState({
+                advanceToNextTurn({
                     ...combatState,
                     currentHP: newMonsterHP,
-                    log: turnLog.slice(0, 6)
-                });
+                    damageDealtByHero: dmgMap,
+                    log: turnLog
+                }, updatedPartyList);
             }
         };
 
+        // ESECUZIONE DEL CALCOLO TIRO D20 NELLA STORIA
         const executeRollCalculation = (choice, d20Value) => {
-            const d20 = Math.max(1, Math.min(20, parseInt(d20Value) || 10));
+            const rawD20 = Math.max(1, Math.min(20, parseInt(d20Value) || 10));
+            const boostBonus = treasureBoostActive ? 5 : 0;
+            if (treasureBoostActive) setTreasureBoostActive(false);
+
             const stats = getFinalStats(character);
             const statVal = stats[choice.stat] || 10;
             const humanBonus = character.raceId === 'umano' ? 1 : 0;
             const firstStrikeBonus = stats.keywords.includes("Attacco Improvviso") ? 2 : 0;
-            const total = d20 + statVal + humanBonus + firstStrikeBonus;
+            const total = rawD20 + boostBonus + statVal + humanBonus + firstStrikeBonus;
             
-            const isCritSuccess = d20 === 20;
-            const isCritFail = d20 === 1;
+            const isCritSuccess = rawD20 === 20;
+            const isCritFail = rawD20 === 1 && !boostBonus;
             const passed = isCritSuccess || (!isCritFail && total >= choice.dc);
 
             let updatedChar = normalizeCharacterSlots(character);
@@ -2781,9 +3148,9 @@
             }
 
             setLastRollInfo({
-                d20: d20,
-                statName: choice.stat.toUpperCase(),
-                statVal: statVal + humanBonus + firstStrikeBonus,
+                d20: rawD20,
+                statName: choice.stat.toUpperCase() + (boostBonus ? " +💎5" : ""),
+                statVal: statVal + humanBonus + firstStrikeBonus + boostBonus,
                 total: total,
                 dc: choice.dc,
                 passed: passed,
@@ -2839,13 +3206,19 @@
         const partyHasPlaneswalker = party.some(p => p.sparkIgnited) || (character && character.sparkIgnited);
 
         // ====================================================================
-        // VISTA A: STORIA INTERATTIVA + ARENA DI COMBATTIMENTO A TURNI
+        // VISTA A: STORIA INTERATTIVA + ARENA CON INIZIATIVA D&D + MERCANTE
         // ====================================================================
         if (character && rpgView === "story") {
             const stats = getFinalStats(character);
             const currentNodeObj = RPG_STORY_NODES[character.currentNode] || RPG_STORY_NODES["start"];
             const avatarSrc = getAvatarSrc(character.raceId, character.classId, character.customAvatar, character.ascensionForm);
             const storyText = (playMode === "party" && currentNodeObj.textParty) ? currentNodeObj.textParty : (currentNodeObj.textSolo || currentNodeObj.text);
+            const activeParty = party.length > 0 ? party : [character];
+
+            // Chi è di turno nell'Arena?
+            const currentTurnCombatant = (combatState && combatState.phase === "battle" && combatState.turnOrder.length > 0)
+                ? combatState.turnOrder[combatState.currentTurnIdx]
+                : null;
 
             return (
                 <div className="max-w-3xl mx-auto p-2 sm:p-4 animate-fade pb-24 space-y-4">
@@ -2859,18 +3232,16 @@
                                 👥 Party ({party.length})
                             </button>
                             <button
-                                onClick={() => startMonsterEncounter( Object.keys(MTG_BESTIARY)[Math.floor(Math.random() * 5)], character.currentNode )}
+                                onClick={() => startMonsterEncounter( Object.keys(MTG_BESTIARY)[Math.floor(Math.random() * 6)], character.currentNode )}
                                 className="bg-red-700 hover:bg-red-600 text-white font-black px-3 py-2 rounded-lg text-xs shadow"
                             >
                                 ⚔️ Caccia Mostri
                             </button>
                             <button
-                                onClick={() => {
-                                    applyRewardsAndMove(character, { heal: 8 }, character.currentNode, "⛺ Riposo Breve completato: tutta la compagnia recupera +8 Punti Vita!");
-                                }}
-                                className="bg-emerald-800 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg text-xs shadow"
+                                onClick={() => setShowMerchant(!showMerchant)}
+                                className="bg-yellow-600 hover:bg-yellow-500 text-black font-black px-3 py-2 rounded-lg text-xs shadow"
                             >
-                                ⛺ Riposo (+8 PV)
+                                ⚖️ Mercante ({character.gold || 0} 🪙)
                             </button>
                             {partyHasPlaneswalker && (
                                 <button
@@ -2896,62 +3267,130 @@
                         </button>
                     </div>
 
+                    {/* SELETTORE RAPIDO DELL'EROE ATTIVO */}
                     {party.length > 1 && (
                         <div className="bg-purple-950/60 border border-purple-500 rounded-xl p-2.5 flex items-center gap-2 overflow-x-auto">
-                            <span className="text-purple-300 font-black text-xs uppercase shrink-0">Turno di:</span>
+                            <span className="text-purple-300 font-black text-xs uppercase shrink-0">Eroe Attivo:</span>
                             {party.map((hero) => (
                                 <button
                                     key={hero.id}
                                     onClick={() => setCharacter(hero)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${character.id === hero.id ? "bg-amber-500 text-black shadow-md scale-105" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}
                                 >
-                                    🛡️ {hero.name} (LIV {hero.level} • {hero.currentHP} PV) {hero.isLegendary ? "👑" : ""}{hero.sparkIgnited ? "🔥" : ""}
+                                    🛡️ {hero.name} (LIV {hero.level} • ❤️{hero.currentHP} • 🪙{hero.gold || 0})
                                 </button>
                             ))}
                         </div>
                     )}
 
-                    {/* MINI-SCHEDA CON RITRATTO VERTICALE 2:3 */}
-                    <div className="bg-gray-900/95 border-2 border-amber-600/60 rounded-xl p-3 shadow-xl flex items-center gap-3">
-                        <img src={avatarSrc} onError={(e) => handleImgError(e, character.raceId)} className="w-16 h-24 rounded-lg object-cover object-top border-2 border-amber-500 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="font-black text-white text-base truncate">{character.name}</h3>
-                                <span className="bg-amber-500 text-black font-black text-[10px] px-2 py-0.5 rounded">LIV {character.level}</span>
-                                {character.isLegendary && <span className="text-xs bg-yellow-900/60 text-yellow-300 px-1.5 py-0.5 rounded border border-yellow-500 font-bold">👑 Leggendario</span>}
-                                {character.sparkIgnited && <span className="text-xs bg-orange-900/60 text-orange-300 px-1.5 py-0.5 rounded border border-orange-500 font-bold">🔥 Planeswalker</span>}
-                            </div>
-                            <p className="text-gray-400 text-xs truncate">{character.race} {character.classType} • EXP: {character.exp} (Prossimo Liv: {character.level * 120})</p>
-                            <div className="grid grid-cols-5 gap-1 mt-1.5 text-center">
-                                <span className="bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-[10px] font-bold text-gray-300">FOR <b className="text-white">{stats.str}</b></span>
-                                <span className="bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-[10px] font-bold text-gray-300">AGI <b className="text-white">{stats.agi}</b></span>
-                                <span className="bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-[10px] font-bold text-gray-300">MAG <b className="text-white">{stats.mag}</b></span>
-                                <span className="bg-gray-800 border border-amber-700/60 rounded px-1 py-0.5 text-[10px] font-bold text-amber-300">COS <b className="text-white">{stats.con}</b></span>
-                                <span className="bg-red-950 border border-red-700 rounded px-1 py-0.5 text-[10px] font-black text-red-300">❤️ {character.currentHP}/{stats.maxHP}</span>
+                    {/* MINI-SCHEDA PERSONAGGIO IN ALTO + BARRA RISORSE (ORO, PEDINE TESORO E PEDINE CIBO) */}
+                    <div className="bg-gray-900/95 border-2 border-amber-600/60 rounded-xl p-3 shadow-xl space-y-2.5">
+                        <div className="flex items-center gap-3">
+                            <img src={avatarSrc} onError={(e) => handleImgError(e, character.raceId)} className="w-16 h-24 rounded-lg object-cover object-top border-2 border-amber-500 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <h3 className="font-black text-white text-base truncate">{character.name}</h3>
+                                    <span className="bg-amber-500 text-black font-black text-[10px] px-2 py-0.5 rounded">LIV {character.level}</span>
+                                    {character.isLegendary && <span className="text-xs bg-yellow-900/60 text-yellow-300 px-1.5 py-0.5 rounded border border-yellow-500 font-bold">👑 Leggendario</span>}
+                                    {character.sparkIgnited && <span className="text-xs bg-orange-900/60 text-orange-300 px-1.5 py-0.5 rounded border border-orange-500 font-bold">🔥 Planeswalker</span>}
+                                </div>
+                                <p className="text-gray-400 text-xs truncate">{character.race} {character.classType} • EXP: {character.exp}/{character.level * 120}</p>
+                                <div className="grid grid-cols-5 gap-1 mt-1.5 text-center">
+                                    <span className="bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-[10px] font-bold text-gray-300">FOR <b className="text-white">{stats.str}</b></span>
+                                    <span className="bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-[10px] font-bold text-gray-300">AGI <b className="text-white">{stats.agi}</b></span>
+                                    <span className="bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-[10px] font-bold text-gray-300">MAG <b className="text-white">{stats.mag}</b></span>
+                                    <span className="bg-gray-800 border border-amber-700/60 rounded px-1 py-0.5 text-[10px] font-bold text-amber-300">COS <b className="text-white">{stats.con}</b></span>
+                                    <span className="bg-red-950 border border-red-700 rounded px-1 py-0.5 text-[10px] font-black text-red-300">❤️ {character.currentHP}/{stats.maxHP}</span>
+                                </div>
                             </div>
                         </div>
-                        {character.classId === 'chierico' && character.currentHP < stats.maxHP && (
-                            <button onClick={() => applyRewardsAndMove(character, { heal: 5 }, character.currentNode, `✨ Preghiera Curativa di ${character.name}: tutta la compagnia recupera +5 PV!`)} className="bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-black px-2 py-2 rounded-lg shadow shrink-0">
-                                ✨ Cura +5
-                            </button>
-                        )}
+
+                        {/* BARRA ECONOMIA E TOKEN DI MAGIC (ORO, TESORI, CIBO) */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-800 text-xs">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="bg-yellow-950/80 border border-yellow-600 text-yellow-300 font-black px-2.5 py-1 rounded-lg">
+                                    🪙 Oro: {character.gold || 0}
+                                </span>
+                                <button
+                                    onClick={sacrificeTreasureToken}
+                                    className={`font-black px-2.5 py-1 rounded-lg border transition-all ${treasureBoostActive ? "bg-amber-400 text-black border-white animate-pulse" : "bg-cyan-950/80 hover:bg-cyan-900 border-cyan-500 text-cyan-200"}`}
+                                    title="Sacrifica 1 Pedina Tesoro per ottenere +5 al prossimo tiro D20 e +8 danni!"
+                                >
+                                    💎 Tesori: {character.treasures || 0} {treasureBoostActive ? "(BOOST +5 ATTIVO!)" : "(Usa +5 Dado)"}
+                                </button>
+                                <button
+                                    onClick={sacrificeFoodToken}
+                                    className="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500 text-emerald-200 font-black px-2.5 py-1 rounded-lg transition-all"
+                                    title="Sacrifica 1 Pedina Cibo per recuperare subito +6 PV"
+                                >
+                                    🍖 Cibo: {character.food || 0} (Usa +6 PV)
+                                </button>
+                            </div>
+                            {character.classId === 'chierico' && character.currentHP < stats.maxHP && (
+                                <button onClick={() => applyRewardsAndMove(character, { heal: 5 }, character.currentNode, `✨ Preghiera Curativa di ${character.name}: tutta la compagnia recupera +5 PV!`)} className="bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-black px-2.5 py-1 rounded-lg shadow">
+                                    ✨ Cura Chierico (+5 PV)
+                                </button>
+                            )}
+                        </div>
                     </div>
 
-                    {/* ARENA DI COMBATTIMENTO A TURNI */}
+                    {/* BOTTEGA DEL MERCANTE PLANARE (APRIBILE IN QUALSIASI MOMENTO CON L'ORO) */}
+                    {showMerchant && (
+                        <div className="bg-gray-900 border-4 border-yellow-500 rounded-2xl p-4 shadow-2xl animate-fade space-y-3">
+                            <div className="flex justify-between items-center border-b border-gray-700 pb-2">
+                                <div>
+                                    <h3 className="text-yellow-400 font-black text-base uppercase">⚖️ Bottega del Mercante Planare</h3>
+                                    <p className="text-xs text-gray-300">Acquista equipaggiamento o pedine per <b>{character.name}</b> (Oro disponibile: <b className="text-yellow-300">{character.gold || 0} 🪙</b>)</p>
+                                </div>
+                                <button onClick={() => setShowMerchant(false)} className="bg-gray-700 text-white text-xs font-bold px-3 py-1 rounded">Chiudi ✖</button>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+                                {MERCHANT_SHOP.map((entry, idx) => {
+                                    const isToken = entry.type === "token";
+                                    const dbItem = !isToken ? RPG_ITEMS_DB[entry.id] : null;
+                                    if (!isToken && !dbItem) return null;
+                                    const itemName = isToken ? entry.name : dbItem.name;
+                                    const itemDesc = isToken ? entry.desc : formatItemBonuses(dbItem);
+                                    return (
+                                        <div key={idx} className="bg-gray-800 border border-gray-700 rounded-xl p-2.5 flex justify-between items-center gap-2">
+                                            <div className="min-w-0">
+                                                <p className="text-white font-bold text-xs truncate">{itemName}</p>
+                                                <p className="text-amber-400 text-[10px] truncate">{itemDesc}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => buyFromMerchant(entry)}
+                                                className="bg-yellow-500 hover:bg-yellow-400 text-black font-black text-xs px-3 py-1.5 rounded-lg shrink-0 shadow"
+                                            >
+                                                {entry.cost} 🪙
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ==================================================================== */}
+                    {/* ARENA DI COMBATTIMENTO CON INIZIATIVA D&D E ORDINE DI TURNO          */}
+                    {/* ==================================================================== */}
                     {combatState && (
                         <div className="bg-gradient-to-b from-red-950 via-gray-900 to-gray-950 border-4 border-red-500 rounded-2xl p-5 shadow-[0_0_30px_rgba(239,68,68,0.4)] animate-fade space-y-4">
                             <div className="flex justify-between items-start gap-2 border-b border-red-800 pb-3">
                                 <div>
-                                    <span className="bg-red-600 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded">⚔️ SCONTRO A TURNI IN CORSO</span>
+                                    <span className="bg-red-600 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded">
+                                        {combatState.phase === "initiative" ? "🎲 FASE 1: TIRO DI INIZIATIVA D&D" : `⚔️ ROUND ${combatState.round} — COMBATTIMENTO A TURNI`}
+                                    </span>
                                     <h2 className="text-2xl font-black text-white mt-1">{combatState.name}</h2>
                                     <p className="text-xs text-gray-300 italic">{combatState.desc}</p>
                                 </div>
                                 <div className="text-right shrink-0">
-                                    <p className="text-xs font-bold text-red-300">Difesa Mostro: <b className="text-white">CD {combatState.dc}</b></p>
-                                    <p className="text-xs font-bold text-amber-300">Danno Attacco: <b className="text-white">{combatState.dmg} PV</b></p>
+                                    <p className="text-xs font-bold text-red-300">Difesa: <b className="text-white">CD {combatState.dc}</b></p>
+                                    <p className="text-xs font-bold text-amber-300">Attacco: <b className="text-white">{combatState.dmg} PV</b></p>
+                                    <p className="text-[11px] font-bold text-yellow-300">Taglia: {combatState.gold}🪙 +{combatState.treasures}💎</p>
                                 </div>
                             </div>
 
+                            {/* BARRA SALUTE DEL MOSTRO */}
                             <div>
                                 <div className="flex justify-between text-xs font-black text-red-200 mb-1">
                                     <span>❤️ PUNTI VITA NEMICO</span>
@@ -2965,56 +3404,148 @@
                                 </div>
                             </div>
 
-                            {pendingCombatAction && (
-                                <div className="bg-indigo-950 border-2 border-emerald-400 rounded-xl p-3 text-center space-y-2">
-                                    <p className="text-xs font-black text-emerald-300 uppercase">
-                                        🎲 Tira il tuo D20 Reale per l'attacco su {pendingCombatAction.toUpperCase()}! Tocca il risultato:
+                            {/* FASE 1: RACCOLTA INIZIATIVA PASSO-PASSO PER OGNI EROE DELLA COMPAGNIA */}
+                            {combatState.phase === "initiative" && (
+                                <div className="bg-indigo-950 border-2 border-amber-400 rounded-xl p-4 text-center space-y-3 animate-fade">
+                                    <p className="text-xs font-bold text-amber-300 uppercase">
+                                        👹 {combatState.name} ha tirato Iniziativa Automatica: <b className="text-white text-sm">{combatState.monsterInitTotal}</b> (Dado {combatState.monsterInitD20})
                                     </p>
-                                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-1">
+                                    <h3 className="text-base font-black text-white">
+                                        🎲 Tira il Dado D20 di Iniziativa per: <span className="text-emerald-400 underline">{activeParty[combatState.initHeroIndex].name}</span> ({combatState.initHeroIndex + 1} di {activeParty.length})
+                                    </h3>
+                                    <p className="text-xs text-gray-300">
+                                        Tocca il risultato uscito sul tuo dado reale (il sistema aggiungerà metà AGI e +4 se hai Attacco Improvviso):
+                                    </p>
+                                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
                                         {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20].map(n => (
-                                            <button key={n} onClick={() => resolveCombatTurn(pendingCombatAction, n)} className="bg-gray-900 hover:bg-emerald-600 text-white font-black text-xs py-2 rounded border border-gray-600">
+                                            <button
+                                                key={n}
+                                                onClick={() => submitHeroInitiativeRoll(n)}
+                                                className="bg-gray-900 hover:bg-emerald-600 text-white font-black text-xs py-2 rounded border border-gray-600"
+                                            >
                                                 {n}
                                             </button>
                                         ))}
                                     </div>
+                                    <button
+                                        onClick={() => {
+                                            let autoMap = { ...combatState.initRolls };
+                                            for (let i = combatState.initHeroIndex; i < activeParty.length; i++) {
+                                                autoMap[activeParty[i].id] = Math.floor(Math.random() * 20) + 1;
+                                            }
+                                            buildTurnOrderAndStartBattle(combatState, autoMap);
+                                        }}
+                                        className="bg-amber-500 text-black font-black text-xs px-4 py-2 rounded-lg shadow mt-2"
+                                    >
+                                        🤖 Tira Iniziativa Automatica per tutti
+                                    </button>
                                 </div>
                             )}
 
-                            <div className="space-y-2">
-                                <p className="text-xs font-black uppercase text-amber-400">Scegli la mossa del turno per {character.name}:</p>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                    <button
-                                        onClick={() => diceMode === "manual" ? setPendingCombatAction("str") : resolveCombatTurn("str", Math.floor(Math.random()*20)+1)}
-                                        className="bg-red-900/80 hover:bg-red-800 border-2 border-red-500 p-3 rounded-xl text-left text-white font-bold text-xs shadow transition-all active:scale-95"
-                                    >
-                                        <span className="text-sm font-black block">⚔️ Assalto col Ferro (FOR)</span>
-                                        <span className="text-gray-300 text-[11px]">Bonus: +{stats.str} • Travolgere +4 Danni</span>
-                                    </button>
-                                    <button
-                                        onClick={() => diceMode === "manual" ? setPendingCombatAction("agi") : resolveCombatTurn("agi", Math.floor(Math.random()*20)+1)}
-                                        className="bg-emerald-900/80 hover:bg-emerald-800 border-2 border-emerald-500 p-3 rounded-xl text-left text-white font-bold text-xs shadow transition-all active:scale-95"
-                                    >
-                                        <span className="text-sm font-black block">🏹 Colpo Mirato / Furtivo (AGI)</span>
-                                        <span className="text-gray-300 text-[11px]">Bonus: +{stats.agi} • Precisione Letale</span>
-                                    </button>
-                                    <button
-                                        onClick={() => diceMode === "manual" ? setPendingCombatAction("mag") : resolveCombatTurn("mag", Math.floor(Math.random()*20)+1)}
-                                        className="bg-indigo-900/80 hover:bg-indigo-800 border-2 border-indigo-400 p-3 rounded-xl text-left text-white font-bold text-xs shadow transition-all active:scale-95"
-                                    >
-                                        <span className="text-sm font-black block">🔮 Incantesimo Mana (MAG)</span>
-                                        <span className="text-gray-300 text-[11px]">Bonus: +{stats.mag} • Scarica Arcana</span>
-                                    </button>
-                                </div>
-                            </div>
+                            {/* FASE 2: LISTA DI PRIORITÀ TURNO (INIZIATIVA D&D) E AZIONI */}
+                            {combatState.phase === "battle" && (
+                                <div className="space-y-4">
+                                    {/* BARRA DELL'ORDINE DI INIZIATIVA */}
+                                    <div className="bg-gray-950 border border-gray-700 rounded-xl p-2.5">
+                                        <p className="text-[10px] font-black uppercase text-gray-400 mb-1.5">⚡ Ordine di Iniziativa (Priorità Turno D&D):</p>
+                                        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                                            {combatState.turnOrder.map((comb, idx) => {
+                                                const isCurrent = idx === combatState.currentTurnIdx;
+                                                const heroDmg = comb.type === "hero" ? (combatState.damageDealtByHero[comb.id] || 0) : 0;
+                                                return (
+                                                    <div
+                                                        key={idx}
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-black shrink-0 border transition-all ${
+                                                            isCurrent
+                                                                ? (comb.type === "monster" ? "bg-red-600 text-white border-white scale-105 shadow-lg" : "bg-amber-500 text-black border-white scale-105 shadow-lg")
+                                                                : "bg-gray-800 text-gray-400 border-gray-700"
+                                                        }`}
+                                                    >
+                                                        {idx + 1}° {comb.type === "monster" ? "👹 " : "🛡️ "}{comb.name} (Init {comb.initTotal})
+                                                        {comb.type === "hero" && <span className="block text-[9px] font-normal opacity-80">Danni: {heroDmg}</span>}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
 
-                            <div className="bg-black/60 border border-gray-700 rounded-xl p-3 space-y-1 max-h-36 overflow-y-auto">
+                                    {/* SE È IL TURNO DEL MOSTRO */}
+                                    {currentTurnCombatant && currentTurnCombatant.type === "monster" ? (
+                                        <div className="bg-red-950/90 border-2 border-red-400 rounded-xl p-4 text-center space-y-3 animate-fade">
+                                            <h4 className="text-lg font-black text-white">
+                                                👹 È IL TURNO DI {combatState.name.toUpperCase()}!
+                                            </h4>
+                                            <p className="text-xs text-red-200">
+                                                Il nemico sta per scegliere una preda nella vostra Compagnia e sferrare il suo attacco!
+                                            </p>
+                                            <button
+                                                onClick={executeMonsterTurn}
+                                                className="w-full sm:w-auto bg-red-600 hover:bg-red-500 text-white font-black py-3 px-8 rounded-xl shadow-[0_0_20px_rgba(239,68,68,0.6)] text-base transition-all active:scale-95"
+                                            >
+                                                🎲 Esegui Attacco del Mostro ➔
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        /* SE È IL TURNO DI UN EROE DELLA COMPAGNIA */
+                                        <div className="space-y-3">
+                                            {pendingCombatAction && (
+                                                <div className="bg-indigo-950 border-2 border-emerald-400 rounded-xl p-3 text-center space-y-2">
+                                                    <p className="text-xs font-black text-emerald-300 uppercase">
+                                                        🎲 Tira il tuo D20 Reale per l'attacco di {character.name} su {pendingCombatAction.toUpperCase()}! Tocca il risultato:
+                                                    </p>
+                                                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-1">
+                                                        {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20].map(n => (
+                                                            <button key={n} onClick={() => resolveCombatTurn(pendingCombatAction, n)} className="bg-gray-900 hover:bg-emerald-600 text-white font-black text-xs py-2 rounded border border-gray-600">
+                                                                {n}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="flex justify-between items-center">
+                                                <p className="text-xs font-black uppercase text-amber-400">
+                                                    🛡️ Turno di Attacco: <span className="text-white underline">{character.name}</span> {treasureBoostActive ? "(💎 +5 Dado / +8 Danni Attivo!)" : ""}
+                                                </p>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                <button
+                                                    onClick={() => diceMode === "manual" ? setPendingCombatAction("str") : resolveCombatTurn("str", Math.floor(Math.random()*20)+1)}
+                                                    className="bg-red-900/80 hover:bg-red-800 border-2 border-red-500 p-3 rounded-xl text-left text-white font-bold text-xs shadow transition-all active:scale-95"
+                                                >
+                                                    <span className="text-sm font-black block">⚔️ Assalto col Ferro (FOR)</span>
+                                                    <span className="text-gray-300 text-[11px]">Bonus: +{stats.str} • Travolgere +4 Danni</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => diceMode === "manual" ? setPendingCombatAction("agi") : resolveCombatTurn("agi", Math.floor(Math.random()*20)+1)}
+                                                    className="bg-emerald-900/80 hover:bg-emerald-800 border-2 border-emerald-500 p-3 rounded-xl text-left text-white font-bold text-xs shadow transition-all active:scale-95"
+                                                >
+                                                    <span className="text-sm font-black block">🏹 Colpo Mirato / Furtivo (AGI)</span>
+                                                    <span className="text-gray-300 text-[11px]">Bonus: +{stats.agi} • Precisione Letale</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => diceMode === "manual" ? setPendingCombatAction("mag") : resolveCombatTurn("mag", Math.floor(Math.random()*20)+1)}
+                                                    className="bg-indigo-900/80 hover:bg-indigo-800 border-2 border-indigo-400 p-3 rounded-xl text-left text-white font-bold text-xs shadow transition-all active:scale-95"
+                                                >
+                                                    <span className="text-sm font-black block">🔮 Incantesimo Mana (MAG)</span>
+                                                    <span className="text-gray-300 text-[11px]">Bonus: +{stats.mag} • Scarica Arcana</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* DIARIO DEI TURNI DI COMBATTIMENTO */}
+                            <div className="bg-black/60 border border-gray-700 rounded-xl p-3 space-y-1 max-h-40 overflow-y-auto">
                                 {combatState.log.map((entry, idx) => (
                                     <p key={idx} className={`text-xs font-bold ${idx === 0 ? "text-amber-300" : "text-gray-400"}`}>{entry}</p>
                                 ))}
                             </div>
 
                             <div className="flex justify-between items-center pt-1">
-                                <span className="text-[11px] text-gray-400">Suggerimento: se siete in gruppo, potete cambiare eroe attivo a ogni turno!</span>
+                                <span className="text-[11px] text-gray-400">🏆 L'eroe che infligge più danni totali riceverà il Bonus MVP (+25% EXP, Oro e 💎)!</span>
                                 <button onClick={() => setCombatState(null)} className="text-xs text-red-400 underline font-bold">🏃 Fuggi dallo scontro</button>
                             </div>
                         </div>
@@ -3027,7 +3558,7 @@
                                 🎲 Tira il tuo Dado D20 Reale sul tavolo!
                             </h3>
                             <p className="text-xs text-gray-200">
-                                Prova su <b className="text-amber-400">{pendingRollChoice.stat.toUpperCase()}</b> (Tuo Bonus: <b>+{stats[pendingRollChoice.stat] + (character.raceId === 'umano' ? 1 : 0) + (stats.keywords.includes("Attacco Improvviso") ? 2 : 0)}</b>) • Difficoltà da battere: <b className="text-white">CD {pendingRollChoice.dc}</b>
+                                Prova su <b className="text-amber-400">{pendingRollChoice.stat.toUpperCase()}</b> (Tuo Bonus: <b>+{stats[pendingRollChoice.stat] + (character.raceId === 'umano' ? 1 : 0) + (stats.keywords.includes("Attacco Improvviso") ? 2 : 0) + (treasureBoostActive ? 5 : 0)}</b>) • Difficoltà: <b className="text-white">CD {pendingRollChoice.dc}</b>
                             </p>
                             <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
                                 {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20].map(num => (
@@ -3114,7 +3645,7 @@
                                         >
                                             <span>{ch.text}</span>
                                             <span className="text-xs font-black px-2 py-1 rounded bg-black/50 text-amber-400 shrink-0">
-                                                {ch.type === 'combat' ? '⚔️ SCONTRO' : (ch.type === 'roll' ? `🎲 ${ch.stat.toUpperCase()} ${ch.dc}` : '➔')}
+                                                {ch.type === 'combat' ? '⚔️ INIZIATIVA & SCONTRO' : (ch.type === 'roll' ? `🎲 ${ch.stat.toUpperCase()} ${ch.dc}` : '➔')}
                                             </span>
                                         </button>
                                     );
@@ -3176,8 +3707,9 @@
                             </div>
 
                             <div className="flex flex-wrap gap-2 pt-2 border-t border-purple-800/60">
-                                <button onClick={() => applyRewardsAndMove(character, { heal: 5 }, character.currentNode)} className="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded shadow">+5 PV a Tutti</button>
-                                <button onClick={() => applyRewardsAndMove(character, { partyDamage: 5 }, character.currentNode)} className="bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded shadow">-5 PV a Tutti</button>
+                                <button onClick={() => applyRewardsAndMove(character, { heal: 5 }, character.currentNode)} className="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold px-2.5 py-1.5 rounded shadow">+5 PV Gruppo</button>
+                                <button onClick={() => applyRewardsAndMove(character, { gold: 25 }, character.currentNode)} className="bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-black px-2.5 py-1.5 rounded shadow">+25 🪙</button>
+                                <button onClick={() => applyRewardsAndMove(character, { treasures: 1 }, character.currentNode)} className="bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-bold px-2.5 py-1.5 rounded shadow">+1 💎 Tesoro</button>
                                 <select value={masterLootId} onChange={e => setMasterLootId(e.target.value)} className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white text-xs flex-1">
                                     {Object.values(RPG_ITEMS_DB).map(it => <option key={it.id} value={it.id}>{it.name}</option>)}
                                 </select>
@@ -3273,7 +3805,6 @@
 
             return (
                 <div className="max-w-md mx-auto p-3 sm:p-4 animate-fade pb-20">
-                    {/* CSS STAMPA A4 CALIBRATO SUL FORMATO VERTICALE 2:3 DELLE TUE IMMAGINI! */}
                     <style>{`
                         @media print {
                             @page { size: A4 portrait; margin: 5mm; }
@@ -3302,7 +3833,7 @@
                             }
                             #print-art-box {
                                 width: 100% !important;
-                                height: 158mm !important;
+                                height: 155mm !important;
                                 aspect-ratio: auto !important;
                             }
                         }
@@ -3362,7 +3893,7 @@
                             </div>
                         </div>
 
-                        {/* ILLUSTRAZIONE VERTICALE NATIVA 2:3 (667x1000) — MOSTRA IL 100% DELL'IMMAGINE DALLA TESTA AI PIEDI! */}
+                        {/* ILLUSTRAZIONE VERTICALE NATIVA 2:3 (667x1000) */}
                         <div id="print-art-box" className="w-full bg-gray-950 border-4 border-gray-900 rounded-xl overflow-hidden mb-2.5 shadow-inner relative" style={{ aspectRatio: "2 / 3" }}>
                             <img 
                                 src={avatarSrc} 
@@ -3380,8 +3911,8 @@
                             </div>
                         </div>
 
-                        {/* 5 STATISTICHE VISIBILI (FOR, AGI, MAG, COS, SALUTE) */}
-                        <div className="grid grid-cols-5 gap-1.5 mb-2.5 text-center">
+                        {/* 5 STATISTICHE VISIBILI */}
+                        <div className="grid grid-cols-5 gap-1.5 mb-2 text-center">
                             <div className="bg-white/90 border-2 border-gray-800 rounded-lg p-1 shadow-sm">
                                 <p className="text-[9px] font-black uppercase text-gray-600">Forza</p>
                                 <p className="text-lg font-black text-gray-900">{stats.str}</p>
@@ -3404,8 +3935,15 @@
                             </div>
                         </div>
 
+                        {/* RISORSE: MONETE D'ORO, PEDINE TESORO E CIBO SULLA SCHEDA */}
+                        <div className="grid grid-cols-3 gap-1.5 mb-2 text-center text-[10px] font-black">
+                            <div className="bg-yellow-100 border border-yellow-800 rounded-lg py-1">🪙 Oro: {character.gold || 0}</div>
+                            <div className="bg-cyan-100 border border-cyan-800 rounded-lg py-1">💎 Tesori: {character.treasures || 0}</div>
+                            <div className="bg-emerald-100 border border-emerald-800 rounded-lg py-1">🍖 Cibo: {character.food || 0}</div>
+                        </div>
+
                         {/* ORACLE TEXT: PAROLE CHIAVE E ABILITÀ */}
-                        <div className="bg-white/90 border-2 border-gray-800 rounded-xl p-2.5 mb-2.5 shadow-inner space-y-1">
+                        <div className="bg-white/90 border-2 border-gray-800 rounded-xl p-2.5 mb-2 shadow-inner space-y-1">
                             {stats.keywords.length > 0 && (
                                 <p className="font-black text-indigo-900 text-[11px] border-b border-gray-300 pb-0.5">
                                     ⚡ Abilità Magic: {stats.keywords.join(", ")}
@@ -3479,7 +4017,6 @@
                     <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded font-bold shadow">Esci</button>
                 </div>
 
-                {/* SCELTA MODALITÀ */}
                 <div>
                     <label className="block text-gray-300 font-bold text-xs uppercase mb-1">1. Modalità di Gioco</label>
                     <div className="grid grid-cols-2 gap-2">
@@ -3492,7 +4029,6 @@
                     </div>
                 </div>
 
-                {/* LISTA EROI GIÀ CREATI NELLA COMPAGNIA (MODALITÀ GRUPPO) */}
                 {party.length > 0 && playMode === 'party' && (
                     <div className="bg-purple-950/40 border-2 border-purple-500 rounded-xl p-3 space-y-2">
                         <p className="text-purple-300 font-black text-xs uppercase">Eroi nel Party ({party.length}):</p>
@@ -3512,7 +4048,6 @@
                     </div>
                 )}
 
-                {/* EROE PRONTO (MODALITÀ SOLITARIO) */}
                 {party.length > 0 && playMode === 'solo' && (
                     <div className="bg-indigo-950/40 border-2 border-indigo-500 rounded-xl p-3 text-center space-y-2">
                         <p className="text-indigo-300 font-black text-xs">Eroe attivo: <b className="text-white">{party[0].name} ({party[0].race} {party[0].classType || "Standard"})</b></p>
