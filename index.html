@@ -2086,7 +2086,7 @@
         // Stati Form di Creazione Personaggio
         const [name, setName] = useState("");
         const [selectedRace, setSelectedRace] = useState("");
-        const [selectedClass, setSelectedClass] = useState("");
+        const [selectedClass, setSelectedClass] = useState("standard");
         const [selectedMana, setSelectedMana] = useState("");
         const [customAvatar, setCustomAvatar] = useState(null);
 
@@ -2109,22 +2109,24 @@
             { id: "G", name: "Verde (Natura, Istinto, Forza)", icon: "🌳", colorClass: "text-green-600", bgClass: "bg-green-100", borderClass: "border-green-600" }
         ];
 
+        // RAZZE CON LISTA DELLE CLASSI CONSENTITE (Fedele alla Lore di Magic)
         const RACES = [
-            { id: "umano", name: "Umano", str: 10, agi: 10, mag: 10, con: 20, ability: "Versatilità Umana: +1 a tutti i tiri. Può trasformarsi in Angelo (Karma +3) o Demone (Karma -3)." },
-            { id: "elfo", name: "Elfo", str: 8, agi: 12, mag: 12, con: 18, ability: "Sinergia Silvana: Ignora i terreni difficili e +2 alle prove nella natura." },
-            { id: "goblin", name: "Goblin", str: 9, agi: 14, mag: 8, con: 16, ability: "Sciame Goblin: +2 ai tiri d'attacco (raddoppia a +4 se giochi in Modalità Gruppo!)." },
-            { id: "leonin", name: "Leonin", str: 14, agi: 10, mag: 6, con: 22, ability: "Ruggito del Branco: Intimidisce i nemici e +2 alle prove fisiche di Forza." },
-            { id: "vampiro", name: "Vampiro", str: 12, agi: 12, mag: 12, con: 16, ability: "Sete Nobile: Parte con 'Legame Vitale' (i critici curano 4 PV)." },
-            { id: "tritone", name: "Tritone (Merfolk)", str: 8, agi: 11, mag: 14, con: 18, ability: "Signore delle Maree: Parte con 'Imbloccabile' nei passaggi segreti e acquatici." },
-            { id: "ratto", name: "Ratto (Nezumi)", str: 8, agi: 14, mag: 10, con: 18, ability: "Istinto Nezumi: +2 alle prove di Agilità e scasso." },
-            { id: "volpe", name: "Volpe (Kitsune)", str: 8, agi: 12, mag: 14, con: 16, ability: "Benedizione Kitsune: Parte con 'Cautela' e percepisce le illusioni." },
-            { id: "nano", name: "Nano", str: 13, agi: 8, mag: 8, con: 24, ability: "Tempra Nanica: Riduce di 2 tutti i danni subiti." },
-            { id: "naga", name: "Naga (Serpente)", str: 10, agi: 13, mag: 12, con: 17, ability: "Spire Velenose: Parte con 'Tocco Letale'." },
-            { id: "aven", name: "Aven (Uccello)", str: 8, agi: 14, mag: 11, con: 16, ability: "Ali Celesti: Parte con 'Volare'." },
-            { id: "draconico", name: "Draconico", str: 16, agi: 8, mag: 10, con: 20, ability: "Furia del Drago: Parte con 'Travolgere'." }
+            { id: "umano", name: "Umano", str: 10, agi: 10, mag: 10, con: 20, allowedClasses: ["standard", "guerriero", "soldato", "cavaliere", "mago", "necromante", "chierico", "farabutto", "assassino", "artefice"], ability: "Versatilità Umana: +1 a tutti i tiri. Può trasformarsi in Angelo (Karma +3) o Demone (Karma -3)." },
+            { id: "elfo", name: "Elfo", str: 8, agi: 12, mag: 12, con: 18, allowedClasses: ["standard", "guerriero", "sciamano", "mago", "farabutto", "assassino"], ability: "Sinergia Silvana: Ignora i terreni difficili e +2 alle prove nella natura." },
+            { id: "goblin", name: "Goblin", str: 9, agi: 14, mag: 8, con: 16, allowedClasses: ["standard", "guerriero", "barbaro", "sciamano", "farabutto", "artefice"], ability: "Sciame Goblin: +2 ai tiri d'attacco (raddoppia a +4 se giochi in Modalità Gruppo!)." },
+            { id: "leonin", name: "Leonin", str: 14, agi: 10, mag: 6, con: 22, allowedClasses: ["standard", "guerriero", "soldato", "cavaliere", "barbaro", "chierico"], ability: "Ruggito del Branco: Intimidisce i nemici e +2 alle prove fisiche di Forza." },
+            { id: "vampiro", name: "Vampiro", str: 12, agi: 12, mag: 12, con: 16, allowedClasses: ["standard", "guerriero", "cavaliere", "mago", "necromante", "chierico", "assassino"], ability: "Sete Nobile: Parte con 'Legame Vitale' (i critici curano 4 PV)." },
+            { id: "tritone", name: "Tritone (Merfolk)", str: 8, agi: 11, mag: 14, con: 18, allowedClasses: ["standard", "guerriero", "mago", "sciamano", "farabutto"], ability: "Signore delle Maree: Parte con 'Imbloccabile' nei passaggi segreti e acquatici." },
+            { id: "ratto", name: "Ratto (Nezumi)", str: 8, agi: 14, mag: 10, con: 18, allowedClasses: ["standard", "guerriero", "sciamano", "necromante", "farabutto", "ninja"], ability: "Istinto Nezumi: +2 alle prove di Agilità e scasso." },
+            { id: "volpe", name: "Volpe (Kitsune)", str: 8, agi: 12, mag: 14, con: 16, allowedClasses: ["standard", "soldato", "chierico", "sciamano", "mago", "ninja"], ability: "Benedizione Kitsune: Parte con 'Cautela' e percepisce le illusioni." },
+            { id: "nano", name: "Nano", str: 13, agi: 8, mag: 8, con: 24, allowedClasses: ["standard", "guerriero", "soldato", "barbaro", "chierico", "artefice"], ability: "Tempra Nanica: Riduce di 2 tutti i danni subiti." },
+            { id: "naga", name: "Naga (Serpente)", str: 10, agi: 13, mag: 12, con: 17, allowedClasses: ["standard", "guerriero", "mago", "sciamano", "necromante", "assassino"], ability: "Spire Velenose: Parte con 'Tocco Letale'." },
+            { id: "aven", name: "Aven (Uccello)", str: 8, agi: 14, mag: 11, con: 16, allowedClasses: ["standard", "guerriero", "soldato", "cavaliere", "mago", "chierico"], ability: "Ali Celesti: Parte con 'Volare'." },
+            { id: "draconico", name: "Draconico", str: 16, agi: 8, mag: 10, con: 20, allowedClasses: ["standard", "guerriero", "barbaro", "cavaliere", "mago", "sciamano"], ability: "Furia del Drago: Parte con 'Travolgere'." }
         ];
 
         const CLASSES = [
+            { id: "standard", name: "Avventuriero Standard (Senza Classe)", strBonus: 2, agiBonus: 2, magBonus: 2, conBonus: 5, ability: "Istinto dell'Avventuriero: Addestramento bilanciato in ogni disciplina (+1 a FOR, AGI e MAG)." },
             { id: "guerriero", name: "Guerriero", strBonus: 4, agiBonus: 1, magBonus: 0, conBonus: 8, ability: "Furia Bellica: +2 a tutte le prove di Forza." },
             { id: "soldato", name: "Soldato", strBonus: 3, agiBonus: 2, magBonus: 0, conBonus: 8, ability: "Disciplina Militare: Parte con 'Cautela' (+2 in difesa)." },
             { id: "cavaliere", name: "Cavaliere", strBonus: 4, agiBonus: 2, magBonus: 1, conBonus: 7, ability: "Carica Eroica: Parte con 'Attacco Improvviso'." },
@@ -2138,6 +2140,45 @@
             { id: "ninja", name: "Ninja", strBonus: 2, agiBonus: 6, magBonus: 2, conBonus: 2, ability: "Ninjutsu: Parte con 'Imbloccabile' e colpisce nell'ombra." },
             { id: "artefice", name: "Artefice", strBonus: 1, agiBonus: 2, magBonus: 4, conBonus: 5, ability: "Mastro Forgiatore: I suoi oggetti sono indistruttibili ai fallimenti critici (1)." }
         ];
+
+        // DOTAZIONE INIZIALE SU MISURA IN BASE ALLA CLASSE SCELTA
+        const getStartingEquipment = (classId, raceName) => {
+            const armor = { id: "start_armor", name: "Veste da Viaggio Rinforzata (+2 COS)", slot: "armor", str: 0, agi: 0, mag: 0, con: 2 };
+            let weapon = { id: "start_wpn", name: "Spada Corta del Viandante (+1 FOR, +1 AGI)", slot: "weapon", str: 1, agi: 1, mag: 0, con: 0 };
+
+            if (["mago", "necromante", "sciamano"].includes(classId)) {
+                weapon = { id: "start_tome", name: "Grimorio Arcano & Bastone (+2 MAG)", slot: "weapon", str: 0, agi: 0, mag: 2, con: 0 };
+            } else if (["guerriero", "barbaro", "cavaliere", "soldato"].includes(classId)) {
+                weapon = { id: "start_blade", name: "Lama d'Acciaio Temprato (+2 FOR)", slot: "weapon", str: 2, agi: 0, mag: 0, con: 0 };
+            } else if (["farabutto", "assassino", "ninja"].includes(classId)) {
+                weapon = { id: "start_daggers", name: "Doppie Daghe Silenziose (+2 AGI)", slot: "weapon", str: 0, agi: 2, mag: 0, con: 0 };
+            } else if (["chierico", "artefice"].includes(classId)) {
+                weapon = { id: "start_scepter", name: "Scettro Runico Consacrato (+1 FOR, +2 MAG)", slot: "weapon", str: 1, agi: 0, mag: 2, con: 0 };
+            }
+            return { weapon: weapon, armor: armor, artifact: null };
+        };
+
+        // ADATTATORE INTELLIGENTE DEL LOOT TROVATO NELLA STORIA IN BASE ALLA CLASSE
+        const adaptLootForCharacter = (baseItem, char) => {
+            if (!baseItem) return null;
+            let item = { ...baseItem };
+            const isCaster = ["mago", "necromante", "sciamano", "chierico", "artefice"].includes(char.classId);
+            const isAgile = ["farabutto", "assassino", "ninja"].includes(char.classId);
+
+            // Se l'oggetto trovato è un'arma puramente fisica ma l'eroe è un Mago o un Agile, adatta l'oggetto!
+            if (item.slot === "weapon" && (item.str || 0) > 0 && (item.mag || 0) === 0 && (item.agi || 0) === 0) {
+                if (isCaster) {
+                    item.mag = item.str;
+                    item.str = 0;
+                    item.name = item.name + " (Infuso di Mana)";
+                } else if (isAgile) {
+                    item.agi = item.str;
+                    item.str = 0;
+                    item.name = item.name + " (Bilanciato)";
+                }
+            }
+            return item;
+        };
 
         // Carica la compagnia o il singolo eroe salvato
         useEffect(() => {
@@ -2179,7 +2220,6 @@
         const saveCharState = (updatedChar) => {
             setCharacter(updatedChar);
             localStorage.setItem('rpg_character', JSON.stringify(updatedChar));
-            // Aggiorna anche dentro il party e salva su localStorage
             const newParty = party.map(p => p.id === updatedChar.id ? updatedChar : p);
             setParty(newParty);
             localStorage.setItem('rpg_party', JSON.stringify(newParty));
@@ -2215,9 +2255,9 @@
             if (char.raceId === 'goblin') raceBonusStr += (playMode === 'party' ? 4 : 2);
             const raceBonusAgi = char.raceId === 'ratto' ? 2 : 0;
 
-            const classStr = (char.classId === 'guerriero' ? 2 : (char.classId === 'sciamano' ? 1 : 0));
-            const classAgi = (char.classId === 'farabutto' || char.classId === 'assassino') ? 2 : 0;
-            const classMag = (char.classId === 'mago' ? 2 : (char.classId === 'sciamano' ? 1 : 0));
+            const classStr = (char.classId === 'guerriero' ? 2 : ((char.classId === 'sciamano' || char.classId === 'standard') ? 1 : 0));
+            const classAgi = (char.classId === 'farabutto' || char.classId === 'assassino') ? 2 : (char.classId === 'standard' ? 1 : 0);
+            const classMag = (char.classId === 'mago' ? 2 : ((char.classId === 'sciamano' || char.classId === 'standard') ? 1 : 0));
 
             return {
                 str: char.baseStats.str + bonus + eqStr + raceBonusStr + classStr,
@@ -2255,21 +2295,31 @@
             }
         };
 
+        // GESTIONE IMMAGINI (Se la classe è 'standard', usa direttamente rpg_<razza>.png!)
         const getAvatarSrc = (rId, cId, customImg, ascensionForm = null) => {
             if (customImg) return customImg;
             if (ascensionForm === 'angelo') return './rpg_umano_angelo.png';
             if (ascensionForm === 'demone') return './rpg_umano_demone.png';
-            if (rId && cId) return `./rpg_${rId}_${cId}.png`;
+            if (rId && cId && cId !== 'standard') return `./rpg_${rId}_${cId}.png`;
             if (rId) return `./rpg_${rId}.png`;
             return './mtg-bg.jpg';
         };
 
-        // CREAZIONE PERSONAGGIO (CON SUPPORTO MULTI-EROE IN GRUPPO)
+        // Cambio Razza nel form: verifica che la classe selezionata sia valida per la nuova razza
+        const handleRaceChange = (newRaceId) => {
+            setSelectedRace(newRaceId);
+            const rObj = RACES.find(r => r.id === newRaceId);
+            if (rObj && !rObj.allowedClasses.includes(selectedClass)) {
+                setSelectedClass("standard");
+            }
+        };
+
+        // CREAZIONE PERSONAGGIO (CON SUPPORTO MULTI-EROE E EQUIPAGGIAMENTO INIZIALE DI CLASSE)
         const createCharacter = () => {
             if (!name || !selectedRace || !selectedClass || !selectedMana) return alert("Compila tutti i campi!");
             
             const rData = RACES.find(r => r.id === selectedRace);
-            const cData = CLASSES.find(c => c.id === selectedClass);
+            const cData = CLASSES.find(c => c.id === selectedClass) || CLASSES[0];
             const mData = MANA_COLORS.find(m => m.id === selectedMana);
 
             let initialKeywords = [];
@@ -2281,7 +2331,8 @@
             if (rData.id === 'volpe' || cData.id === 'soldato') initialKeywords.push("Cautela");
             if (cData.id === 'cavaliere' || cData.id === 'assassino') initialKeywords.push("Attacco Improvviso");
 
-            const startHP = rData.con + cData.conBonus + 5;
+            const startEquip = getStartingEquipment(cData.id, rData.name);
+            const startHP = rData.con + cData.conBonus + 5 + (startEquip.armor ? startEquip.armor.con : 0);
 
             const newHero = {
                 id: 'char-' + Date.now(),
@@ -2290,7 +2341,7 @@
                 raceId: rData.id,
                 classId: cData.id,
                 race: rData.name,
-                classType: cData.name,
+                classType: cData.id === 'standard' ? "" : cData.name,
                 customAvatar: customAvatar,
                 ascensionForm: null,
                 manaIdentity: [mData.id],
@@ -2310,21 +2361,19 @@
                 abilities: [rData.ability, cData.ability],
                 mtgKeywords: [...new Set(initialKeywords)],
                 inventory: [],
-                equipped: { weapon: null, armor: null, artifact: null }
+                equipped: startEquip
             };
 
             const updatedParty = playMode === 'party' ? [...party, newHero] : [newHero];
             savePartyState(updatedParty);
             
             // Reset campi form per un eventuale secondo eroe
-            setName(""); setSelectedRace(""); setSelectedClass(""); setSelectedMana(""); setCustomAvatar(null);
+            setName(""); setSelectedRace(""); setSelectedClass("standard"); setSelectedMana(""); setCustomAvatar(null);
 
             if (playMode === 'solo') {
-                // In solitario apre subito la scheda dell'eroe pronto a giocare
                 setRpgView("sheet");
             } else {
-                // In gruppo resta nella pagina di creazione così puoi aggiungere il 2°, 3° o 4° amico!
-                alert(`🛡️ Eroe "${newHero.name}" aggiunto alla compagnia! Puoi creare un altro eroe qui sotto oppure cliccare su "AVVIA LA STORIA CON LA COMPAGNIA".`);
+                alert(`🛡️ Eroe "${newHero.name}" aggiunto alla compagnia con il suo equipaggiamento di classe! Puoi creare un altro eroe qui sotto oppure cliccare su "AVVIA LA STORIA CON LA COMPAGNIA".`);
             }
         };
 
@@ -2376,7 +2425,7 @@
             saveCharState(updated);
         };
 
-        // GESTIONE RICOMPENSE, SALITA DI LIVELLO, TRASFORMAZIONE ANGELO/DEMONE E SCINTILLA
+        // GESTIONE RICOMPENSE, SALITA DI LIVELLO, LOOT ADATTIVO, TRASFORMAZIONE ANGELO/DEMONE E SCINTILLA
         const applyRewardsAndMove = (charState, rewards, targetNodeId, extraBanner = "") => {
             const nextNodeVal = targetNodeId || charState.currentNode;
             let nextChar = { ...charState, currentNode: nextNodeVal };
@@ -2421,7 +2470,8 @@
                     messages.push(`⚡ NUOVA ABILITÀ DI MAGIC: Hai ottenuto '${rewards.addKeyword}'!`);
                 }
                 if (rewards.loot && RPG_ITEMS_DB[rewards.loot]) {
-                    const itemObj = RPG_ITEMS_DB[rewards.loot];
+                    const rawItem = RPG_ITEMS_DB[rewards.loot];
+                    const itemObj = adaptLootForCharacter(rawItem, nextChar);
                     const alreadyHas = nextChar.inventory.some(i => i.id === itemObj.id) || (nextChar.equipped && nextChar.equipped[itemObj.slot] && nextChar.equipped[itemObj.slot].id === itemObj.id);
                     if (!alreadyHas) {
                         nextChar.inventory = [...nextChar.inventory, itemObj];
@@ -2447,7 +2497,6 @@
             if (messages.length > 0) setEventBanner(messages.join("\n"));
             else setEventBanner(null);
 
-            // Sincronizza il nodo della storia per tutta la compagnia e aggiorna la tendina Master
             setMasterNodeJump(nextNodeVal);
             setCharacter(nextChar);
             localStorage.setItem('rpg_character', JSON.stringify(nextChar));
@@ -2785,7 +2834,7 @@
         }
 
         // ====================================================================
-        // VISTA B: SCHEDA PERSONAGGIO STAMPABILE (STILE CARTA MAGIC)
+        // VISTA B: SCHEDA PERSONAGGIO STAMPABILE (FORMATO FULL-ART VERTICALE A4)
         // ====================================================================
         if (character && rpgView === "sheet") {
             const stats = getFinalStats(character);
@@ -2798,7 +2847,28 @@
             const avatarSrc = getAvatarSrc(character.raceId, character.classId, character.customAvatar, character.ascensionForm);
 
             return (
-                <div className="max-w-2xl mx-auto p-4 animate-fade pb-20">
+                <div className="max-w-xl mx-auto p-3 sm:p-4 animate-fade pb-20">
+                    {/* CSS DEDICATO ALLA STAMPA A4 PER RENDERE L'IMMAGINE GRANDE, VERTICALE E PULITA */}
+                    <style>{`
+                        @media print {
+                            @page { size: A4 portrait; margin: 8mm; }
+                            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background: white !important; }
+                            .no-print, button, audio, [class*="fixed"] { display: none !important; }
+                            #print-area {
+                                width: 100% !important;
+                                max-width: 185mm !important;
+                                margin: 0 auto !important;
+                                padding: 14px !important;
+                                border-width: 6px !important;
+                                box-shadow: none !important;
+                                page-break-inside: avoid !important;
+                            }
+                            #print-art-box {
+                                height: 440px !important;
+                            }
+                        }
+                    `}</style>
+
                     <div className="no-print flex flex-wrap justify-between items-center gap-2 mb-6">
                         <div className="flex gap-2">
                             <button onClick={() => navigate('home')} className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded font-bold shadow text-sm">⬅ Home</button>
@@ -2809,7 +2879,7 @@
                                 🖼️ Cambia Foto
                                 <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, true)} className="hidden" />
                             </label>
-                            <button onClick={() => window.print()} className="bg-blue-600 hover:bg-blue-500 text-white font-black px-4 py-2 rounded shadow text-sm">🖨️ Stampa Scheda</button>
+                            <button onClick={() => window.print()} className="bg-blue-600 hover:bg-blue-500 text-white font-black px-4 py-2 rounded shadow text-sm">🖨️ Stampa Scheda A4</button>
                             <button onClick={deleteCharacter} className="bg-red-800 hover:bg-red-700 text-white font-bold px-3 py-2 rounded shadow text-sm" title="Elimina Eroe">✖</button>
                         </div>
                     </div>
@@ -2830,7 +2900,7 @@
                         </div>
                     )}
 
-                    <div id="print-area" className={`${mainMana.bgClass} text-black border-[6px] border-gray-900 rounded-2xl p-5 shadow-2xl relative`} style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/aged-paper.png')" }}>
+                    <div id="print-area" className={`${mainMana.bgClass} text-black border-[6px] border-gray-900 rounded-2xl p-4 sm:p-5 shadow-2xl relative`} style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/aged-paper.png')" }}>
                         
                         {character.isLegendary && !character.sparkIgnited && (
                             <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 font-black uppercase px-4 py-1 rounded-full border-2 border-gray-900 shadow-md text-xs z-20">
@@ -2844,7 +2914,7 @@
                         )}
                         
                         {/* INTESTAZIONE CARTA MAGIC */}
-                        <div className="bg-white/80 border-2 border-gray-900 rounded-xl px-4 py-2 mb-4 flex justify-between items-center shadow-sm">
+                        <div className="bg-white/85 border-2 border-gray-900 rounded-xl px-4 py-2 mb-3 flex justify-between items-center shadow-sm">
                             <h1 className="text-2xl sm:text-3xl font-black tracking-wide text-gray-900 truncate" style={{ fontFamily: "Georgia, serif" }}>{character.name}</h1>
                             <div className="flex gap-1 shrink-0">
                                 {character.manaIdentity.map(mId => {
@@ -2854,54 +2924,54 @@
                             </div>
                         </div>
 
-                        {/* ILLUSTRAZIONE E LINEA DI TIPO */}
-                        <div className="w-full h-64 sm:h-80 bg-gray-900 border-4 border-gray-900 rounded-xl overflow-hidden mb-4 shadow-inner relative">
+                        {/* ILLUSTRAZIONE VERTICALE FULL-ART E LINEA DI TIPO */}
+                        <div id="print-art-box" className="w-full h-80 sm:h-[420px] bg-gray-900 border-4 border-gray-900 rounded-xl overflow-hidden mb-3 shadow-inner relative">
                             <img 
                                 src={avatarSrc} 
                                 alt={character.name} 
                                 onError={(e) => handleImgError(e, character.raceId)}
                                 className="w-full h-full object-cover object-top" 
                             />
-                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-3 flex justify-between items-end">
-                                <span className="text-white font-bold italic text-sm drop-shadow" style={{ fontFamily: "Georgia, serif" }}>
-                                    {typeLine} — {character.race} {character.classType} {character.ascensionForm ? `(${character.ascensionForm.toUpperCase()})` : ''}
+                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 pt-8 flex justify-between items-end">
+                                <span className="text-white font-bold italic text-sm sm:text-base drop-shadow" style={{ fontFamily: "Georgia, serif" }}>
+                                    {typeLine} — {character.race} {character.classType ? character.classType : ""} {character.ascensionForm ? `(${character.ascensionForm.toUpperCase()})` : ''}
                                 </span>
-                                <span className="bg-amber-500 text-black font-black px-2.5 py-0.5 rounded text-xs border border-black shadow">
+                                <span className="bg-amber-500 text-black font-black px-2.5 py-0.5 rounded text-xs border border-black shadow shrink-0">
                                     LIV. {character.level}
                                 </span>
                             </div>
                         </div>
 
-                        {/* STATISTICHE */}
-                        <div className="grid grid-cols-4 gap-2 sm:gap-4 mb-4 text-center">
-                            <div className="bg-white/80 border-2 border-gray-800 rounded-lg p-2 shadow-sm">
+                        {/* STATISTICHE (FONT CALIBRATO PER NON SBORDARE MAI) */}
+                        <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-3 text-center">
+                            <div className="bg-white/85 border-2 border-gray-800 rounded-lg p-2 shadow-sm">
                                 <p className="text-[10px] font-black uppercase text-gray-600">Forza</p>
-                                <p className="text-2xl font-black text-gray-900">{stats.str}</p>
+                                <p className="text-xl sm:text-2xl font-black text-gray-900">{stats.str}</p>
                             </div>
-                            <div className="bg-white/80 border-2 border-gray-800 rounded-lg p-2 shadow-sm">
+                            <div className="bg-white/85 border-2 border-gray-800 rounded-lg p-2 shadow-sm">
                                 <p className="text-[10px] font-black uppercase text-gray-600">Agilità</p>
-                                <p className="text-2xl font-black text-gray-900">{stats.agi}</p>
+                                <p className="text-xl sm:text-2xl font-black text-gray-900">{stats.agi}</p>
                             </div>
-                            <div className="bg-white/80 border-2 border-gray-800 rounded-lg p-2 shadow-sm">
+                            <div className="bg-white/85 border-2 border-gray-800 rounded-lg p-2 shadow-sm">
                                 <p className="text-[10px] font-black uppercase text-gray-600">Magia</p>
-                                <p className="text-2xl font-black text-gray-900">{stats.mag}</p>
+                                <p className="text-xl sm:text-2xl font-black text-gray-900">{stats.mag}</p>
                             </div>
                             <div className="bg-red-100 border-2 border-red-800 rounded-lg p-2 shadow-sm">
                                 <p className="text-[10px] font-black uppercase text-red-900">Salute</p>
-                                <p className="text-2xl font-black text-red-700">{character.currentHP}/{stats.maxHP}</p>
+                                <p className="text-lg sm:text-2xl font-black text-red-700 whitespace-nowrap">{character.currentHP}/{stats.maxHP}</p>
                             </div>
                         </div>
 
                         {/* ORACLE TEXT: PAROLE CHIAVE E ABILITÀ */}
-                        <div className="bg-white/80 border-2 border-gray-800 rounded-xl p-4 mb-4 shadow-inner space-y-3">
+                        <div className="bg-white/85 border-2 border-gray-800 rounded-xl p-3.5 mb-3 shadow-inner space-y-2">
                             {stats.keywords.length > 0 && (
-                                <p className="font-black text-indigo-900 text-sm border-b border-gray-300 pb-1">
+                                <p className="font-black text-indigo-900 text-xs sm:text-sm border-b border-gray-300 pb-1">
                                     ⚡ Abilità Magic: {stats.keywords.join(", ")}
                                 </p>
                             )}
                             <div>
                                 <h3 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-1">Tratti Razza & Classe:</h3>
-                                <ul className="list-disc list-inside text-xs sm:text-sm font-semibold space-y-1 text-gray-800">
+                                <ul className="list-disc list-inside text-xs font-semibold space-y-1 text-gray-800">
                                     {character.abilities.map((ab, i) => <li key={i}>{ab}</li>)}
                                     {character.sparkIgnited && <li className="text-indigo-700 font-bold">Planeswalk: Può viaggiare liberamente tra i Piani del Multiverso.</li>}
                                 </ul>
@@ -2909,9 +2979,9 @@
                         </div>
 
                         {/* EQUIPAGGIAMENTO E ZAINO */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white/60 p-3 rounded-xl border-2 border-gray-800">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white/70 p-3 rounded-xl border-2 border-gray-800">
                             <div>
-                                <h3 className="font-black text-gray-900 border-b border-gray-500 mb-1.5 text-xs uppercase">Equipaggiamento</h3>
+                                <h3 className="font-black text-gray-900 border-b border-gray-500 mb-1 text-xs uppercase">Equipaggiamento</h3>
                                 <div className="space-y-1 text-xs font-bold text-gray-800">
                                     <p>⚔️ Arma: {character.equipped.weapon ? character.equipped.weapon.name : "Mani Nude"}</p>
                                     <p>🛡️ Armatura: {character.equipped.armor ? character.equipped.armor.name : "Abiti Comuni"}</p>
@@ -2919,7 +2989,7 @@
                                 </div>
                             </div>
                             <div>
-                                <h3 className="font-black text-gray-900 border-b border-gray-500 mb-1.5 text-xs uppercase">Zaino (Clicca per Equipaggiare)</h3>
+                                <h3 className="font-black text-gray-900 border-b border-gray-500 mb-1 text-xs uppercase">Zaino (Clicca per Equipaggiare)</h3>
                                 {character.inventory.length === 0 ? (
                                     <p className="text-xs italic text-gray-600">Zaino vuoto.</p>
                                 ) : (
@@ -2934,7 +3004,7 @@
                             </div>
                         </div>
                         
-                        <div className="mt-6 text-center no-print">
+                        <div className="mt-5 text-center no-print">
                             <button onClick={() => setRpgView("story")} className="bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 px-8 rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.5)] transition-all text-xl w-full border border-indigo-400">
                                 📖 ENTRA NELLA STORIA ({character.currentNode === "start" ? "Inizia Campagna" : "Continua Avventura"})
                             </button>
@@ -2948,6 +3018,10 @@
         // VISTA C: CREAZIONE DEL PERSONAGGIO E COMPAGNIA (SCHERMATA INIZIALE)
         // ====================================================================
         const previewSrc = getAvatarSrc(selectedRace, selectedClass, customAvatar);
+        const currentRaceObj = RACES.find(r => r.id === selectedRace);
+        const availableClasses = currentRaceObj 
+            ? CLASSES.filter(c => currentRaceObj.allowedClasses.includes(c.id))
+            : CLASSES;
 
         return (
             <div className="max-w-md mx-auto bg-gray-800/90 p-6 rounded-xl border border-gray-600 mt-6 backdrop-blur-sm shadow-2xl animate-fade space-y-5 pb-10">
@@ -2976,7 +3050,7 @@
                         <div className="space-y-1.5">
                             {party.map((hero, idx) => (
                                 <div key={idx} className="bg-purple-900/80 text-purple-100 border border-purple-400 text-xs font-bold px-3 py-2 rounded-lg flex justify-between items-center shadow">
-                                    <span>🛡️ {hero.name} ({hero.race} {hero.classType})</span>
+                                    <span>🛡️ {hero.name} ({hero.race} {hero.classType || "Standard"})</span>
                                     <button onClick={() => { setCharacter(hero); setRpgView("sheet"); }} className="bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-black px-2 py-1 rounded shadow">
                                         🪪 Scheda
                                     </button>
@@ -2992,7 +3066,7 @@
                 {/* EROE PRONTO (MODALITÀ SOLITARIO) */}
                 {party.length > 0 && playMode === 'solo' && (
                     <div className="bg-indigo-950/40 border-2 border-indigo-500 rounded-xl p-3 text-center space-y-2">
-                        <p className="text-indigo-300 font-black text-xs">Eroe attivo: <b className="text-white">{party[0].name} ({party[0].race} {party[0].classType})</b></p>
+                        <p className="text-indigo-300 font-black text-xs">Eroe attivo: <b className="text-white">{party[0].name} ({party[0].race} {party[0].classType || "Standard"})</b></p>
                         <div className="grid grid-cols-2 gap-2">
                             <button onClick={() => { setCharacter(party[0]); setRpgView("sheet"); }} className="bg-amber-500 hover:bg-amber-400 text-black font-black py-2.5 rounded-xl shadow text-xs">
                                 🪪 VEDI SCHEDA
@@ -3007,12 +3081,12 @@
                 <hr className="border-gray-700 my-2" />
                 <h3 className="text-white font-bold text-sm">{party.length === 0 ? "Crea il tuo Eroe:" : "➕ Aggiungi un altro Eroe al Party:"}</h3>
 
-                {/* ANTEPRIMA */}
-                <div className="w-full h-40 bg-gray-900 rounded-xl border-2 border-amber-500/50 overflow-hidden relative shadow-inner flex items-center justify-center">
+                {/* ANTEPRIMA VERTICALE PIÙ GRANDE */}
+                <div className="w-full h-56 bg-gray-900 rounded-xl border-2 border-amber-500/50 overflow-hidden relative shadow-inner flex items-center justify-center">
                     {(selectedRace || customAvatar) ? (
                         <img key={previewSrc} src={previewSrc} onError={(e) => handleImgError(e, selectedRace)} className="w-full h-full object-cover object-top animate-fade" alt="Preview" />
                     ) : (
-                        <p className="text-gray-500 text-xs font-bold text-center px-4">Scegli Razza e Classe per l'anteprima</p>
+                        <p className="text-gray-500 text-xs font-bold text-center px-4">Scegli Razza e Classe per vedere l'anteprima del personaggio</p>
                     )}
                     <label className="absolute bottom-2 right-2 bg-black/80 hover:bg-black text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-gray-500 cursor-pointer shadow-lg">
                         📸 Carica Foto
@@ -3022,7 +3096,7 @@
 
                 <div>
                     <label className="block text-gray-300 font-bold text-xs mb-1">Nome Eroe</label>
-                    <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="es. Kaelen, Toshiro..." className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold text-sm outline-none focus:border-amber-500" />
+                    <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="es. Rin, Kaelen, Toshiro..." className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold text-sm outline-none focus:border-amber-500" />
                 </div>
                 
                 <div>
@@ -3035,17 +3109,27 @@
 
                 <div>
                     <label className="block text-gray-300 font-bold text-xs mb-1">Razza (Magic / D&D)</label>
-                    <select value={selectedRace} onChange={e=>setSelectedRace(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold text-sm outline-none focus:border-amber-500">
+                    <select value={selectedRace} onChange={e=>handleRaceChange(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold text-sm outline-none focus:border-amber-500">
                         <option value="">-- Scegli Razza --</option>
                         {RACES.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                     </select>
                 </div>
 
                 <div>
-                    <label className="block text-gray-300 font-bold text-xs mb-1">Classe / Sottotipo</label>
-                    <select value={selectedClass} onChange={e=>setSelectedClass(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-bold text-sm outline-none focus:border-amber-500">
-                        <option value="">-- Scegli Classe --</option>
-                        {CLASSES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    <label className="block text-gray-300 font-bold text-xs mb-1">
+                        Classe / Sottotipo {currentRaceObj ? `(Classi per ${currentRaceObj.name})` : ""}
+                    </label>
+                    <select 
+                        value={selectedClass} 
+                        onChange={e=>setSelectedClass(e.target.value)} 
+                        disabled={!selectedRace}
+                        className="w-full bg-gray-900 border border-gray-600 disabled:opacity-50 rounded-lg p-3 text-white font-bold text-sm outline-none focus:border-amber-500"
+                    >
+                        {!selectedRace ? (
+                            <option value="">-- Seleziona prima una Razza --</option>
+                        ) : (
+                            availableClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
+                        )}
                     </select>
                 </div>
 
