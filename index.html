@@ -1659,526 +1659,1032 @@
     };
 
     // ============================================================================
-    // --- PARTE 1: ARMERIA LEGGENDA DEL MULTIVERSO (1993-2026) & MAXI-DOMINARIA ---
+    // --- PARTE 1 (BLOCCO 1 DI 3): ARMERIA STORICA (1993-2026), MEGA-BESTIARIO ---
+    // --- E PRIMA PARTE DELLA MAXI-CAMPAGNA DI DOMINARIA (ATTI I & II)        ---
+    // (100% Compatibile con Babel 6 - Zero Optional Chaining)
     // ============================================================================
+
     const RPG_ITEMS_DB = {
         // --- ARMI (slot: "weapon") ---
-        bonesplitter: { id: "bonesplitter", name: "Spaccaossa (Ascia Goblin)", slot: "weapon", str: 3, agi: 0, mag: 0, con: 0, keywords: [] },
+        bonesplitter: { id: "bonesplitter", name: "Spaccaossa (Bonesplitter)", slot: "weapon", str: 3, agi: 0, mag: 0, con: 0, keywords: [] },
         loxodon_warhammer: { id: "loxodon_warhammer", name: "Martello da Guerra Lossodonte", slot: "weapon", str: 4, agi: -1, mag: 0, con: 2, keywords: ["Travolgere", "Legame Vitale"] },
-        umezawa_jitte: { id: "umezawa_jitte", name: "Jitte di Umezawa", slot: "weapon", str: 2, agi: 4, mag: 2, con: 0, keywords: ["Attacco Improvviso"] },
+        umezawa_jitte: { id: "umezawa_jitte", name: "Jitte di Umezawa", slot: "weapon", str: 3, agi: 4, mag: 2, con: 1, keywords: ["Attacco Improvviso", "Legame Vitale"] },
+        isochron_scepter: { id: "isochron_scepter", name: "Scettro Isocrono", slot: "weapon", str: 0, agi: 1, mag: 5, con: 1, keywords: ["Cautela"] },
         sword_fire_ice: { id: "sword_fire_ice", name: "Spada di Fuoco e Ghiaccio", slot: "weapon", str: 4, agi: 2, mag: 4, con: 2, keywords: ["Attacco Improvviso"] },
-        staff_domination: { id: "staff_domination", name: "Bastone della Dominazione Arcana", slot: "weapon", str: 0, agi: 1, mag: 6, con: 2, keywords: ["Cautela"] },
-        blackblade: { id: "blackblade", name: "Blackblade Riforgiata", slot: "weapon", reqLegendary: true, str: 7, agi: 3, mag: 5, con: 5, keywords: ["Indistruttibile", "Travolgere"] },
-        mirari_sword: { id: "mirari_sword", name: "Spada del Mirari", slot: "weapon", str: 5, agi: 2, mag: 5, con: 3, keywords: ["Travolgere"] },
+        sword_feast_famine: { id: "sword_feast_famine", name: "Spada di Abbondanza e Carestia", slot: "weapon", str: 4, agi: 3, mag: 3, con: 3, keywords: ["Tocco Letale"] },
+        sword_light_shadow: { id: "sword_light_shadow", name: "Spada di Luce e Ombra", slot: "weapon", str: 4, agi: 2, mag: 3, con: 3, keywords: ["Legame Vitale"] },
+        staff_domination: { id: "staff_domination", name: "Bastone della Dominazione Arcana", slot: "weapon", str: 0, agi: 2, mag: 6, con: 2, keywords: ["Cautela"] },
+        kaldra_sword: { id: "kaldra_sword", name: "Spada di Kaldra", slot: "weapon", str: 6, agi: 2, mag: 2, con: 2, keywords: ["Travolgere", "Attacco Improvviso"] },
+        batterskull: { id: "batterskull", name: "Sfondacranio (Batterskull)", slot: "weapon", str: 5, agi: 0, mag: 2, con: 6, keywords: ["Cautela", "Legame Vitale"] },
+        embercleave: { id: "embercleave", name: "Fenditura Cinerea (Embercleave)", slot: "weapon", reqMana: "R", str: 7, agi: 2, mag: 1, con: 1, keywords: ["Travolgere", "Attacco Improvviso"] },
+        blackblade: { id: "blackblade", name: "Blackblade Riforgiata", slot: "weapon", reqLegendary: true, str: 8, agi: 3, mag: 5, con: 5, keywords: ["Indistruttibile", "Travolgere"] },
 
         // --- TESTA / ELMI (slot: "head") ---
         champion_helm: { id: "champion_helm", name: "Elmo del Campione di Benalia", slot: "head", str: 1, agi: 0, mag: 1, con: 3, keywords: ["Cautela"] },
         hood_assassin: { id: "hood_assassin", name: "Cappuccio dell'Ombra Dimir", slot: "head", str: 0, agi: 3, mag: 2, con: 1, keywords: ["Imbloccabile"] },
+        skullclamp: { id: "skullclamp", name: "Morsa Cerebrale (Skullclamp)", slot: "head", str: 2, agi: 1, mag: 5, con: -2, keywords: ["Tocco Letale"] },
+        sensei_top: { id: "sensei_top", name: "Cappa delle Profezie del Sensei", slot: "head", str: 0, agi: 3, mag: 4, con: 2, keywords: ["Cautela"] },
         helm_of_the_host: { id: "helm_of_the_host", name: "Elmo delle Moltitudini", slot: "head", reqLegendary: true, str: 3, agi: 3, mag: 3, con: 4, keywords: ["Cautela", "Attacco Improvviso"] },
-        kaldra_helm: { id: "kaldra_helm", name: "Elmo di Kaldra", slot: "head", str: 3, agi: 1, mag: 3, con: 5, keywords: ["Indistruttibile"] },
+        kaldra_helm: { id: "kaldra_helm", name: "Elmo di Kaldra", slot: "head", str: 3, agi: 2, mag: 3, con: 5, keywords: ["Attacco Improvviso", "Travolgere"] },
 
         // --- CORPO / ARMATURE (slot: "body") ---
         whisper_cloak: { id: "whisper_cloak", name: "Manto Bisbigliante di Seta", slot: "body", str: 0, agi: 3, mag: 2, con: 2, keywords: ["Imbloccabile"] },
         celestial_armor: { id: "celestial_armor", name: "Corazza Piumata di Serra", slot: "body", reqMana: "W", str: 2, agi: 2, mag: 2, con: 5, keywords: ["Volare", "Cautela"] },
+        urza_robes: { id: "urza_robes", name: "Tunica dell'Arcimago di Tolaria", slot: "body", reqMana: "U", str: 0, agi: 2, mag: 7, con: 4, keywords: ["Cautela"] },
         darksteel_plate: { id: "darksteel_plate", name: "Corazza di Darksteel", slot: "body", str: 2, agi: 0, mag: 0, con: 7, keywords: ["Indistruttibile"] },
-        urza_robes: { id: "urza_robes", name: "Tunte Sacre del Planeswalker Urza", slot: "body", reqMana: "U", str: 0, agi: 2, mag: 7, con: 4, keywords: ["Cautela"] },
+        akroma_armor: { id: "akroma_armor", name: "Armatura del Memoriale di Akroma", slot: "body", reqLegendary: true, str: 4, agi: 4, mag: 4, con: 6, keywords: ["Volare", "Attacco Improvviso", "Cautela"] },
 
         // --- MANI / GUANTI & SCUDI (slot: "hands") ---
-        gauntlets_power: { id: "gauntlets_power", name: "Guanti del Potere Runico", slot: "hands", str: 3, agi: 1, mag: 3, con: 1, keywords: [] },
-        shield_kaldra: { id: "shield_kaldra", name: "Scudo di Kaldra", slot: "hands", str: 2, agi: 0, mag: 1, con: 5, keywords: ["Indistruttibile"] },
-        venom_bracers: { id: "venom_bracers", name: "Parabraccia delle Spire Golgari", slot: "hands", str: 1, agi: 3, mag: 1, con: 1, keywords: ["Tocco Letale"] },
+        gauntlets_power: { id: "gauntlets_power", name: "Guanti del Potere (Gauntlet of Might)", slot: "hands", str: 3, agi: 1, mag: 3, con: 2, keywords: [] },
+        venom_bracers: { id: "venom_bracers", name: "Parabraccia del Basilisco", slot: "hands", str: 1, agi: 3, mag: 1, con: 1, keywords: ["Tocco Letale"] },
+        pyromancer_goggles: { id: "pyromancer_goggles", name: "Guanti & Lenti di Jaya Ballard", slot: "hands", reqMana: "R", str: 1, agi: 2, mag: 5, con: 2, keywords: [] },
+        shield_kaldra: { id: "shield_kaldra", name: "Scudo di Kaldra", slot: "hands", str: 2, agi: 0, mag: 1, con: 6, keywords: ["Indistruttibile"] },
 
         // --- PIEDI / STIVALI (slot: "feet") ---
         Swiftfoot_boots: { id: "Swiftfoot_boots", name: "Stivali Piedi Veloci", slot: "feet", str: 0, agi: 4, mag: 1, con: 1, keywords: ["Attacco Improvviso"] },
+        trailblazer_boots: { id: "trailblazer_boots", name: "Stivali dell'Esploratore di Zendikar", slot: "feet", str: 1, agi: 4, mag: 1, con: 2, keywords: ["Imbloccabile"] },
         lightning_greaves: { id: "lightning_greaves", name: "Schinieri dei Fulmini", slot: "feet", str: 1, agi: 5, mag: 1, con: 2, keywords: ["Attacco Improvviso", "Imbloccabile"] },
 
-        // --- ARTEFATTI / RELIQUIE (slot: "artifact") ---
+        // --- ARTEFATTI E POWER NINE (slot: "artifact") ---
         sol_ring: { id: "sol_ring", name: "Anello Solare (Sol Ring)", slot: "artifact", str: 2, agi: 2, mag: 4, con: 2, keywords: [] },
+        mana_crypt: { id: "mana_crypt", name: "Cripta di Mana (Mana Crypt)", slot: "artifact", str: 3, agi: 3, mag: 6, con: 0, keywords: ["Attacco Improvviso"] },
+        coalition_relic: { id: "coalition_relic", name: "Reliquia della Coalizione di Urza", slot: "artifact", str: 2, agi: 2, mag: 4, con: 3, keywords: ["Cautela"] },
         chromatic_lantern: { id: "chromatic_lantern", name: "Lanterna Cromatica", slot: "artifact", str: 2, agi: 2, mag: 5, con: 3, keywords: ["Cautela"] },
-        black_lotus: { id: "black_lotus", name: "Loto Nero (Black Lotus)", slot: "artifact", reqLegendary: true, str: 4, agi: 4, mag: 8, con: 4, keywords: ["Volare", "Cautela"] }
+        nevinyrral_disk: { id: "nevinyrral_disk", name: "Disco di Nevinyrral", slot: "artifact", str: 3, agi: 0, mag: 5, con: 4, keywords: ["Tocco Letale"] },
+        the_mirari: { id: "the_mirari", name: "Il Mirari (Sfera dei Desideri)", slot: "artifact", reqLegendary: true, str: 4, agi: 3, mag: 7, con: 3, keywords: ["Travolgere"] },
+        mox_diamond: { id: "mox_diamond", name: "Mox di Diamante", slot: "artifact", str: 2, agi: 3, mag: 5, con: 3, keywords: [] },
+        black_lotus: { id: "black_lotus", name: "🌺 Loto Nero (Black Lotus - Alpha 1993)", slot: "artifact", reqLegendary: true, str: 6, agi: 6, mag: 10, con: 8, keywords: ["Volare", "Attacco Improvviso", "Indistruttibile", "Cautela"] }
     };
 
-    const RPG_STORY_NODES = {
-        // ====================================================================
-        // ATTO I: DOMINARIA — LA LOCANDA E LA SCELTA DEL SENTIERO (LIV 1)
-        // ====================================================================
+    // ============================================================================
+    // --- MEGA-BESTIARIO DI MAGIC (25 CREATURE ICONICHE, MEME E BOSS)          ---
+    // ============================================================================
+    const RPG_MONSTERS_DB = {
+        storm_crow: { name: "Corvo della Tempesta (Storm Crow 1/2)", isHumanoid: false, maxHP: 28, initBonus: 8, dc: 22, dmg: 5, blueMana: 2, exp: 50, gold: 15, treasures: 1, loot: "sol_ring", desc: "Il pennuto più temuto e memato del Multiverso! Scende in picchiata avvolto da mana blu (2💧)!" },
+        fblthp_guards: { name: "Pattuglia Confusa & Fblthp Smarrito", isHumanoid: true, maxHP: 32, initBonus: 4, dc: 22, dmg: 5, blueMana: 2, exp: 50, gold: 20, treasures: 1, loot: "champion_helm", desc: "Un piccolo homunculus con un occhio solo è finito per sbaglio in mezzo a una ronda armata!" },
+        goblin_pack: { name: "Orda di Goblin Predoni", isHumanoid: true, maxHP: 36, initBonus: 5, dc: 23, dmg: 6, blueMana: 0, exp: 55, gold: 20, treasures: 1, loot: "bonesplitter", desc: "Una banda feroce di Goblin pronta a derubarvi o catturarvi!" },
+        goblin_piledriver: { name: "Goblin Battipalo & Predoni di Keld", isHumanoid: true, maxHP: 48, initBonus: 6, dc: 25, dmg: 8, blueMana: 0, exp: 75, gold: 30, treasures: 1, loot: "pyromancer_goggles", desc: "Guidati da un furioso Piledriver, i loro attacchi raddoppiano di ferocia!" },
+        bandit_rogues: { name: "Sicari & Maghi Dimir", isHumanoid: true, maxHP: 44, initBonus: 7, dc: 25, dmg: 7, blueMana: 2, exp: 70, gold: 28, treasures: 1, loot: "hood_assassin", desc: "Assassini e maghi blu: possiedono 2💧 Mana Blu per Counterare e catturano ostaggi!" },
+        brushwagg_mutant: { name: "Brushwagg Mutante Spinato (3/2)", isHumanoid: false, maxHP: 40, initBonus: 4, dc: 24, dmg: 7, blueMana: 0, exp: 65, gold: 18, treasures: 1, loot: "venom_bracers", desc: "Una bizzarra palla di spine e artigli divenuta gigantesca per le radiazioni di mana!" },
+        llanowar_troll: { name: "Troll di Thrun Rigenerante", isHumanoid: false, maxHP: 54, initBonus: 2, dc: 26, dmg: 8, blueMana: 0, exp: 90, gold: 25, treasures: 1, loot: "loxodon_warhammer", desc: "Un colosso muscoloso quasi impossibile da abbattere che rigenera +4 PV a ogni round!" },
+        tarmogoyf: { name: "Tarmogoyf Affamato (★/1+★)", isHumanoid: false, maxHP: 68, initBonus: 6, dc: 27, dmg: 11, blueMana: 0, exp: 120, gold: 35, treasures: 2, loot: "skullclamp", desc: "«Ciò che non cresce, muore. E ciò che muore fa crescere il Tarmogoyf!»" },
+        lhurgoyf_alpha: { name: "Lhurgoyf Ancestrale («Ach! Hans, Run!»)", isHumanoid: false, maxHP: 74, initBonus: 5, dc: 28, dmg: 11, blueMana: 0, exp: 130, gold: 40, treasures: 2, loot: "gauntlets_power", desc: "Il leggendario divoratore di ossa delle foreste nordiche di Dominaria!" },
+        colossal_dreadmaw: { name: "Fauce Terrificante Colossale (6/6 Travolgere)", isHumanoid: false, maxHP: 66, initBonus: 4, dc: 26, dmg: 12, blueMana: 0, exp: 115, gold: 30, treasures: 2, loot: "trailblazer_boots", desc: "Se senti tremare la terra, fuggi. Se vedi i suoi denti, è già troppo tardi! (6/6 Trample!)." },
+        craw_wurm: { name: "Wurm Corazzato delle Foreste (7/6)", isHumanoid: false, maxHP: 70, initBonus: 3, dc: 27, dmg: 10, blueMana: 0, exp: 115, gold: 35, treasures: 1, loot: "Swiftfoot_boots", desc: "Un gigantesco verme draconico i cui colpi possono mandare KO un avventuriero!" },
+        urza_lotus_guardian: { name: "Colosso Guardiano del Loto Nero (Boss Segreto)", isHumanoid: false, maxHP: 110, initBonus: 7, dc: 31, dmg: 14, blueMana: 4, exp: 260, gold: 100, treasures: 3, loot: "black_lotus", isBoss: true, desc: "Un automa divino forgiato da Urza per custodire il Black Lotus! Dispone di 4💧 Mana Blu!" },
+        sliver_swarm: { name: "Sciame di Tramutanti (Sliver Hive)", isHumanoid: false, maxHP: 62, initBonus: 7, dc: 27, dmg: 9, blueMana: 2, exp: 110, gold: 30, treasures: 1, loot: "coalition_relic", desc: "Creature alieno-alveare che condividono mente, ali, artigli e contromagia (2💧)!" },
+        sliver_queen: { name: "Regina dei Tramutanti (Sliver Queen 7/7)", isHumanoid: false, maxHP: 100, initBonus: 8, dc: 30, dmg: 13, blueMana: 4, exp: 220, gold: 90, treasures: 3, loot: "mox_diamond", isBoss: true, desc: "La madre suprema di tutti i Tramutanti di Rath e Dominaria!" },
+        juzam_djinn: { name: "Juzám Djinn delle Tenebre (5/5)", isHumanoid: true, maxHP: 72, initBonus: 6, dc: 28, dmg: 12, blueMana: 0, exp: 135, gold: 50, treasures: 2, loot: "sword_feast_famine", desc: "Un demone-genio mostruoso evocato dalle notti più buie del 1993!" },
+        phyrexian_negator: { name: "Negatore Phyrexiano (5/5 Travolgere)", isHumanoid: true, maxHP: 68, initBonus: 6, dc: 28, dmg: 13, blueMana: 0, exp: 130, gold: 45, treasures: 2, loot: "nevinyrral_disk", desc: "Un abominio biomeccanico progettato unicamente per massacrare ogni forma di vita!" },
+        undead_lord: { name: "Signore dei Non Morti & Lich Blu", isHumanoid: true, maxHP: 64, initBonus: 4, dc: 27, dmg: 9, blueMana: 2, exp: 110, gold: 40, treasures: 1, loot: "whisper_cloak", desc: "Un negromante scortato da un Lich capace di usare Contromagia (2💧 Mana Blu)!" },
+        sengir_vampire: { name: "Barone Vampiro di Sengir (4/4 Volare)", isHumanoid: true, maxHP: 64, initBonus: 7, dc: 27, dmg: 10, blueMana: 2, exp: 120, gold: 45, treasures: 2, loot: "sword_light_shadow", desc: "Ogni goccia di sangue versata in battaglia lo rende più forte!" },
+        phage_untouchable: { name: "Phage l'Intoccabile (Boss della Cabala)", isHumanoid: true, maxHP: 92, initBonus: 8, dc: 30, dmg: 15, blueMana: 2, exp: 210, gold: 85, treasures: 3, loot: "the_mirari", isBoss: true, desc: "Il suo solo tocco dissolve la carne e l'anima dei mortali!" },
+        akroma_angel: { name: "Akroma, Angelo dell'Ira (Boss Celeste)", isHumanoid: true, maxHP: 96, initBonus: 9, dc: 30, dmg: 14, blueMana: 2, exp: 220, gold: 90, treasures: 3, loot: "akroma_armor", isBoss: true, desc: "Volare, Attacco Improvviso, Cautela, Travolgere, Rapidità: la furia divina incarnata!" },
+        serra_griffin: { name: "Grifone d'Argento & Arcimago", isHumanoid: false, maxHP: 48, initBonus: 6, dc: 25, dmg: 8, blueMana: 2, exp: 85, gold: 30, treasures: 1, loot: "celestial_armor", desc: "Una fiera celeste protetta da scudi di contromagia astrale (2💧)!" },
+        phyrexian_obliterator: { name: "Obliteratore di Phyrexia (Boss)", isHumanoid: true, maxHP: 98, initBonus: 6, dc: 30, dmg: 13, blueMana: 2, exp: 200, gold: 75, treasures: 2, loot: "chromatic_lantern", isBoss: true, desc: "Un incubo biomeccanico letale protetto da droni Jin-Gitaxias (2💧 Mana Blu)!" },
+        shivan_dragon: { name: "Drago di Shiv Antico (Boss)", isHumanoid: false, maxHP: 118, initBonus: 8, dc: 31, dmg: 14, blueMana: 2, exp: 260, gold: 120, treasures: 3, loot: "blackblade", isBoss: true, desc: "Il sovrano indiscusso dei vulcani di Shiv!" },
+        blightsteel_colossus: { name: "Colosso di Blightsteel (11/11 Infettare)", isHumanoid: false, maxHP: 130, initBonus: 6, dc: 32, dmg: 16, blueMana: 2, exp: 300, gold: 140, treasures: 3, loot: "darksteel_plate", isBoss: true, desc: "Montagna di metallo vivente indistruttibile bagnata dall'olio di Phyrexia!" },
+        marit_lage: { name: "Marit Lage, Avatar 20/20 dei Ghiacci (Super-Boss)", isHumanoid: false, maxHP: 160, initBonus: 9, dc: 34, dmg: 18, blueMana: 4, exp: 450, gold: 250, treasures: 5, loot: "mana_crypt", isBoss: true, desc: "Risvegliata da Dark Depths: un'entità cosmica 20/20 Volare e Indistruttibile!" }
+    };
+
+    // ============================================================================
+    // --- CAMPAGNA DI DOMINARIA — PARTE 1 DI 3 (BENALIA, KELD, LLANOWAR & LOTO) ---
+    // ============================================================================
+    const RPG_STORY_NODES_PART1 = {
+        // --- CAPITOLO 1: NUOVA BENALIA, JHOIRA, BARAL E FBLTHP ---
         start: {
-            act: "Atto I — Dominaria: La Locanda di Nuova Benalia",
-            title: "Il Consiglio al Grifone Spezzato",
-            textSolo: "La pioggia batte sulle vetrate della locanda 'Il Grifone Spezzato'. Stringi la tua arma mentre il saggio Baral srotola una mappa magica sul tavolo.\n\n«Le Linee di Forza di Dominaria si sono spezzate», esordisce. «Sulla Vetta di Shiv un frammento planare sta risvegliando legioni meccaniche di Phyrexia e mostri ancestrali. Per raggiungere la montagna dovete attraversare le terre selvagge di Benalia e superare le prove delle fazioni. Dove dirigete i vostri passi prima che cali la notte?»",
-            textParty: "La pioggia batte sulle vetrate della locanda 'Il Grifone Spezzato' mentre la vostra Compagnia si riunisce attorno al focolare. Il saggio Baral vi mostra una mappa incantata.\n\n«Eroi, il destino di Dominaria è in bilico. L'energia di Phyrexia sta corrompendo le foreste e le cripte. Prima di tentare la scalata a Shiv, dovrete guadagnare alleati, sconfiggere le prime creature corrotte e raccogliere risorse fondamentali. Come volete iniziare il vostro viaggio?»",
+            act: "Atto I — Dominaria: La Cittadella di Nuova Benalia",
+            title: "Il Ritorno di Jhoira e il Calice Infranto",
+            textSolo: "La pioggia batte sulle vetrate istoriate della locanda 'Il Calice Infranto' a Nuova Benalia. Seduta a un tavolo d'angolo, illuminata dal bagliore azzurro di un crono-artefatto Thran, ti attende **Jhoira**, capitano della leggendaria nave volante *Cavalcavento* (*Weatherlight*), affiancata dal severo mago **Baral**.\n\n«Finalmente sei qui», ti dice Jhoira porgendoti una bussola di metallo argenteo. «Le faglie temporali hanno risvegliato vecchi orrori su Dominaria: la Cabala sta marciando da Urborg, i predoni di Keld assediano i passi montani e Karn è scomparso nelle profondità di Koilos. Prima di partire, esplora pure la città o mettiti alla prova nella Piazza d'Armi».",
+            textParty: "La pioggia batte sulle vetrate istoriate della locanda 'Il Calice Infranto' a Nuova Benalia. Attorno al grande tavolo delle mappe vi attendono **Jhoira**, storica artigiana di Tolaria e capitano della *Cavalcavento*, e il rigoroso mago del controllo **Baral**.\n\n«Avventurieri», esordisce Jhoira attivando un ologramma Thran. «Dominaria è sull'orlo di una nuova Frattura. Per arrivare alle Grotte di Koilos e alla Vetta di Shiv dovrete attraversare regioni letali, affrontare creature leggendarie e potenziare la vostra Compagnia. Come volete muovervi a Nuova Benalia?»",
             choices: [
-                { text: "📜 Consulta gli archivi storici di Baral per studiare le debolezze dei nemici (MAG)", type: "roll", stat: "mag", dc: 20, successNode: "baral_lore_blessing", failNode: "tavern_brawl_choice", failDamage: 2, failText: "Le pergamene sono illeggibili, Baral scuote la testa deluso.", rewards: { exp: 35, gold: 20 } },
-                { text: "🍺 Offri da bere ai mercanti locali per carpire voci su tesori nascosti (AGI)", type: "roll", stat: "agi", dc: 20, successNode: "merchant_rumors", failNode: "tavern_brawl_choice", failDamage: 2, failText: "I mercanti diffidano di voi e vi spintonano fuori dal bancone.", rewards: { exp: 35, gold: 25 } },
-                { text: "⚔️ Esci subito nella notte piovosa e imbocca il Sentiero di Benalia", type: "move", nextNode: "benalia_outskirts" }
+                { text: "⚙️ Studia il Crono-Artefatto di Jhoira per sintonizzare il Mana (MAG CD 21)", type: "roll", stat: "mag", dc: 21, successNode: "jhoira_lab_gift", failNode: "benalia_square", failDamage: 2, failText: "Una scintilla temporale ti brucia le dita! Uscite nella piazza.", rewards: { exp: 35, gold: 15 } },
+                { text: "⚔️ Recati nella Piazza d'Armi per sfidare la comandante Danitha Capashen", type: "move", nextNode: "benalia_square" },
+                { text: "🕵️ Scendi nei vicoli bassi verso il Mercato Nero e le Fogne di Benalia", type: "move", nextNode: "benalia_undercity" }
             ]
         },
 
-        baral_lore_blessing: {
-            act: "Atto I — Dominaria: La Conoscenza degli Antichi",
-            title: "La Benedizione di Baral",
-            text: "Baral loda la vostra mente acuta e vi benedice con antiche rune di protezione, regalandovi un Anello Solare (Sol Ring) e preziosa moneta (+40 EXP, +30 Monete d'Oro e Sol Ring nello zaino!).",
+        jhoira_lab_gift: {
+            act: "Atto I — Il Laboratorio della Cavalcavento",
+            title: "Il Dono di Jhoira",
+            text: "Riuscite a stabilizzare i rotori temporali dell'artefatto! Jhoira sorride ammirata: «Urza stesso sarebbe rimasto colpito. Prendete questo **Anello Solare (Sol Ring)** dalla stiva della Cavalcavento, vi darà un vantaggio prezioso là fuori!»",
             choices: [
-                { text: "➔ Avanti verso le Outskirts di Benalia", type: "move", nextNode: "benalia_outskirts", rewards: { exp: 40, gold: 30, loot: "sol_ring" } }
+                { text: "💍 Raccogli il Sol Ring (+40 EXP, +20 Oro) e vai nella Piazza d'Armi", type: "move", nextNode: "benalia_square", rewards: { loot: "sol_ring", exp: 40, gold: 20 } },
+                { text: "🕵️ Vai invece a esplorare i vicoli del Mercato Nero", type: "move", nextNode: "benalia_undercity", rewards: { loot: "sol_ring", exp: 40, gold: 20 } }
             ]
         },
 
-        merchant_rumors: {
-            act: "Atto I — Dominaria: Le Soffiate del Porto",
-            title: "Il Sacco di Monete",
-            text: "Un contrabbandiere vi svela l'ubicazione di una vecchia cassa di rifornimenti dimenticata dietro le stalle (+40 EXP, +40 Monete d'Oro e una Pedina Cibo 🍖!).",
+        benalia_square: {
+            act: "Atto I — Nuova Benalia",
+            title: "La Piazza d'Armi e Danitha Capashen",
+            text: "Nella piazza lastricata di marmo bianco, **Danitha Capashen** sta addestrando i cavalieri scelti di Benalia. Poco distante, una folla indica il campanile: uno strano pennuto azzurro avvolto da fulmini sta seminando il panico tra le guardie!",
             choices: [
-                { text: "➔ Avanti verso le Outskirts di Benalia", type: "move", nextNode: "benalia_outskirts", rewards: { exp: 40, gold: 40, food: 1 } }
+                { text: "🗡️ Sfida Danitha Capashen in un duello d'onore con la spada (FOR CD 23)", type: "roll", stat: "str", dc: 23, successNode: "danitha_duel_win", failNode: "danitha_duel_loss", failDamage: 4, failText: "Danitha para il tuo colpo e ti atterra col piatto della lama!", rewards: { exp: 45, gold: 20 } },
+                { text: "🐦 [MEME SCONTRO] Affronta il leggendario Corvo della Tempesta (Storm Crow) sul campanile!", type: "combat", monster: "storm_crow", winNode: "benalia_outskirts" },
+                { text: "🕵️ Scivola nei vicoli verso il Mercato Nero", type: "move", nextNode: "benalia_undercity" },
+                { text: "➔ Lascia la città e marcia verso l'Acquedotto Antico", type: "move", nextNode: "benalia_outskirts" }
             ]
         },
 
-        tavern_brawl_choice: {
-            act: "Atto I — Dominaria: Il Grifone Spezzato",
-            title: "Rissa alla Locanda",
-            text: "Qualche bicchiere di troppo e la tensione si taglia con il coltello! Una fazione di mercenari corrotti vi attacca per rubarvi l'equipaggiamento!",
+        danitha_duel_win: {
+            act: "Atto I — Nuova Benalia",
+            title: "L'Onore dei Capashen",
+            text: "Con una finta magistrale riesci a toccare la spalla dell'armatura di Danitha! La comandante ride di gusto e ti consegna l'**Elmo del Campione di Benalia** (+Cautela) benedicendo la vostra missione.",
             choices: [
-                { text: "⚔️ Affronta i mercenari corrotti in Battaglia a Turni!", type: "combat", monster: "goblin_pack", winNode: "benalia_outskirts" }
+                { text: "🪖 Indossa l'Elmo del Campione e dirigiti fuori dalle mura", type: "move", nextNode: "benalia_outskirts", rewards: { loot: "champion_helm", exp: 50, karma: 1 } }
             ]
         },
 
-        // ====================================================================
-        // ATTO I-B: LE PERIFERIE DI BENALIA E L'INCONTRO CON TEFERI
-        // ====================================================================
+        danitha_duel_loss: {
+            act: "Atto I — Nuova Benalia",
+            title: "Lezione di Scherma",
+            text: "Danitha ti aiuta a rialzarti dal fango: «Hai fegato, ma là fuori i nemici non useranno il piatto della spada. Tieni una razione da campo e fai attenzione!»",
+            choices: [
+                { text: "➔ Rialzati e prosegui fuori dalle mura di Benalia", type: "move", nextNode: "benalia_outskirts", rewards: { exp: 20 } }
+            ]
+        },
+
+        benalia_undercity: {
+            act: "Atto I — I Bassifondi di Benalia",
+            title: "Il Mercato Nero e... Fblthp?!",
+            text: "Nei vicoli nebbiosi sotto la cattedrale incrociate una scena surreale: un piccolo homunculus blu con un solo occhio gigantesco (**Fblthp**!) è caduto da un portale dimensionale rovesciando il banco di una banda di contrabbandieri e guardie corrotte!",
+            choices: [
+                { text: "⚔️ Difendi il povero Fblthp dalla pattuglia corrotta nell'Arena!", type: "combat", monster: "fblthp_guards", winNode: "fblthp_reward" },
+                { text: "🗝️ Approfitta del caos per derubare il banco degli artefatti (AGI CD 23)", type: "roll", stat: "agi", dc: 23, successNode: "undercity_heist_win", failNode: "start", failDamage: 5, failText: "Scatta una trappola esplosiva! Le guardie vi inseguono e siete costretti a **tornare indietro alla Locanda di partenza**!", rewards: { exp: 45, karma: -1 } }
+            ]
+        },
+
+        fblthp_reward: {
+            act: "Atto I — Bassifondi di Benalia",
+            title: "La Gratitudine di Fblthp",
+            text: "Fblthp trema tutto, vi porge un **Cappuccio dell'Ombra** e una borsa di monete caduta dal portale, poi inciampa in una pozzanghera luminosa e sparisce di nuovo nel Multiverso!",
+            choices: [
+                { text: "➔ Saluta Fblthp e raggiungi l'Acquedotto fuori città", type: "move", nextNode: "benalia_outskirts", rewards: { loot: "hood_assassin", gold: 30, exp: 50, karma: 1 } }
+            ]
+        },
+
+        undercity_heist_win: {
+            act: "Atto I — Bassifondi di Benalia",
+            title: "Mani di Velluto",
+            text: "Sottraete dal banco degli **Stivali Piedi Veloci (Swiftfoot Boots)** e un sacchetto d'oro senza che nessuno vi veda!",
+            choices: [
+                { text: "🥾 Prendi gli Stivali Piedi Veloci e fuggi fuori dalle mura", type: "move", nextNode: "benalia_outskirts", rewards: { loot: "Swiftfoot_boots", gold: 25, exp: 50 } }
+            ]
+        },
+
+        // --- CAPITOLO 2: TEFERI, IL LABIRINTO DI KELD, JAYA BALLARD E SQUEE ---
         benalia_outskirts: {
-            act: "Atto I — Le Periferie di Benalia",
-            title: "L'Incontro con Teferi",
-            textSolo: "Mentre cammini tra le rovine di un vecchio acquedotto romano-thran, il tempo attorno a te sembra rallentare improvvisamente. Un uomo con una tunica blu e una clessidra in mano compare in un lampo di luce: è il Planeswalker **Teferi**!\n\n«Il tempo sta collassando», ti dice Teferi sorridendo. «Dimostrami che sai gestire il flusso della battaglia e ti concederò un frammento della mia magia temporale».",
-            textParty: "Mentre la Compagnia attraversa le rovine di un vecchio acquedotto thran, il tempo attorno a voi si ferma di colpo. Le gocce di pioggia restano sospese a mezz'aria. Un uomo saggio con una clessidra fluttuante appare dal nulla: **Teferi**!\n\n«Avventurieri», esclama Teferi. «Avete la stoffa dei veri eroi, ma la tempesta temporale vi metterà alla prova. Dimostrate la vostra sincronia».",
+            act: "Atto I — Le Rovine dell'Acquedotto Thran",
+            title: "L'Anomalia Temporale di Teferi",
+            text: "A poche miglia da Benalia, l'aria si cristallizza. Il Planeswalker **Teferi** appare sospeso a mezz'aria sopra un arco di pietra spezzato:\n\n«Per sopravvivere alle legioni che vi attendono avrete bisogno della mia *Protezione*. Ma prima dovete dimostrare di saper resistere alle distorsioni del tempo o sconfiggere la fiera astrale che mi insegue!»",
             choices: [
-                { text: "⏳ Focalizzati e anticipa il flusso temporale con la mente (MAG CD 22)", type: "roll", stat: "mag", dc: 22, successNode: "teferi_blessing", failNode: "teferi_challenge", failDamage: 3, failText: "Il paradosso temporale ti stordisce per un istante!", rewards: { exp: 50, gold: 35 } },
-                { text: "⚔️ Accetta la sfida d'armi di Teferi e colpisci l'illusione temporale (FOR/AGI)", type: "roll", stat: "str", dc: 22, successNode: "teferi_blessing", failNode: "teferi_challenge", failDamage: 3, failText: "Colpisci l'aria! L'illusione svanisce ridendo.", rewards: { exp: 50, gold: 35 } },
-                { text: "🛡️ Chiedi a Teferi la benedizione difensiva per la compagnia", type: "move", nextNode: "teferi_blessing", rewards: { exp: 40, addKeyword: "Cautela" } }
+                { text: "⏳ Resisti all'onda temporale con la mente o il vigore (MAG o COS CD 23)", type: "roll", stat: "mag", dc: 23, successNode: "teferi_blessing", failNode: "teferi_challenge", failDamage: 4, failText: "L'onda temporale ti piega in ginocchio!", rewards: { exp: 55, gold: 25 } },
+                { text: "⚔️ Affronta il Grifone Astrale nell'Arena per aiutare Teferi!", type: "combat", monster: "serra_griffin", winNode: "teferi_blessing" }
             ]
         },
 
         teferi_challenge: {
-            act: "Atto I — Le Periferie di Benalia",
-            title: "La Prova del Tempo",
-            text: "Teferi scuote la testa divertito e evoca un'eco temporale ostile che vi sbarra la strada!",
+            act: "Atto I — Acquedotto Thran",
+            title: "L'Assalto Astrale",
+            text: "La fiera temporale piomba su di voi! Sconfiggetela per ottenere il favore di Teferi!",
             choices: [
-                { text: "⚔️ Combatti l'Eco Temporale nell'Arena!", type: "combat", monster: "serra_griffin", winNode: "teferi_blessing" }
+                { text: "⚔️ Combatti il Grifone d'Argento nell'Arena!", type: "combat", monster: "serra_griffin", winNode: "teferi_blessing" }
             ]
         },
 
         teferi_blessing: {
-            act: "Atto I — Le Periferie di Benalia",
-            title: "Il Dono di Teferi",
-            text: "Teferi si inchina: «Avete superato la prova. Che il tempo sia con voi». Vi dona l'abilità **Cautela**, +50 Monete d'Oro e vi apre il passaggio verso il Sentiero di Montagna.",
+            act: "Atto I — Acquedotto Thran",
+            title: "L'Incantesimo di Teferi",
+            text: "Teferi batte il suo bastone a terra: «Siete pronti. Vi insegno l'Istantaneo leggendario **Protezione di Teferi** (ora presente nel vostro Grimorio!). Davanti a voi si ergono i monti di Keld: fate attenzione ai bivi del canyon, molti viandanti si sono persi tornando al punto di partenza!»",
             choices: [
-                { text: "➔ Prosegui verso il Passo delle Rocce Rosse", type: "move", nextNode: "road_departure", rewards: { addKeyword: "Cautela", gold: 50, exp: 60 } }
+                { text: "➔ Imbocca l'ingresso del Canyon di Keld", type: "move", nextNode: "keld_canyon_entry", rewards: { addKeyword: "Cautela", exp: 60, heal: 8 } }
             ]
         },
 
-        // ====================================================================
-        // ATTO I-C: IL PASSO DELLE ROCCE ROSSE E LA TAVERNA DEI LADRI
-        // ====================================================================
-        road_departure: {
-            act: "Atto I — Il Passo delle Rocce Rosse",
-            title: "L'Imboscata dei Predoni",
-            textSolo: "Lasciata Benalia, ti inoltri nel canyon roccioso. All'improvviso, una gragnola di pietre e dardi avvelenati piove dall'alto: un'Orda di Goblin Predoni e tagliagole umani guidati da un capoguerra ti circonda!",
-            textParty: "La Compagnia avanza nel canyon roccioso. All'improvviso risuonano urla sgraziate e corni da guerra: un'Orda di Goblin e banditi umani balza fuori dalle caverne laterali!",
+        keld_canyon_entry: {
+            act: "Atto I — Il Labirinto del Passo di Keld",
+            title: "L'Assedio dei Goblin Battipalo",
+            text: "Il Canyon delle Rocce Rosse è un dedalo di gole fumanti. Dal ponte sospeso sopra il precipizio carica una furiosa squadra d'assalto guidata da un **Goblin Battipalo (Goblin Piledriver)**, mentre a sinistra si apre un tunnel buio nella roccia!",
             choices: [
-                { text: "⚔️ Sguaina le armi e affronta l'Orda di Goblin in Battaglia a Turni!", type: "combat", monster: "goblin_pack", winNode: "mountain_tavern" },
-                { text: "🏹 Spara una scarica preventiva e carica a testa bassa (AGI)", type: "roll", stat: "agi", dc: 23, successNode: "mountain_tavern", failNode: "goblin_forced_fight", failDamage: 4, failText: "L'imboscata ti coglie di sorpresa!", rewards: { exp: 60, gold: 40 } }
+                { text: "⚔️ Carica sul ponte e affronta il Goblin Battipalo nell'Arena!", type: "combat", monster: "goblin_piledriver", winNode: "jaya_squee_camp" },
+                { text: "🕯️ Infilati nel tunnel buio di sinistra per aggirare i Goblin (AGI CD 24)", type: "roll", stat: "agi", dc: 24, successNode: "jaya_squee_camp", failNode: "keld_maze_setback", failDamage: 5, failText: "Crolla una frana nel tunnel! Precipitate lungo uno scivolo di roccia!", rewards: { exp: 65, gold: 25 } }
             ]
         },
 
-        goblin_forced_fight: {
-            act: "Atto I — Passo delle Rocce Rosse",
-            title: "Mischia Furiosa",
-            text: "I predoni vi stringono d'assedio con le lame sguainate! Dovete combattere!",
+        keld_maze_setback: {
+            act: "Atto I — Trappola del Canyon!",
+            title: "Smarriti nelle Gole di Keld!",
+            text: "La frana vi trascina giù per centinaia di metri fino a riportarvi **indietro all'imboccatura dell'Acquedotto**, ammaccati e inseguiti da una banda di Goblin Predoni!",
             choices: [
-                { text: "⚔️ Combatti l'Orda nell'Arena!", type: "combat", monster: "goblin_pack", winNode: "mountain_tavern" }
+                { text: "⚔️ Sconfiggi gli inseguitori Goblin per poter risalire il Canyon!", type: "combat", monster: "goblin_pack", winNode: "keld_canyon_entry" },
+                { text: "⏪ Torna indietro fino a Nuova Benalia per riorganizzarti", type: "move", nextNode: "benalia_square" }
             ]
         },
 
-        mountain_tavern: {
-            act: "Atto I — Il Rifugio del Passo",
-            title: "La Taverna dei Fuorilegge",
-            text: "Sconfitti i predoni, trovate un rifugio scavato nella roccia: una taverna clandestina gestita da contrabbandieri dove è possibile riposare, spendere oro o rischiare alla roulette del mana.",
+        jaya_squee_camp: {
+            act: "Atto I — Il Bivacco Vulcanico",
+            title: "Jaya Ballard e l'Immortale Squee",
+            textSolo: "Superato il passo, trovi un accampamento illuminato da sfere di fuoco fluttuanti. Una donna anziana dagli occhiali da piromante — la leggendaria **Jaya Ballard** — sta arrostendo carne su una roccia, mentre il goblin **Squee** rovista in un baule pieno di bombe e reliquie.\n\n«Ehi, guarda chi si vede!» ridacchia Jaya. «Se vuoi imparare a incenerire i tuoi nemici col fuoco puro o comprare uno dei giocattoli di Squee, sei nel posto giusto!»",
+            textParty: "Superato il passo, la Compagnia raggiunge il bivacco della leggendaria piromante **Jaya Ballard** e del goblin immortale **Squee**.\n\n«Bene, bene!» esclama Jaya facendo danzare una fiammella tra le dita. «Qualcuno che sa menare le mani! Squee ha appena dissotterrato uno strano Scettro Thran, ma dice che lo darà solo a chi resiste al mio fuoco o risolve l'indovinello goblin!»",
             choices: [
-                { text: "🪙 Riposa al calduccio (+10 PV, spende 15 Oro per cibo e bevande)", type: "move", nextNode: "crossroads_wilds", rewards: { heal: 10, exp: 40 } },
-                { text: "🎲 Gioca d'azzardo con i contrabbandieri (Prova di AGI o MAG CD 23)", type: "roll", stat: "agi", dc: 23, successNode: "gambling_win", failNode: "gambling_loss", failDamage: 3, failText: "I dadi girano male! Perdi la posta in palio.", rewards: { exp: 40 } },
-                { text: "➔ Rimettiti in marcia verso il Bivio", type: "move", nextNode: "crossroads_wilds" }
+                { text: "🔥 Fatti temprare dalle fiamme di Jaya Ballard (+Mana R, +Guanti del Piromante - COS CD 24)", type: "roll", stat: "con", dc: 24, successNode: "jaya_fire_gift", failNode: "crossroads_wilds", failDamage: 5, failText: "Le fiamme di Jaya sono troppo ardenti! Vi ritirate verso valle.", rewards: { addMana: "R", exp: 75 } },
+                { text: "💣 Contratta con Squee per lo Scettro Isocrono (MAG o AGI CD 24)", type: "roll", stat: "mag", dc: 24, successNode: "squee_scepter_win", failNode: "crossroads_wilds", failDamage: 3, failText: "Una granata di Squee vi scoppia in mano! Squee scappa ridendo.", rewards: { exp: 75 } },
+                { text: "⛺ Riposa attorno al fuoco di Jaya (+12 PV a tutta la compagnia) e scendi al Grande Bivio", type: "move", nextNode: "crossroads_wilds", rewards: { heal: 12, exp: 50 } }
             ]
         },
 
-        gambling_win: {
-            act: "Atto I — Taverna Clandestina",
-            title: "Colpo Grosso ai Dadi!",
-            text: "Con un tiro magistrale sbanchi il tavolo dei contrabbandieri guadagnando +60 Monete d'Oro e l'ammirazione della ciurma!",
+        jaya_fire_gift: {
+            act: "Atto I — Bivacco di Jaya",
+            title: "Il Battesimo del Fuoco",
+            text: "Jaya applaude entusiasta: «Così si fa! Risolvi ogni problema col fuoco!» Vi dona i suoi **Guanti & Lenti del Piromante** e +2 Mana Rosso!",
             choices: [
-                { text: "➔ Prosegui verso il Bivio", type: "move", nextNode: "crossroads_wilds", rewards: { gold: 60, exp: 50 } }
+                { text: "➔ Scendi verso il Grande Bivio delle Terre Selvagge", type: "move", nextNode: "crossroads_wilds", rewards: { loot: "pyromancer_goggles", addMana: "R", exp: 60, gold: 30 } }
             ]
         },
 
-        gambling_loss: {
-            act: "Atto I — Taverna Clandestina",
-            title: "Tasche Svuotate",
-            text: "La fortuna volta le spalle e perdi 20 Monete d'Oro nella bisca clandestina.",
+        squee_scepter_win: {
+            act: "Atto I — Il Tesoro di Squee",
+            title: "Lo Scettro Isocrono",
+            text: "Squee batte le mani felice per lo scambio e vi consegna l'antico **Scettro Isocrono** (+5 MAG, +Cautela) insieme a una Pedina Tesoro!",
             choices: [
-                { text: "➔ Abbandona la taverna e prosegui", type: "move", nextNode: "crossroads_wilds", rewards: { gold: -20 } }
+                { text: "➔ Scendi verso il Grande Bivio delle Terre Selvagge", type: "move", nextNode: "crossroads_wilds", rewards: { loot: "isochron_scepter", treasures: 1, exp: 60 } }
             ]
         },
 
+        // --- CAPITOLO 3: IL GRANDE BIVIO E LA GIUNGLA DI LLANOWAR / ARGOTH (IL SENTIERO DEL BLACK LOTUS!) ---
         crossroads_wilds: {
-            act: "Atto I — Il Grande Bivio di Dominaria",
-            title: "Le Tre Vie verso Koilos",
-            text: "Davanti a voi la strada si divide. Ognuna delle tre vie custodisce reliquie e prove uniche:\n\n1. **La Foresta di Llanowar (Verde):** Fitte fronde, Elfi arcieri, Troll rigeneranti e Wurm colossali.\n2. **Le Cripte di Urborg (Nero):** Nebbia mefitica, Zombie erranti e il Signore dei Non Morti.\n3. **I Picchi dei Grifoni (Bianco/Blu):** Santuari celesti protetti da fiere alate e magia astrale.",
+            act: "Atto II — Il Crocevia dei Continenti di Dominaria",
+            title: "Quattro Strade nel Mito",
+            text: "Ai piedi della catena montuosa si aprono quattro grandi direttrici:\n\n1. **La Foresta di Llanowar & Il Sentiero Segreto di Argoth (Verde):** Dove dimorano Radha, Multani, il Tarmogoyf e la leggenda del **Black Lotus**.\n2. **L'Accademia di Tolaria (Blu):** L'isola del tempo dove i Tramutanti (Slivers) stanno assediando Barrin e Jodah.\n3. **Le Paludi di Urborg & L'Arena della Cabala (Nero):** I domini di Liliana Vess, Braids, Juzám Djinn, Phage e Akroma.\n4. **I Cancelli delle Grotte di Koilos:** La via diretta verso Karn e l'Obliteratore di Phyrexia.",
             choices: [
-                { text: "🌳 Entra nella Foresta di Llanowar", type: "move", nextNode: "llanowar_entry" },
-                { text: "💀 Attraversa le Cripte Nebbiose di Urborg", type: "move", nextNode: "urborg_entry" },
-                { text: "☀️ Scala i Picchi dei Grifoni di Serra", type: "move", nextNode: "serra_peaks_entry" }
+                { text: "🌳 Esplora la Giungla di Llanowar (Caccia al Tarmogoyf e al Black Lotus!)", type: "move", nextNode: "llanowar_entry" },
+                { text: "💧 Naviga verso l'Accademia di Tolaria (Saga dei Tramutanti e dei Maghi)", type: "move", nextNode: "tolaria_gates" },
+                { text: "💀 Addentrati nelle Paludi di Urborg e nell'Arena della Cabala", type: "move", nextNode: "urborg_entry" },
+                { text: "⚙️ Marcia direttamente alle Grotte di Koilos (Consigliato Liv. 3+)", type: "move", nextNode: "koilos_gates" }
             ]
         },
 
-        // ====================================================================
-        // RAMO 1: FORESTA DI LLANOWAR (ESPANSO)
-        // ====================================================================
         llanowar_entry: {
-            act: "Atto I — Foresta di Llanowar",
-            title: "L'Imboscata dei Druidi Corrotti",
-            text: "Mentre camminate tra i tronchi millenari, le radici stesse sembrano animarsi. Un gruppo di druidi corrotti dall'olio di Phyrexia vi sbarra la strada insieme a un mastodontico **Troll di Thrun**!",
+            act: "Atto II — La Giungla di Llanowar",
+            title: "Radha e la Valle dei Predatori",
+            text: "La guerriera elfica **Radha, Erede di Keld**, vi intercetta sugli alberi colossali di Llanowar: «Fermi, viandanti! La foresta inferiore è impazzita: un **Brushwagg Mutante** e un branco di **Tarmogoyf** stanno divorando ogni cosa. E se cercate l'antico Santuario del Loto Nero, sappiate che nessuno ne è mai uscito vivo!»",
             choices: [
-                { text: "⚔️ Affronta il Troll di Thrun in Battaglia a Turni nell'Arena!", type: "combat", monster: "llanowar_troll", winNode: "llanowar_deep_path" },
-                { text: "🌿 Purifica la radice con la magia verde (MAG CD 24)", type: "roll", stat: "mag", dc: 24, successNode: "llanowar_deep_path", failNode: "llanowar_troll_ambush", failDamage: 4, failText: "La corruzione resiste e il Troll vi assalta!", rewards: { exp: 80, karma: 1, gold: 40 } }
+                { text: "⚔️ Aiuta Radha ad abbattere il Brushwagg Mutante nell'Arena!", type: "combat", monster: "brushwagg_mutant", winNode: "llanowar_goyf_nest" },
+                { text: "🌲 Salta tra i rami giganti seguendo Radha (AGI CD 24)", type: "roll", stat: "agi", dc: 24, successNode: "llanowar_goyf_nest", failNode: "llanowar_fall_setback", failDamage: 5, failText: "Un ramo si spezza! Precipitate nella palude sottostante!", rewards: { exp: 70, addMana: "G" } }
             ]
         },
 
-        llanowar_troll_ambush: {
-            act: "Atto I — Foresta di Llanowar",
-            title: "La Furia del Troll",
-            text: "Il Troll di Thrun vi carica brandendo un tronco d'albero!",
+        llanowar_fall_setback: {
+            act: "Atto II — Il Sottobosco di Llanowar",
+            title: "Caduti nella Tana del Troll!",
+            text: "La caduta dagli alberi vi fa atterrare dritti nella tana fangosa del **Troll di Thrun Rigenerante**! Se fuggite tornerete indietro al Crocevia!",
             choices: [
-                { text: "⚔️ Combatti il Troll di Thrun!", type: "combat", monster: "llanowar_troll", winNode: "llanowar_deep_path" }
+                { text: "⚔️ Sconfiggi il Troll di Thrun per risalire verso la Valle dei Goyf!", type: "combat", monster: "llanowar_troll", winNode: "llanowar_goyf_nest" },
+                { text: "⏪ Ritirati indietro al Crocevia dei Continenti", type: "move", nextNode: "crossroads_wilds" }
             ]
         },
 
-        llanowar_deep_path: {
-            act: "Atto I — Profondità di Llanowar",
-            title: "La Fossa del Wurm",
-            text: "Superato il Troll, il sentiero sprofonda in una gola fangosa dove nidifica un **Wurm Corazzato delle Foreste (7/6)**!",
+        llanowar_goyf_nest: {
+            act: "Atto II — La Valle delle Ossa",
+            title: "L'Ombra del Tarmogoyf e del Colossal Dreadmaw",
+            text: "Il terreno è disseminato di spade spezzate, pergamene e ossa. Dal cratere centrale emerge un gigantesco **Tarmogoyf**, mentre dalla giungla vicina risuona il ruggito del leggendario dinosauro **Fauce Terrificante Colossale (Colossal Dreadmaw 6/6 Travolgere)**!\n\nDietro di loro, seminascosto dalle liane, vedete il portale di pietra che conduce al **Santuario Segreto del Loto Nero**.",
             choices: [
-                { text: "⚔️ Combatti il Wurm Corazzato nell'Arena!", type: "combat", monster: "craw_wurm", winNode: "llanowar_shrine" },
-                { text: "🏃 Attraversa la gola di corsa schivando i fendenti (AGI CD 24)", type: "roll", stat: "agi", dc: 24, successNode: "llanowar_shrine", failNode: "llanowar_wurm_fight", failDamage: 5, failText: "Il Wurm ti colpisce con la coda sbalzandoti nel fango!", rewards: { exp: 90, gold: 50 } }
+                { text: "⚔️ Affronta il temibile TARMOGOYF in Battaglia a Turni!", type: "combat", monster: "tarmogoyf", winNode: "llanowar_multani_shrine" },
+                { text: "🦖 [MEME LEGGENDARIO] Sfida il COLOSSAL DREADMAW (6/6 Travolgere) nell'Arena!", type: "combat", monster: "colossal_dreadmaw", winNode: "llanowar_multani_shrine" },
+                { text: "🌺 [SFIDA ESTREMA DEL BLACK LOTUS] Varca il Portale Segreto di Argoth (3 Scontri Consecutivi!)", type: "move", nextNode: "lotus_gauntlet_1" }
             ]
         },
 
-        llanowar_wurm_fight: {
-            act: "Atto I — Fossa del Wurm",
-            title: "L'Attacco del Colosso",
-            text: "Il Wurm vi blocca l'uscita dalla gola! Non potete indietreggiare!",
+        // --- IL DUNGEON SEGRETO DEL BLACK LOTUS (3 PROVE DI COMBATTIMENTO CONSECUTIVE!) ---
+        lotus_gauntlet_1: {
+            act: "🌺 Dungeon Segreto di Argoth — Prova 1 di 3",
+            title: "Ach! Hans, Run! It's the Lhurgoyf!",
+            text: "Entrate nella valle proibita dove Urza e Mishra scatenarono il Sylex. Per raggiungere il piedistallo del **Black Lotus** dovete superare 3 Guardiani senza mai tornare indietro!\n\nIl primo guardiano balza fuori da una montagna di teschi: è il **Lhurgoyf Ancestrale**!",
             choices: [
-                { text: "⚔️ Affronta il Wurm Corazzato!", type: "combat", monster: "craw_wurm", winNode: "llanowar_shrine" }
+                { text: "⚔️ [PROVA 1/3] Sconfiggi il Lhurgoyf Ancestrale nell'Arena!", type: "combat", monster: "lhurgoyf_alpha", winNode: "lotus_gauntlet_2" },
+                { text: "🏃 Rinuncia e torna indietro alla Valle delle Ossa", type: "move", nextNode: "llanowar_goyf_nest" }
             ]
         },
 
-        llanowar_shrine: {
-            act: "Atto I — Il Cuore di Llanowar",
-            title: "L'Altare di Gaea e l'Incontro con Liliana",
-            textSolo: "Arrivi alla fonte sacra di Gaea. Appoggiato a una roccia c'è un calice di mana verde; accanto ad esso, avvolta in ombre viola, ti osserva la Planeswalker **Liliana Vess**.\n\n«Sciocco mortale», mormora Liliana con un ghigno. «Vuoi il potere della foresta? Dimostrami che non sei solo cibo per i miei non-morti».",
-            textParty: "Raggiungete la fonte sacra di Gaea. Ad attendervi tra le felcie c'è la potente e oscura Planeswalker **Liliana Vess**.\n\n«Che insolenza camminare nei miei domini», dice Liliana sollevando un teschio fluttuante. «Vediamo se la vostra compagnia vale qualcosa».",
+        lotus_gauntlet_2: {
+            act: "🌺 Dungeon Segreto di Argoth — Prova 2 di 3",
+            title: "Il Wurm Antico del Cratere",
+            text: "Il Lhurgoyf cade, ma il sangue versato risveglia il secondo custode della reliquia: un colossale **Wurm Corazzato delle Foreste (7/6)** che avvolge con le sue spire la scalinata del tempio!",
             choices: [
-                { text: "💀 Sfida la magia nera di Liliana con la forza di volontà (MAG/COS CD 25)", type: "roll", stat: "con", dc: 25, successNode: "liliana_respect", failNode: "liliana_fight_clash", failDamage: 6, failText: "L'energia di Liliana ti gela il sangue nelle vene!", rewards: { exp: 100, karma: -1 } },
-                { text: "🌿 Offri un tributo di mana verde per ingraziarti la foresta e Liliana", type: "move", nextNode: "koilos_gates", rewards: { addMana: "G", addKeyword: "Travolgere", heal: 15, exp: 90, gold: 60 } }
+                { text: "⚔️ [PROVA 2/3] Abbatti il Wurm Corazzato nell'Arena!", type: "combat", monster: "craw_wurm", winNode: "lotus_gauntlet_3" },
+                { text: "🏃 Fuggi dal tempio prima che sia troppo tardi", type: "move", nextNode: "llanowar_goyf_nest" }
             ]
         },
 
-        liliana_fight_clash: {
-            act: "Atto I — Altare di Gaea",
-            title: "L'Eco di Liliana",
-            text: "Liliana evoca un'ondata di spettri urlanti per mettervi alla prova!",
+        lotus_gauntlet_3: {
+            act: "🌺 Dungeon Segreto di Argoth — Prova Finale 3 di 3",
+            title: "Il Colosso Guardiano del Loto Nero",
+            text: "Siete in cima al santuario! Al centro di una teca di cristallo fluttua il mitico **Loto Nero (Black Lotus)**. Ma davanti alla teca si attiva un gigantesco **Automa Guardiano di Urza** dotato di 4💧 Mana Blu per neutralizzare le vostre magie!",
             choices: [
-                { text: "⚔️ Sconfiggi gli Spettri di Liliana nell'Arena!", type: "combat", monster: "undead_lord", winNode: "liliana_respect" }
+                { text: "⚔️ [BOSS DEL LOTO NERO] Sconfiggi il Colosso Guardiano e reclama il BLACK LOTUS!", type: "combat", monster: "urza_lotus_guardian", winNode: "lotus_sanctum_victory" }
+            ]
+        },
+
+        lotus_sanctum_victory: {
+            act: "🌺 Il Trionfo di Argoth",
+            title: "Il Potere del Black Lotus!",
+            text: "Il Colosso di Urza crolla in mille frammenti dorati! La teca si apre e il leggendario **Loto Nero (Black Lotus)** — la reliquia più potente e rara della storia di Magic (+10 MAG, +6 FOR, +6 AGI, +8 COS, Volare, Indistruttibile, Attacco Improvviso) — è finalmente nelle vostre mani!",
+            choices: [
+                { text: "🌺 Reclama la gloria eterna (+200 EXP, +3 Tesori 💎, Cura Totale) e prosegui verso Multani!", type: "move", nextNode: "llanowar_multani_shrine", rewards: { loot: "black_lotus", exp: 200, treasures: 3, heal: 50, makeLegendary: true } }
+            ]
+        },
+
+        llanowar_multani_shrine: {
+            act: "Atto II — Il Cuore di Yavimaya e Llanowar",
+            title: "La Benedizione di Multani",
+            text: "Lo spirito elementale **Multani, Maro-Stregone**, emerge dalla corteccia dell'Albero Madre: «Avete liberato la giungla dai predatori. Vi dono il legame eterno col Mana Verde e vi apro i sentieri verso Tolaria, Urborg o direttamente alle Grotte di Koilos!»",
+            choices: [
+                { text: "🌳 Ricevi il Dono di Multani (+Mana G, +Travolgere, +15 PV) e torna al Crocevia dei Continenti", type: "move", nextNode: "crossroads_wilds", rewards: { addMana: "G", addKeyword: "Travolgere", heal: 15, exp: 90, gold: 45 } },
+                { text: "⚙️ Marcia direttamente alle Grotte di Koilos", type: "move", nextNode: "koilos_gates", rewards: { addMana: "G", heal: 15, exp: 90 } }
+            ]
+        },
+
+        // --- NODI SPECIALI PRIGIONE OSTAGGI (INTEGRATI ANCHE QUI) ---
+        hostage_prison_node: {
+            act: "⛓️ Evento Speciale — Prigionieri nel Covo Nemico!",
+            title: "Presi in Ostaggio e Interrogati!",
+            text: "Riprendete conoscenza a 1 Punto Vita, legati con catene nel covo dei vostri aguzzini! Il capobanda vi minaccia chiedendovi dove sono nascosti l'oro e gli artefatti della vostra missione!",
+            choices: [
+                { text: "🗝️ Spezza le catene o scassina la serratura (FOR o AGI CD 22)", type: "roll", stat: "agi", dc: 22, successNode: "hostage_escape_success", failNode: "hostage_prison_node", failDamage: 1, failText: "La guardia sente il rumore delle catene e ti colpisce!", rewards: { exp: 60, loot: "hood_assassin" } },
+                { text: "🪙 Paga il Riscatto (Cedi 20 Monete d'Oro) per farti liberare", type: "move", nextNode: "crossroads_wilds", rewards: { gold: -20, heal: 10 } }
+            ]
+        },
+        hostage_escape_success: {
+            act: "⛓️ Fuga dal Covo",
+            title: "Liberi nella Notte!",
+            text: "Vi liberate dalle catene, stordite i carcerieri e recuperate il vostro equipaggiamento insieme al forziere delle guardie (+15 PV e +30 Oro!).",
+            choices: [
+                { text: "➔ Torna al Crocevia dei Continenti", type: "move", nextNode: "crossroads_wilds", rewards: { heal: 15, gold: 30, exp: 50 } }
+            ]
+        }
+    };
+    // ============================================================================
+    // --- PARTE 1 (BLOCCO 2 DI 3): DOMINARIA ATTO III, IV & V                  ---
+    // --- (TOLARIA, SLIVERS, URBORG, CABALA, PHAGE, AKROMA, KOILOS E SHIV)     ---
+    // (100% Compatibile con Babel 6 - Zero Optional Chaining)
+    // ============================================================================
+
+    const RPG_STORY_NODES_PART2 = {
+        // ====================================================================
+        // RAMO BLU: L'ACCADEMIA DI TOLARIA E LA REGINA DEI TRAMUTANTI
+        // ====================================================================
+        tolaria_gates: {
+            act: "Atto II — L'Isola dell'Accademia di Tolaria",
+            title: "Barrin, Jodah e le Bolle di Tempo Lento",
+            textSolo: "Sbarchi sulle coste cristalline di Tolaria. Le torri dell'Accademia fondata da Urza sono avvolte da cupole di luce azzurra dove il tempo scorre a velocità folle o si ferma del tutto. Sulla scalinata d'ingresso, il vecchio maestro **Barrin** e **Jodah, Arcimago Eterno**, stanno tenendo a bada una breccia dimensionale da cui sciamano creature aliene dotate di artigli a falce: i **Tramutanti (Slivers)**!",
+            textParty: "La vostra Compagnia sbarca sulle coste di Tolaria. Le guglie dell'Accademia di Urza sono intrappolate tra bolle di tempo veloce e lento. Sulla piazza centrale **Barrin** e **Jodah, Arcimago Eterno**, lottano per contenere una frattura planare con Rath da cui si riversa un feroce **Sciame di Tramutanti (Slivers)**!",
+            choices: [
+                { text: "⚔️ Carica la breccia e affronta lo Sciame di Tramutanti nell'Arena!", type: "combat", monster: "sliver_swarm", winNode: "tolaria_chrono_maze" },
+                { text: "🔮 Aiuta Jodah a tessere un sigillo di contenimento arcano (MAG CD 25)", type: "roll", stat: "mag", dc: 25, successNode: "tolaria_chrono_maze", failNode: "tolaria_sliver_ambush", failDamage: 5, failText: "I Tramutanti spezzano il sigillo con la loro mente alveare e vi assaltano!", rewards: { exp: 80, addMana: "U" } },
+                { text: "⏪ Torna indietro con la barca al Crocevia dei Continenti", type: "move", nextNode: "crossroads_wilds" }
+            ]
+        },
+
+        tolaria_sliver_ambush: {
+            act: "Atto II — Cortile di Tolaria",
+            title: "Mente Alveare in Attacco!",
+            text: "I Tramutanti condividono ali, artigli velenosi e scudi di mana blu! Dovete abbattere lo sciame per entrare nell'Accademia!",
+            choices: [
+                { text: "⚔️ Combatti lo Sciame di Tramutanti nell'Arena!", type: "combat", monster: "sliver_swarm", winNode: "tolaria_chrono_maze" }
+            ]
+        },
+
+        tolaria_chrono_maze: {
+            act: "Atto II — I Corridoi del Tempo di Tolaria",
+            title: "Il Labirinto Cronologico di Urza",
+            text: "Entrate nella Grande Biblioteca di Tolaria. Barrin vi avverte: «La Regina dei Tramutanti si è annidata nella Sala della Macchina Temporale! Per raggiungerla dovete attraversare tre portali cronologici. Scegliete la sequenza corretta (Passato ➔ Presente ➔ Futuro) o verrete rispediti indietro nel tempo all'ingresso dell'isola!»",
+            choices: [
+                { text: "⏳ Varca l'Arco d'Argento di Thran (Passato) e calcola i pendoli (MAG CD 26)", type: "roll", stat: "mag", dc: 26, successNode: "tolaria_queen_lair", failNode: "tolaria_time_loop_setback", failDamage: 6, failText: "I pendoli invertono il flusso! Venite risucchiati indietro nel tempo!", rewards: { exp: 95, loot: "sensei_top" } },
+                { text: "⚡ [Attacco Improvviso / Imbloccabile] Sfreccia tra le bolle temporali prima che si chiudano!", type: "move", reqKeywordAny: ["Attacco Improvviso", "Imbloccabile"], nextNode: "tolaria_queen_lair", rewards: { exp: 80 } },
+                { text: "🌀 Tenta di sfondare la porta centrale della Biblioteca con la forza (FOR CD 28)", type: "roll", stat: "str", dc: 28, successNode: "tolaria_queen_lair", failNode: "tolaria_time_loop_setback", failDamage: 6, failText: "La barriera temporale rimbalza il colpo e vi catapulta fuori dall'Accademia!", rewards: { exp: 95 } }
+            ]
+        },
+
+        tolaria_time_loop_setback: {
+            act: "Atto II — Paradosso Temporale!",
+            title: "Rispediti Indietro nel Tempo!",
+            text: "Un lampo accecante avvolge la Compagnia: l'orologio gira al contrario e vi ritrovate **sulla spiaggia d'ingresso di Tolaria**, proprio mentre un secondo **Corvo della Tempesta** e una pattuglia di Tramutanti vi sbarrano la strada!",
+            choices: [
+                { text: "⚔️ Sconfiggi il Corvo della Tempesta per rientrare nell'Accademia!", type: "combat", monster: "storm_crow", winNode: "tolaria_gates" },
+                { text: "⚔️ Affronta i Tramutanti di guardia per forzare il passaggio!", type: "combat", monster: "sliver_swarm", winNode: "tolaria_chrono_maze" }
+            ]
+        },
+
+        tolaria_queen_lair: {
+            act: "Atto II — Il Nucleo di Tolaria",
+            title: "La Regina dei Tramutanti (Sliver Queen)",
+            text: "Nella Sala del Reattore Temporale si erge una creatura colossale e aliena: la **Regina dei Tramutanti (Sliver Queen 7/7)**! Attorno al suo nido brillano la **Tunica dell'Arcimago di Tolaria** e il rarissimo **Mox di Diamante**.",
+            choices: [
+                { text: "⚔️ [BOSS DI TOLARIA] Sfida la Regina dei Tramutanti (Sliver Queen) nell'Arena!", type: "combat", monster: "sliver_queen", winNode: "tolaria_victory_vault" },
+                { text: "🔮 Usa l'equazione di Barrin per bandire la Regina su Rath (MAG CD 30)", type: "roll", stat: "mag", dc: 30, successNode: "tolaria_victory_vault", failNode: "tolaria_queen_forced", failDamage: 7, failText: "La Regina contrasta l'incantesimo con la sua volontà psichica e vi attacca!", rewards: { exp: 150, loot: "urza_robes" } }
+            ]
+        },
+
+        tolaria_queen_forced: {
+            act: "Atto II — Nucleo di Tolaria",
+            title: "La Furia dell'Alveare!",
+            text: "La Regina dei Tramutanti sibila scatenando tutta la sua covata! Dovete sconfiggerla in combattimento!",
+            choices: [
+                { text: "⚔️ Combatti la Regina dei Tramutanti nell'Arena!", type: "combat", monster: "sliver_queen", winNode: "tolaria_victory_vault" }
+            ]
+        },
+
+        tolaria_victory_vault: {
+            act: "Atto II — Il Tesoro dell'Accademia",
+            title: "Il Dono di Barrin e Jodah",
+            text: "Con la caduta della Regina, la frattura con Rath si sigilla! Barrin e Jodah aprono il caveau segreto di Urza: tutta la Compagnia assorbe il **Mana Blu (`U`)**, viene curata completamente e può scegliere una reliquia suprema prima di dirigersi a Urborg o alle Grotte di Koilos!",
+            choices: [
+                { text: "💧 Indossa la Tunica di Urza (+7 MAG, +Cautela, +Mana U) e vai al Crocevia", type: "move", nextNode: "crossroads_wilds", rewards: { addMana: "U", loot: "urza_robes", heal: 30, exp: 110, gold: 50 } },
+                { text: "💎 Prendi la Reliquia della Coalizione (+Mana U, +2 Tesori) e marcia verso Koilos", type: "move", nextNode: "koilos_gates", rewards: { addMana: "U", loot: "coalition_relic", treasures: 2, heal: 30, exp: 110 } }
+            ]
+        },
+
+        // ====================================================================
+        // RAMO NERO/BIANCO: URBORG, SENGIR, JUZAM DJINN, PHAGE E AKROMA
+        // ====================================================================
+        urborg_entry: {
+            act: "Atto II — Le Paludi Nere di Urborg",
+            title: "Braids, Chainer e la Nebbia dei Morti",
+            textSolo: "Ti addentri nelle torbiere sulfuree di Urborg. Sopra un altare di ossa annerite, la folle evocatrice della Cabala **Braids** ride sguaiatamente accanto al tormentista **Chainer**:\n\n«Un altro viandante venuto a nutrire i nostri incubi! Se vuoi raggiungere la Roccaforte della Cabala o parlare con Liliana Vess, dovrai prima sopravvivere al nostro campione del 1993: il **Juzám Djinn**, o farti strada nel castello del **Barone Sengir**!»",
+            textParty: "La Compagnia avanza nelle torbiere nere di Urborg. Sopra un obelisco d'ossidiana, gli adepti della Cabala **Braids** e **Chainer** vi sbarrano il passo:\n\n«Benvenuti a Urborg, eroi! Qui la luce di Benalia non può salvarvi. Scegliete il vostro supplizio: il demone antico **Juzám Djinn** nella palude, oppure il **Barone Vampiro di Sengir** nella cripta di sangue!»",
+            choices: [
+                { text: "👹 [ICONA 1993] Affronta il mostruoso JUZÁM DJINN (5/5) nell'Arena!", type: "combat", monster: "juzam_djinn", winNode: "liliana_urborg_meeting" },
+                { text: "🧛 Entra nel Castello Oscuro e sfida il BARONE SENGIR (4/4 Volare)!", type: "combat", monster: "sengir_vampire", winNode: "liliana_urborg_meeting" },
+                { text: "💀 Sacrifica vitalità sull'altare di Braids per passare (COS CD 25, -5 PV)", type: "roll", stat: "con", dc: 25, successNode: "liliana_urborg_meeting", failNode: "urborg_pit_trap_setback", failDamage: 7, failText: "Gli incubi di Chainer vi trascinano in una voragine di fango nero!", rewards: { exp: 85, karma: -1, loot: "skullclamp" } }
+            ]
+        },
+
+        urborg_pit_trap_setback: {
+            act: "Atto II — Voragine della Dementia!",
+            title: "Sprofondati nelle Cripte Inferiori!",
+            text: "Il terreno cede sotto i vostri piedi facendovi precipitare nelle catacombe più antiche di Urborg! Un **Signore dei Non Morti** vi blocca la scala per risalire, altrimenti dovrete strisciare fuori tornando **indietro al Crocevia dei Continenti**!",
+            choices: [
+                { text: "⚔️ Sconfiggi il Signore dei Non Morti per risalire al santuario di Liliana!", type: "combat", monster: "undead_lord", winNode: "liliana_urborg_meeting" },
+                { text: "⏪ Striscia lungo il tunnel di scolo e torna indietro al Crocevia", type: "move", nextNode: "crossroads_wilds" }
+            ]
+        },
+
+        liliana_urborg_meeting: {
+            act: "Atto II — Il Mausoleo del Velo di Catena",
+            title: "Il Patto con Liliana Vess",
+            text: "Tra le colonne spezzate del mausoleo, la Planeswalker **Liliana Vess** accarezza il leggendario *Velo di Catena*. I tatuaggi sul suo corpo brillano di luce violetta:\n\n«Avete sconfitto i mastini di Braids, complimenti. Ma davanti a voi si apre l'**Arena della Cabala di Otaria**, dove **Kamahl**, la letale **Phage l'Intoccabile** e l'angelo **Akroma** si contendono il potere del **Mirari**. Aiutatemi a eliminare il **Negatore Phyrexiano** che infesta queste rovine e vi insegnerò il mio incantesimo più spietato!»",
+            choices: [
+                { text: "⚔️ Affronta il brutale NEGATORE PHYREXIANO (5/5 Travolgere) per Liliana!", type: "combat", monster: "phyrexian_negator", winNode: "liliana_respect" },
+                { text: "🔮 Domina l'energia del Velo di Catena con la tua mente (MAG CD 27)", type: "roll", stat: "mag", dc: 27, successNode: "liliana_respect", failNode: "liliana_negator_forced", failDamage: 6, failText: "Il Velo di Catena rigetta la tua mente e attira il Negatore Phyrexiano!", rewards: { exp: 100, addMana: "B" } }
+            ]
+        },
+
+        liliana_negator_forced: {
+            act: "Atto II — Mausoleo di Urborg",
+            title: "L'Assalto del Negatore!",
+            text: "Il Negatore Phyrexiano sfonda la parete del mausoleo con lame d'osso e metallo nero! Combattete per la vostra vita!",
+            choices: [
+                { text: "⚔️ Combatti il Negatore Phyrexiano nell'Arena!", type: "combat", monster: "phyrexian_negator", winNode: "liliana_respect" }
             ]
         },
 
         liliana_respect: {
-            act: "Atto I — Altare di Gaea",
-            title: "Il Rispetto della Strega",
-            text: "Liliana sorride compiaciuta: «Non male per dei mortali». Vi lascia in dono i **Parabraccia delle Spire Golgari** (+Tocco Letale) e +80 Monete d'Oro prima di svanire in una nube di fumo.",
+            act: "Atto II — Mausoleo di Urborg",
+            title: "L'Insegnamento Oscuro di Liliana",
+            text: "Liliana Vess sorride soddisfatta: «Meritate il mio favore». Infonde nella vostra Compagnia il **Mana Nero (`B`)**, l'abilità **Legame Vitale** e vi insegna la Stregoneria One-Shot **Lama del Fato (Doom Blade)**! Ora potete entrare nella leggendaria Arena di Otaria.",
             choices: [
-                { text: "➔ Marcia verso le Caverne di Koilos", type: "move", nextNode: "koilos_gates", rewards: { loot: "venom_bracers", gold: 80, exp: 100 } }
+                { text: "➔ Entra nell'Arena di Otaria: Kamahl, Phage e Akroma!", type: "move", nextNode: "otaria_cabal_arena", rewards: { addMana: "B", addKeyword: "Legame Vitale", exp: 100, gold: 45, heal: 15 } }
             ]
         },
 
-        // ====================================================================
-        // RAMO 2: CRIPTE DI URBORG (ESPANSO)
-        // ====================================================================
-        urborg_entry: {
-            act: "Atto I — Le Paludi di Urborg",
-            title: "Il Cimitero dei Ghoul",
-            text: "Le nebbie di Urborg nascondono bare scoperte e tombe profanate. Una pattuglia di banditi e ghoul non-morti vi circonda con torce fumiganti.",
+        otaria_cabal_arena: {
+            act: "Atto II — L'Arena di Otaria",
+            title: "Kamahl e lo Scontro tra Phage e Akroma",
+            textSolo: "Entri nel colosseo infuocato di Otaria. Al centro dell'arena, il barbaro divenuto druido **Kamahl** impugna la sua spada mentre due figure divine e terribili si fronteggiano: a sinistra **Phage l'Intoccabile**, la cui sola carezza uccide all'istante; a destra **Akroma, Angelo dell'Ira**, creata da Ixidor per pura vendetta!\n\nAl centro del colosseo fluttua la sfera mutaforma del **Mirari**. Con chi ti schieri, o chi osi sfidare?",
+            textParty: "La Compagnia entra nel colosseo di Otaria! **Kamahl** vi grida sopra il boato della folla: «Il **Mirari** sta facendo impazzire l'intero continente! **Phage l'Intoccabile** e **Akroma, Angelo dell'Ira** stanno per distruggere tutto! Scegliete quale delle due leggende affrontare nell'Arena, o aiutate gli angeli a purificare il colosseo!»",
             choices: [
-                { text: "⚔️ Annienta i ghoul e i banditi nell'Arena a turni!", type: "combat", monster: "bandit_rogues", winNode: "urborg_deep_crypt" },
-                { text: "👻 Dissuadi i non-morti con preghiere o necromanzia (MAG CD 24)", type: "roll", stat: "mag", dc: 24, successNode: "urborg_deep_crypt", failNode: "urborg_bandits_fight", failDamage: 4, failText: "I ghoul non riconoscono la tua autorità!", rewards: { exp: 80, gold: 45 } }
+                { text: "💀 [BOSS CABALA] Sfida PHAGE L'INTOCCABILE nell'Arena per reclamare IL MIRARI!", type: "combat", monster: "phage_untouchable", winNode: "otaria_mirari_victory" },
+                { text: "☀️ [BOSS CELESTE] Sfida AKROMA, ANGELO DELL'IRA per l'Armatura del Memoriale!", type: "combat", monster: "akroma_angel", winNode: "serra_blessing_done" },
+                { text: "🗡️ Unisciti a Kamahl per spezzare l'ipnosi del Mirari col ferro e il mana (FOR o MAG CD 28)", type: "roll", stat: "str", dc: 28, successNode: "serra_blessing_done", failNode: "otaria_phage_forced", failDamage: 7, failText: "L'onda psichica del Mirari ti travolge e Phage scatta verso di te!", rewards: { exp: 130, loot: "batterskull" } }
             ]
         },
 
-        urborg_bandits_fight: {
-            act: "Atto I — Cimitero di Urborg",
-            title: "Aggressione nella Nebbia",
-            text: "I banditi approfittano della confusione per assalire le vostre spalle!",
+        otaria_phage_forced: {
+            act: "Atto II — Arena della Cabala",
+            title: "Il Tocco Mortale di Phage!",
+            text: "Phage l'Intoccabile balza nell'arena circondata da tentacoli d'ombra letale! Non potete fuggire!",
             choices: [
-                { text: "⚔️ Combatti i banditi e i ghoul!", type: "combat", monster: "bandit_rogues", winNode: "urborg_deep_crypt" }
+                { text: "⚔️ Affronta Phage l'Intoccabile nell'Arena!", type: "combat", monster: "phage_untouchable", winNode: "otaria_mirari_victory" }
             ]
         },
 
-        urborg_deep_crypt: {
-            act: "Atto I — Cripte Sotterranee",
-            title: "La Sala del Signore dei Non Morti",
-            text: "Nel profondo della cripta, il **Signore dei Non Morti** officia un oscuro rituale di sacrificio circondato da un muro di scheletri armati di scimitarre.",
+        otaria_mirari_victory: {
+            act: "Atto II — Trionfo nell'Arena",
+            title: "I Signori del Mirari",
+            text: "Phage cade in ginocchio e la sfera incandescente del **Mirari** rotola ai vostri piedi! Kamahl si inchina alla vostra potenza e vi indica il passaggio diretto verso le antiche **Grotte di Koilos**.",
             choices: [
-                { text: "⚔️ Affronta il Signore dei Non Morti in un duello mortale nell'Arena!", type: "combat", monster: "undead_lord", winNode: "urborg_vault" },
-                { text: "🗡️ Infiltrati silenziosamente per rubare l'altare prima che il rito si compia (AGI CD 25)", type: "roll", stat: "agi", dc: 25, successNode: "urborg_vault", failNode: "urborg_lord_combat", failDamage: 6, failText: "Un calice d'argento cade a terra! Il Signore dei Non Morti si volta furioso!", rewards: { exp: 100, loot: "whisper_cloak" } }
-            ]
-        },
-
-        urborg_lord_combat: {
-            act: "Atto I — Sala del Negromante",
-            title: "La Collera del Signore",
-            text: "Il Signore dei Non Morti evoca una tempesta di teschi urlanti!",
-            choices: [
-                { text: "⚔️ Combatti il Signore dei Non Morti!", type: "combat", monster: "undead_lord", winNode: "urborg_vault" }
-            ]
-        },
-
-        urborg_vault: {
-            act: "Atto I — Tesoro di Urborg",
-            title: "Il Sarcofago del Re",
-            text: "Aperto il sarcofago centrale, venite inondati da Mana Nero e trovate il **Manto Bisbigliante di Seta** e una montagna di monete d'oro sepolte.",
-            choices: [
-                { text: "💀 Assorbi il Mana Nero (+Mana B, +Legame Vitale, +100 Monete d'Oro)", type: "move", nextNode: "koilos_gates", rewards: { addMana: "B", addKeyword: "Legame Vitale", gold: 100, exp: 90 } },
-                { text: "🎒 Prendi il Manto Bisbigliante (+Imbloccabile) e prosegui", type: "move", nextNode: "koilos_gates", rewards: { loot: "whisper_cloak", gold: 70, exp: 90 } }
-            ]
-        },
-
-        // ====================================================================
-        // RAMO 3: PICCHI DI SERRA (ESPANSO)
-        // ====================================================================
-        serra_peaks_entry: {
-            act: "Atto I — I Picchi di Serra",
-            title: "Il Vento di Cristallo",
-            text: "Salendo lungo le scale di marmo bianco, il vento fischia tra le guglie. Un **Grifone d'Argento Ribelle** scende in picchiata per difendere il nido sacro",
-            choices: [
-                { text: "⚔️ Combatti il Grifone d'Argento nell'Arena!", type: "combat", monster: "serra_griffin", winNode: "serra_sanctum_deep" },
-                { text: "🕊️ Calma la bestia con un dono di cibo e mana (COS/MAG CD 24)", type: "roll", stat: "mag", dc: 24, successNode: "serra_sanctum_deep", failNode: "serra_griffin_fight", failDamage: 4, failText: "Il Grifone agita gli artigli metallici!", rewards: { exp: 80, gold: 40 } }
-            ]
-        },
-
-        serra_griffin_fight: {
-            act: "Atto I — Picchi di Serra",
-            title: "L'Attacco della Fiera Alata",
-            text: "Il Grifone non intende indietreggiare!",
-            choices: [
-                { text: "⚔️ Affronta il Grifone d'Argento!", type: "combat", monster: "serra_griffin", winNode: "serra_sanctum_deep" }
-            ]
-        },
-
-        serra_sanctum_deep: {
-            act: "Atto I — Tempio di Serra",
-            title: "La Prova della Luce",
-            text: "All'interno del tempio, un angelo protettore vi pone una domanda sul valore del sacrificio per testare la purezza della vostra Compagnia.",
-            choices: [
-                { text: "☀️ Giura di proteggere i deboli (Risposta di Luce: Fede pura - MAG/COS CD 23)", type: "roll", stat: "con", dc: 23, successNode: "serra_blessing_done", failNode: "serra_blessing_done", rewards: { exp: 90, karma: 2, heal: 15 } }
+                { text: "🔮 Raccogli Il Mirari (+120 EXP, +50 Oro, +15 PV) e marcia verso le Grotte di Koilos!", type: "move", nextNode: "koilos_gates", rewards: { loot: "the_mirari", exp: 120, gold: 50, heal: 15 } },
+                { text: "⏪ Torna prima al Crocevia dei Continenti per esplorare le altre vie", type: "move", nextNode: "crossroads_wilds", rewards: { loot: "the_mirari", exp: 120, gold: 50, heal: 15 } }
             ]
         },
 
         serra_blessing_done: {
-            act: "Atto I — Santuario Celeste",
-            title: "La Grazia dell'Angelo",
-            text: "L'angelo vi benedice con il **Mana Bianco** e vi dona la **Corazza Piumata di Serra** (+Volare) e +60 Monete d'Oro.",
+            act: "Atto II — La Luce sull'Arena",
+            title: "Il Dono di Akroma e Serra",
+            text: "La luce celeste squarcia le nubi su Otaria! Ricevete il **Mana Bianco (`W`)**, l'Istantaneo One-Shot **Sentiero dell'Esilio (Path to Exile)** nel vostro Grimorio e la benedizione alata per marciare verso le Grotte di Koilos!",
             choices: [
-                { text: "➔ Scendi verso le Caverne di Koilos", type: "move", nextNode: "koilos_gates", rewards: { addMana: "W", loot: "celestial_armor", gold: 60, exp: 90 } }
+                { text: "☀️ Ricevi la Benedizione (+Mana W, +Volare, +20 PV) e marcia verso Koilos!", type: "move", nextNode: "koilos_gates", rewards: { addMana: "W", addKeyword: "Volare", heal: 20, exp: 120, gold: 50 } },
+                { text: "⏪ Torna al Crocevia dei Continenti per visitare anche Tolaria o Llanowar", type: "move", nextNode: "crossroads_wilds", rewards: { addMana: "W", heal: 20, exp: 120 } }
             ]
         },
 
         // ====================================================================
-        // ATTO II: LE CAVERNE DI KOILOS E LA LIBERAZIONE DI KARN (LIV 2 - 3)
+        // ATTO III: IL DEDALO THRAN DI KOILOS, KALDRA E KARN (LIV 3 - 4)
         // ====================================================================
         koilos_gates: {
-            act: "Atto II — Le Caverne di Koilos",
-            title: "Il Nucleo dei Thran e l'Obliteratore",
-            textSolo: "Scendi nelle profondità di Koilos. Al centro della sala dei Thran vedi il leggendario golem d'argento **Karn** imprigionato in catene di mana corrotto! A fargli da guardia c'è una creatura mostruosa: un **Obliteratore di Phyrexia**!",
-            textParty: "La vostra Compagnia penetra nelle profondità di Koilos. Al centro della sala dei Thran vedete il golem d'argento **Karn** incatenato da fasci di energia oscura! A sbarrarvi il passo si erge un terrificante **Obliteratore di Phyrexia**!",
+            act: "Atto III — Le Grotte di Koilos",
+            title: "L'Ingresso del Labirinto Thran",
+            textSolo: "Giungi davanti ai colossali portoni di metallo Thran delle Grotte di Koilos, dove millenni fa Urza e Mishra trovarono la Pietra del Potere e la Pietra della Debolezza. Dalle profondità risuona la voce metallica di **Karn**, prigioniero nel livello inferiore, ma tra te e lui si estende il **Labirinto Meccanico dei Thran**!",
+            textParty: "La vostra Compagnia giunge davanti ai portoni delle Grotte di Koilos. Dalle profondità della terra risuona il richiamo telepatico del golem d'argento **Karn**, ma per raggiungere la Sala del Nucleo dovete superare le camere blindate del **Labirinto Thran**, dove sono custodite le reliquie di **Kaldra**!",
             choices: [
-                { text: "⚔️ [BOSS] Attacca frontalmente l'Obliteratore di Phyrexia nell'Arena!", type: "combat", monster: "phyrexian_obliterator", winNode: "karn_freed_legendary" },
-                { text: "⚡ Sovraccarica i pilastri Thran per folgorare la guardia (MAG CD 27)", type: "roll", stat: "mag", dc: 27, successNode: "karn_freed_legendary", failNode: "koilos_boss_forced", failDamage: 6, failText: "I pilastri esplodono ferendovi! L'Obliteratore avanza!", rewards: { exp: 130, gold: 80, loot: "shield_kaldra" } }
+                { text: "⚙️ Decifra i glifi delle due Mezze Pietre di Urza e Mishra (MAG CD 26)", type: "roll", stat: "mag", dc: 26, successNode: "koilos_kaldra_chamber", failNode: "koilos_trap_corridor", failDamage: 6, failText: "I glifi attivano le lame rotanti del corridoio!", rewards: { exp: 90, treasures: 1 } },
+                { text: "🛡️ Sfonda il portone corazzato con la pura potenza fisica (FOR CD 27)", type: "roll", stat: "str", dc: 27, successNode: "koilos_kaldra_chamber", failNode: "koilos_trap_corridor", failDamage: 6, failText: "Il portone cede ma fa scattare una trappola di gas bollente!", rewards: { exp: 90 } },
+                { text: "⏪ Torna indietro al Crocevia dei Continenti per potenziarti ancora", type: "move", nextNode: "crossroads_wilds" }
             ]
         },
 
-        koilos_boss_forced: {
-            act: "Atto II — Caverne di Koilos",
-            title: "Scontro Mortale con l'Obliteratore",
-            text: "L'Obliteratore di Phyrexia vi sbarra la via per Karn! Dovete distruggerlo!",
+        koilos_trap_corridor: {
+            act: "Atto III — Trappola del Labirinto di Koilos",
+            title: "L'Imboscata delle Sentinelle Phyrexiane!",
+            text: "L'allarme Thran risveglia un **Negatore Phyrexiano** lasciato di guardia nei condotti! Se non riuscite a superarlo, il pavimento mobile vi rispedirà fuori dai cancelli di Koilos!",
             choices: [
-                { text: "⚔️ Combatti l'Obliteratore di Phyrexia nell'Arena!", type: "combat", monster: "phyrexian_obliterator", winNode: "karn_freed_legendary" }
+                { text: "⚔️ Distruggi il Negatore Phyrexiano nell'Arena per avanzare!", type: "combat", monster: "phyrexian_negator", winNode: "koilos_kaldra_chamber" },
+                { text: "🤸 Salta oltre il pavimento mobile all'ultimo secondo (AGI CD 27)", type: "roll", stat: "agi", dc: 27, successNode: "koilos_kaldra_chamber", failNode: "koilos_gates", failDamage: 6, failText: "Il pavimento mobile si ribalta e vi scaraventa **indietro all'ingresso esterno di Koilos**!" }
+            ]
+        },
+
+        koilos_kaldra_chamber: {
+            act: "Atto III — Il Santuario Interno di Koilos",
+            title: "Le Reliquie dell'Avatar di Kaldra",
+            text: "Raggiungete l'armeria segreta dei Thran, proprio sopra la Sala del Nucleo dove è imprigionato Karn. Sui tre piedistalli di luce brillano la **Spada di Kaldra**, lo **Scudo di Kaldra** e l'**Elmo di Kaldra**. Ma la porta verso il Nucleo è sbarrata dal mostruoso comandante dell'invasione: l'**Obliteratore di Phyrexia**!",
+            choices: [
+                { text: "⚔️ Impugna la Spada di Kaldra (+6 FOR) e affronta l'OBLITERATORE DI PHYREXIA!", type: "combat", monster: "phyrexian_obliterator", winNode: "karn_freed_legendary", rewards: { loot: "kaldra_sword" } },
+                { text: "🪖 Prendi l'Elmo di Kaldra (+5 COS) e affronta l'OBLITERATORE DI PHYREXIA!", type: "combat", monster: "phyrexian_obliterator", winNode: "karn_freed_legendary", rewards: { loot: "kaldra_helm" } }
             ]
         },
 
         karn_freed_legendary: {
-            act: "Atto II — La Rinascita delle Leggende",
-            title: "L'Investitura di Karn e il Tesoro di Koilos",
-            textSolo: "Le catene si infrangono e Karn si rialza in tutta la sua maestosità. Posa la sua enorme mano d'argento sulla tua spalla:\n\n«Hai salvato Dominaria dalla corruzione. Da oggi il tuo nome sarà inciso nella storia come una **Creatura Leggendaria**! Ecco a te il leggendario **Scudo di Kaldra** e 150 Monete d'Oro. Sali sulla Vetta di Shiv: là ti attende il Drago Antico!»",
-            textParty: "Le catene si infrangono e Karn si rialza. Posa lo sguardo su ciascuno dei membri della vostra Compagnia:\n\n«Avete combattuto come veri eroi. Conferisco a **tutta la vostra Compagnia** il rango di **Creature Leggendarie**! Ricevete lo **Scudo di Kaldra** e 150 Monete d'Oro. Ora scalate la Vetta di Shiv!»",
+            act: "Atto III — La Sala del Nucleo di Koilos",
+            title: "La Liberazione di Karn e l'Ascensione Leggendaria",
+            textSolo: "L'Obliteratore di Phyrexia esplode in una nube di cenere nera! Le catene che imprigionavano **Karn, il Golem d'Argento**, vanno in frantumi. Karn si china davanti a te poggiando la sua mano metallica sul tuo petto:\n\n«Hai salvato l'eredità di Urza e liberato Koilos. Conferisco a te il grado immortale di **Creatura Leggendaria** e ti dono lo **Scudo di Kaldra**! Ora resta un'ultima impresa su Dominaria: scala i Vulcani di Shiv, sconfiggi il Drago Antico e tocca l'Obelisco per risvegliare la tua Scintilla da Planeswalker!»",
+            textParty: "L'Obliteratore di Phyrexia crolla sconfitto! **Karn, il Golem d'Argento**, spezza le ultime catene e irradia un'onda di pura energia argentata su **tutta la vostra Compagnia**:\n\n«Eroi di Dominaria, le vostre gesta risuoneranno per l'eternità! Conferisco a **ciascuno di voi** il rango di **Creatura Leggendaria** (+5 a tutte le Statistiche e +10 COS/Salute!) insieme allo **Scudo di Kaldra**! Ora scalate insieme la Vetta di Shiv per conquistare la Blackblade e accendere la Scintilla!»",
             choices: [
-                { text: "👑 Ricevi il Grado di CREATURA LEGGENDARIA, Scudo di Kaldra, 150 Oro e parti per Shiv!", type: "move", nextNode: "shiv_ascent", rewards: { makeLegendary: true, loot: "shield_kaldra", gold: 150, heal: 20, exp: 120 } }
+                { text: "👑 Ascendi a CREATURA LEGGENDARIA (+Scudo di Kaldra, +20 PV a tutti) e parti per i Vulcani di Shiv!", type: "move", nextNode: "shiv_ascent", rewards: { makeLegendary: true, loot: "shield_kaldra", heal: 20, exp: 140, gold: 80 } }
             ]
         },
 
         // ====================================================================
-        // ATTO III: LA VETTA DI SHIV E L'ACCENSIONE DELLA SCINTILLA (LIV 3 - 4+)
+        // ATTO IV: I VULCANI DI SHIV, BLIGHTSTEEL E L'OBELISCO DELLA SCINTILLA
         // ====================================================================
         shiv_ascent: {
-            act: "Atto III — I Vulcani di Shiv",
-            title: "Il Nido del Drago Antico",
-            text: "Il calore sulla Vetta di Shiv è insopportabile. Fiumi di magma circondano l'Obelisco Planare. Prima che possiate avvicinarvi, un boato squarcia le nubi di cenere: il **Drago di Shiv Antico** atterra davanti all'Obelisco spiegando le sue ali di fuoco!",
+            act: "Atto IV — Il Continente Vulcanico di Shiv",
+            title: "La Fonderia di Mana e il Bivio di Magma",
+            text: "Il cielo sopra Shiv è squarciato da eruzioni di puro Mana Rosso. Salendo lungo la Fonderia di Mana (*Mana Rig*), vedete due cammini:\n\n1. **Il Cratere del Trono Draconico:** Dove il leggendario **Drago di Shiv Antico** custodisce la **Blackblade Riforgiata** e la via verso l'Obelisco.\n2. **La Forgia Segreta Infetta (Sfida Estrema):** Un cratere secondario dove l'olio phyrexiano ha dato vita al mostruoso **Colosso di Blightsteel (11/11 Infettare)** che custodisce la **Corazza di Darksteel** e la **Fenditura Cinerea (Embercleave)**!",
             choices: [
-                { text: "⚔️ [BOSS LEGGENDARIO] Sfida il Drago di Shiv nell'Arena (Ottenete la Blackblade!)", type: "combat", monster: "shivan_dragon", winNode: "obelisk_spark_trial" },
-                { text: "🔥 Attraversa il fiume di magma con un salto prodigioso (AGI CD 28)", type: "roll", stat: "agi", dc: 28, successNode: "obelisk_spark_trial", failNode: "shiv_dragon_forced", failDamage: 8, failText: "Il calore ti ustiona! Devi affrontare il Drago!", rewards: { addMana: "R", exp: 180, gold: 100, loot: "sword_fire_ice" } }
+                { text: "🐉 [BOSS PRINCIPALE] Scala il Cratere e affronta il DRAGO DI SHIV ANTICO!", type: "combat", monster: "shivan_dragon", winNode: "obelisk_spark_trial" },
+                { text: "🤖 [SUPER-BOSS OPZIONALE] Entra nella Forgia Infetta e sfida il COLOSSO DI BLIGHTSTEEL (11/11)!", type: "combat", monster: "blightsteel_colossus", winNode: "shiv_blightsteel_win" },
+                { text: "🔥 Attraversa i geyser di lava con un balzo eroico (AGI o COS CD 29)", type: "roll", stat: "agi", dc: 29, successNode: "obelisk_spark_trial", failNode: "shiv_lava_setback", failDamage: 8, failText: "Un'eruzione di magma fa crollare la passerella sotto i vostri piedi!", rewards: { addMana: "R", exp: 150, loot: "sword_fire_ice" } }
             ]
         },
 
-        shiv_dragon_forced: {
-            act: "Atto III — Vetta di Shiv",
-            title: "L'Assalto del Drago",
-            text: "Il Drago di Shiv vi chiude ogni via di fuga! Sguainate le spade!",
+        shiv_lava_setback: {
+            act: "Atto IV — Fiume di Magma di Shiv",
+            title: "Sbalzati alle Pendici del Vulcano!",
+            text: "Il crollo della passerella vi fa scivolare fino alla base della caldera di Shiv, dove una banda di **Goblin Battipalo** vi attacca tra i fumi sulfurei!",
             choices: [
-                { text: "⚔️ Affronta il Drago di Shiv Antico nell'Arena!", type: "combat", monster: "shivan_dragon", winNode: "obelisk_spark_trial" }
+                { text: "⚔️ Sconfiggi i Goblin di Shiv per riprendere la scalata al Cratere!", type: "combat", monster: "goblin_piledriver", winNode: "shiv_ascent" }
+            ]
+        },
+
+        shiv_blightsteel_win: {
+            act: "Atto IV — La Forgia Purificata",
+            title: "Il Trofeo di Darksteel ed Embercleave",
+            text: "Con un'impresa leggendaria avete abbattuto l'inarrestabile Colosso di Blightsteel! Tra i resti incandescenti della forgia raccogliete la **Fenditura Cinerea (Embercleave)** e salite trionfanti verso il Cratere del Drago e dell'Obelisco!",
+            choices: [
+                { text: "🗡️ Impugna Embercleave (+200 EXP, +25 PV) e affronta il Drago di Shiv!", type: "combat", monster: "shivan_dragon", winNode: "obelisk_spark_trial", rewards: { loot: "embercleave", exp: 200, heal: 25 } },
+                { text: "➔ Raggiungi direttamente l'Obelisco della Scintilla", type: "move", nextNode: "obelisk_spark_trial", rewards: { loot: "embercleave", exp: 200, heal: 25 } }
             ]
         },
 
         obelisk_spark_trial: {
-            act: "Atto III — Il Cratere dell'Obelisco",
-            title: "Il Risveglio della Scintilla",
-            text: "Il Drago di Shiv giace sconfitto e la leggendaria **Blackblade Riforgiata** è ora vostra. Davanti a voi pulsa l'Obelisco della Cieca Eternità.\n\nPer accendere la **Scintilla di Planeswalker** senza essere disintegrati, dovete superare la Prova Suprema!",
+            act: "Atto IV — La Vetta Suprema di Shiv",
+            title: "La Blackblade e l'Accensione della Scintilla!",
+            textSolo: "Il Drago di Shiv è sconfitto e la leggendaria spada che uccise gli antichi draghi — la **Blackblade Riforgiata** — è tra le tue mani. Davanti a te svetta l'Obelisco Planare che collega Dominaria alla Cieca Eternità.\n\nAppoggi entrambe le mani sul cristallo ardente per scatenare l'accensione della tua **Scintilla di Planeswalker**!",
+            textParty: "Il Drago di Shiv giace sconfitto e la mitica **Blackblade Riforgiata** brilla davanti a voi. Tutta la vostra Compagnia circonda l'Obelisco Planare sulla cima del vulcano.\n\nUnendo le vostre forze, toccate il nucleo dell'Obelisco per risvegliare la **Scintilla di Planeswalker** e aprire le porte dei Piani del Multiverso!",
             choices: [
-                { text: "🔥 Afferra il Nucleo con la Forza del Campione (FOR CD 28)", type: "roll", stat: "str", dc: 28, successNode: "planeswalker_nexus", failNode: "obelisk_spark_trial", failDamage: 6, failText: "L'onda d'urto ti respinge! Riprova!", rewards: { igniteSpark: true, exp: 200, heal: 25, gold: 150 } },
-                { text: "✨ Canalizza l'Obelisco con il Dominio Arcano (MAG CD 28)", type: "roll", stat: "mag", dc: 28, successNode: "planeswalker_nexus", failNode: "obelisk_spark_trial", failDamage: 6, failText: "Il flusso di mana è immenso! Riprova!", rewards: { igniteSpark: true, exp: 200, heal: 25, gold: 150 } }
+                { text: "🔥 Domina l'Obelisco con la Forza Eroica (FOR CD 28)", type: "roll", stat: "str", dc: 28, successNode: "planeswalker_nexus", failNode: "obelisk_spark_trial", failDamage: 5, failText: "La tempesta d'etere ti respinge! Stringi i denti e riprova!", rewards: { igniteSpark: true, exp: 220, heal: 30, gold: 100 } },
+                { text: "✨ Armonizza l'Obelisco con la Sapienza Arcana (MAG CD 28)", type: "roll", stat: "mag", dc: 28, successNode: "planeswalker_nexus", failNode: "obelisk_spark_trial", failDamage: 5, failText: "Il vortice di mana è immenso! Concentrati e riprova!", rewards: { igniteSpark: true, exp: 220, heal: 30, gold: 100 } },
+                { text: "⚡ Sincronizza i riflessi con la Cieca Eternità (AGI o COS CD 28)", type: "roll", stat: "agi", dc: 28, successNode: "planeswalker_nexus", failNode: "obelisk_spark_trial", failDamage: 5, failText: "Quasi ci sei! Tenta ancora!", rewards: { igniteSpark: true, exp: 220, heal: 30, gold: 100 } }
             ]
-        },
+        }
+    };
+    // ============================================================================
+    // --- PARTE 1 (BLOCCO 3 DI 3): LE 4 GRANDI CAMPAGNE PLANARI ESPANSE,       ---
+    // --- DARK DEPTHS (MARIT LAGE) E L'ASSEDIO FINALE AL MULTIVERSO            ---
+    // (100% Compatibile con Babel 6 - Zero Optional Chaining)
+    // ============================================================================
 
+    const RPG_STORY_NODES_PART3 = {
         // ====================================================================
-        // ATTO IV: IL CROCEVIA DEI PLANESWALKER E LE SAGHE PLANARI
+        // IL CROCEVIA PLANARE: LA CIECA ETERNITÀ (NEXUS CENTRALE)
         // ====================================================================
         planeswalker_nexus: {
             act: "Atto IV — La Cieca Eternità",
-            title: "Il Crocevia del Multiverso",
-            text: "Siete diventati **Planeswalker Leggendari**! Nel nexus stellato potete viaggiare verso i Piani minacciati, comprare artefatti dal Mercante o varcare la Frattura Finale per concludere la Campagna.",
+            title: "Il Nexus dei Planeswalker",
+            textSolo: "Fluttui tra i flussi stellati della Cieca Eternità. La tua Scintilla vibra in risonanza con i mondi del Multiverso. Da qui puoi viaggiare verso i quattro grandi Piani minacciati, tornare nelle terre di Dominaria per completare i dungeon segreti, sfidare i ghiacci proibiti di Dark Depths o varcare il Ponte Planare per la Battaglia Finale!",
+            textParty: "La vostra Compagnia viaggia attraverso la Cieca Eternità! Davanti a voi brillano le coordinate dimensionali di quattro grandi Piani, il ghiacciaio proibito di Marit Lage e il vortice oscuro del Ponte Planare. Quale mondo volete esplorare?",
             choices: [
-                { text: "🦇 Viaggia su INNISTRAD (Saga Gotica: Vampiri & Luna d'Argento)", type: "move", nextNode: "innistrad_ch1" },
-                { text: "🏛️ Viaggia su RAVNICA (Saga delle Gilde & Cittadella)", type: "move", nextNode: "ravnica_ch1" },
-                { text: "⛩️ Viaggia su KAMIGAWA (Saga Cyber-Feudale & Spiriti Kami)", type: "move", nextNode: "kamigawa_ch1" },
-                { text: "💎 Viaggia su ZENDIKAR (Saga Selvaggia & Edri Fluttuanti)", type: "move", nextNode: "zendikar_ch1" },
-                { text: "🌌 [ATTO FINALE] Varca la Frattura verso la Battaglia Finale del Multiverso!", type: "move", nextNode: "finale_realm_gate" }
+                { text: "🦇 Viaggia su INNISTRAD (Campagna Gotica in 6 Capitoli: Thalia, Sorin & Avacyn)", type: "move", nextNode: "innistrad_ch1" },
+                { text: "🏛️ Viaggia su RAVNICA (Campagna delle 10 Gilde in 6 Capitoli: Jace, Niv-Mizzet & Vraska)", type: "move", nextNode: "ravnica_ch1" },
+                { text: "⛩️ Viaggia su KAMIGAWA (Campagna Cyber-Feudale in 5 Capitoli: Kaito, Imperatrice & Boseiju)", type: "move", nextNode: "kamigawa_ch1" },
+                { text: "💎 Viaggia su ZENDIKAR (Campagna Selvaggia in 5 Capitoli: Nissa, Nahiri & Occhio di Ugin)", type: "move", nextNode: "zendikar_ch1" },
+                { text: "❄️ [SUPER-BOSS SEGRETO] Esplora i Ghiacci Eterni di DARK DEPTHS (Marit Lage 20/20!)", type: "move", nextNode: "dark_depths_entry" },
+                { text: "🌍 Torna su DOMINARIA (Al Grande Crocevia dei Continenti)", type: "move", nextNode: "crossroads_wilds" },
+                { text: "🌌 [ATTO FINALE DEL GIOCO] Assalta il Ponte Planare e la Cittadella della Singolarità!", type: "move", nextNode: "finale_planar_bridge" }
             ]
         },
 
-        // --- INNISTRAD ---
+        // ====================================================================
+        // DUNGEON SEGRETO OPZIONALE: DARK DEPTHS & MARIT LAGE (20/20)
+        // ====================================================================
+        dark_depths_entry: {
+            act: "❄️ Abisso Segreto — Dark Depths",
+            title: "I Dieci Sigilli di Ghiaccio Eterno",
+            text: "Atterrate su una distesa di ghiaccio nero risalente all'Era Glaciale. Sotto la lastra trasparente riposa imprigionata un'entità titanica con tentacoli cosmici e occhi ardenti: **Marit Lage**!\n\nDieci monoliti di ghiaccio mantengono attivo il sigillo. Scioglierli risveglierà la creatura più devastante del Multiverso, ma custodisce la leggendaria **Cripta di Mana (Mana Crypt)**!",
+            choices: [
+                { text: "🔥 Sciogli i 10 Sigilli col Mana e affronta il Super-Boss MARIT LAGE (20/20)!", type: "combat", monster: "marit_lage", winNode: "dark_depths_victory" },
+                { text: "⛏️ Tenta di estrarre un frammento di ghiaccio senza svegliarla (AGI CD 31)", type: "roll", stat: "agi", dc: 31, successNode: "dark_depths_victory", failNode: "dark_depths_awakening", failDamage: 10, failText: "Il ghiaccio si spacca con un boato! Marit Lage spalanca gli occhi!", rewards: { exp: 200, treasures: 2 } },
+                { text: "⏪ Fuggi nel Nexus prima che il ghiaccio ceda", type: "move", nextNode: "planeswalker_nexus" }
+            ]
+        },
+
+        dark_depths_awakening: {
+            act: "❄️ Il Risveglio dell'Abisso",
+            title: "La Furia di Marit Lage!",
+            text: "Il ghiacciaio esplode! L'Avatar 20/20 di **Marit Lage** si solleva oscurando il cielo! Non potete più fuggire: combattetela!",
+            choices: [
+                { text: "⚔️ Affronta Marit Lage nell'Arena!", type: "combat", monster: "marit_lage", winNode: "dark_depths_victory" }
+            ]
+        },
+
+        dark_depths_victory: {
+            act: "❄️ Trionfo sui Ghiacci Eterni",
+            title: "I Domatori di Marit Lage",
+            text: "Avete compiuto un'impresa che persino gli antichi Planeswalker ritenevano impossibile! Nel cratere fumante raccogliete la mitica **Cripta di Mana (Mana Crypt)** (+6 MAG, +3 FOR, +3 AGI, Attacco Improvviso) e una cascata di tesori ancestrali!",
+            choices: [
+                { text: "💎 Reclama la Mana Crypt (+300 EXP, +150 Oro, +3 Tesori) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "mana_crypt", exp: 300, gold: 150, treasures: 3, heal: 50 } }
+            ]
+        },
+
+        // ====================================================================
+        // SAGA 1: INNISTRAD — L'OMBRA DELLA LUNA D'ARGENTO (6 CAPITOLI)
+        // ====================================================================
         innistrad_ch1: {
-            act: "Saga di Innistrad — Capitolo 1",
-            title: "Il Castello di Stensia",
-            text: "Sotto la luna rossa di Innistrad affrontate l'armata dei vampiri Voldaren.",
+            act: "Saga di Innistrad — Capitolo 1 di 6",
+            title: "L'Assedio di Thraben e Thalia",
+            text: "Atterrate nella nebbia gelida di Innistrad. Le mura della città santa di Thraben sono assediate da un'orda infinita di Ghoul cuciti insieme e spettri urlanti. Al centro della barricata, la giovane guardiana **Thalia, Protettrice di Thraben**, combatte con lo stocco d'argento in pugno:\n\n«Viandanti! I necro-alchimisti di Nephalia e i vampiri di Stensia hanno unito le forze mentre l'arcangelo Avacyn è intrappolata nell'Helvault! Aiutatemi a tenere la porta o infiltratevi nei laboratori di Havengul!»",
             choices: [
-                { text: "⚔️ Stermina i non-morti fuori dal castello nell'Arena!", type: "combat", monster: "undead_lord", winNode: "innistrad_ch2" },
-                { text: "🦇 Infiltrati furtivamente tra le guglie (AGI CD 28)", type: "roll", stat: "agi", dc: 28, successNode: "innistrad_ch2", failNode: "innistrad_ch1", failDamage: 6, rewards: { exp: 140, gold: 80, loot: "whisper_cloak" } }
+                { text: "⚔️ Combatti spalla a spalla con Thalia contro l'orda del Signore dei Non Morti!", type: "combat", monster: "undead_lord", winNode: "innistrad_nephalia_lab" },
+                { text: "☀️ Canalizza una barriera consacrata sulle mura di Thraben (MAG o COS CD 26)", type: "roll", stat: "mag", dc: 26, successNode: "innistrad_nephalia_lab", failNode: "innistrad_thraben_breach", failDamage: 6, failText: "I Ghoul sfondano il cancello laterale!", rewards: { exp: 95, karma: 1, gold: 40 } }
             ]
         },
+
+        innistrad_thraben_breach: {
+            act: "Saga di Innistrad — Le Mura Infrante",
+            title: "Mischia nel Cimitero di Gavony",
+            text: "Le creature della notte dilagano nel cortile! Dovete abbatterle col ferro e col fuoco per proseguire verso Nephalia!",
+            choices: [
+                { text: "⚔️ Respingi il Signore dei Non Morti nell'Arena!", type: "combat", monster: "undead_lord", winNode: "innistrad_nephalia_lab" }
+            ]
+        },
+
+        innistrad_nephalia_lab: {
+            act: "Saga di Innistrad — Capitolo 2 di 6",
+            title: "I Laboratori Folli di Ludevic e Geralf",
+            text: "Raggiungete le torri costiere di Nephalia, dove i cucitori di cadaveri **Geralf** e **Ludevic** usano i fulmini per animare mostruosi Skaab corazzati. Per salire al passo montano di Stensia dovete disattivare le bobine galvaniche del laboratorio!",
+            choices: [
+                { text: "⚡ Cortocircuita i generatori di Ludevic con precisione (AGI o MAG CD 27)", type: "roll", stat: "agi", dc: 27, successNode: "innistrad_stensia_pass", failNode: "innistrad_lab_explosion_setback", failDamage: 7, failText: "Una scarica da centomila volt fa esplodere il pavimento!", rewards: { exp: 110, loot: "skullclamp" } },
+                { text: "⚔️ Sfonda il laboratorio affrontando le guardie e i sicari di Nephalia!", type: "combat", monster: "bandit_rogues", winNode: "innistrad_stensia_pass" }
+            ]
+        },
+
+        innistrad_lab_explosion_setback: {
+            act: "Saga di Innistrad — Crollo a Nephalia!",
+            title: "Scagliati Indietro nelle Paludi di Thraben!",
+            text: "L'esplosione delle bobine vi scaraventa nel fiume sottostante: la corrente vi trascina **indietro fino alle porte assediate di Thraben**, dove i mostri stanno ancora attaccando!",
+            choices: [
+                { text: "⏪ Risali faticosamente verso le mura di Thraben", type: "move", nextNode: "innistrad_ch1" }
+            ]
+        },
+
+        innistrad_stensia_pass: {
+            act: "Saga di Innistrad — Capitolo 3 di 6",
+            title: "Sorin Markov sul Passo di Stensia",
+            text: "Salendo tra i pini neri di Stensia, incontrate il antico Planeswalker vampiro **Sorin Markov**, con la sua spada *Zanna Parassita* sguainata:\n\n«Olivia Voldaren e i nobili decaduti vogliono impedire il ritorno di Avacyn, la protettrice che io stesso ho creato per mantenere l'equilibrio di questo Piano. Sconfiggete il **Barone Vampiro** che presidia il ponte e vi aprirò le porte del Maniero!»",
+            choices: [
+                { text: "🧛 Affronta il Barone Vampiro sul ponte di Stensia nell'Arena!", type: "combat", monster: "sengir_vampire", winNode: "innistrad_markov_manor" },
+                { text: "🩸 Assorbi il giuramento di sangue di Sorin (+Legame Vitale, FOR CD 28)", type: "roll", stat: "str", dc: 28, successNode: "innistrad_markov_manor", failNode: "innistrad_vampire_ambush", failDamage: 6, failText: "I vampiri di guardia vi attaccano dai tetti!", rewards: { addKeyword: "Legame Vitale", exp: 120, gold: 50 } }
+            ]
+        },
+
+        innistrad_vampire_ambush: {
+            act: "Saga di Innistrad — Ponte di Stensia",
+            title: "Ali nella Notte",
+            text: "Il Barone Vampiro piomba su di voi con le zanne sguainate!",
+            choices: [
+                { text: "⚔️ Combatti il Barone Vampiro nell'Arena!", type: "combat", monster: "sengir_vampire", winNode: "innistrad_markov_manor" }
+            ]
+        },
+
+        innistrad_markov_manor: {
+            act: "Saga di Innistrad — Capitolo 4 di 6",
+            title: "Il Ballo in Maschera di Olivia Voldaren",
+            text: "Entrate nel salone illuminato da candelabri cremisi della magione vampirica. **Olivia Voldaren** fluttua sopra gli invitati: «Quale onore! Lasciate che vi presenti il demone antico che abbiamo evocato dalle profondità dell'Abisso per custodire la chiave dell'Helvault!»",
+            choices: [
+                { text: "👹 [BOSS DEL MANIERO] Affronta il Demone dell'Abisso (Juzám Djinn) nell'Arena!", type: "combat", monster: "juzam_djinn", winNode: "innistrad_helvault_climax" },
+                { text: "🗡️ [Imbloccabile / Attacco Improvviso] Sottrai la chiave d'argento dalle mani di Olivia!", type: "move", reqKeywordAny: ["Imbloccabile", "Attacco Improvviso"], nextNode: "innistrad_helvault_climax", rewards: { exp: 120, gold: 60 } }
+            ]
+        },
+
+        innistrad_helvault_climax: {
+            act: "Saga di Innistrad — Capitolo 5 di 6",
+            title: "Il Monolito d'Argento dell'Helvault",
+            text: "Tornate sulla spianata della cattedrale di Thraben con la chiave lunare. Davanti al gigantesco monolito d'argento dell'**Helvault**, Thalia e Sorin vi affiancano: un'ultima incarnazione corrotta della notte cerca di fermarvi prima che possiate liberare l'arcangelo **Avacyn**!",
+            choices: [
+                { text: "⚔️ [CLIMAX DI INNISTRAD] Infrangi l'assedio finale e spezza i sigilli dell'Helvault (FOR o MAG CD 29)", type: "roll", stat: "str", dc: 29, successNode: "innistrad_ch2", failNode: "innistrad_helvault_climax", failDamage: 6, failText: "Il monolito vibra violentemente! Colpite ancora tutti insieme!", rewards: { exp: 150 } },
+                { text: "☀️ Usa la Luce di Serra o il Mana Bianco per aprire l'Helvault!", type: "move", nextNode: "innistrad_ch2", rewards: { exp: 150 } }
+            ]
+        },
+
         innistrad_ch2: {
-            act: "Saga di Innistrad — Capitolo 2",
-            title: "La Corazza di Darksteel",
-            text: "Liberato il santuario, ottenete la **Corazza di Darksteel** (+Indistruttibile) e +100 Monete d'Oro.",
+            act: "Saga di Innistrad — Capitolo Finale 6 di 6",
+            title: "Il Ritorno di Avacyn, Angelo della Speranza",
+            text: "L'Helvault si spalanca in una colonna di luce dorata che squarcia le tenebre di Innistrad! **Avacyn, Angelo della Speranza**, spiega le sue ali immacolate rendendo indistruttibili i difensori!\n\nIn segno di eterna riconoscenza, Avacyn e Sorin vi consegnano la **Corazza di Darksteel** (+7 COS, Indistruttibile) e la **Spada di Luce e Ombra**!",
             choices: [
-                { text: "🛡️ Raccogli il bottino e torna al Nexus Planare", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "darksteel_plate", gold: 100, exp: 150, heal: 20 } }
+                { text: "🛡️ Ricevi la Corazza di Darksteel (+180 EXP, +100 Oro, Cura Totale) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "darksteel_plate", exp: 180, gold: 100, heal: 50, karma: 2 } },
+                { text: "🗡️ Ricevi la Spada di Luce e Ombra (+180 EXP, +100 Oro, Cura Totale) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "sword_light_shadow", exp: 180, gold: 100, heal: 50, karma: 2 } }
             ]
         },
 
-        // --- RAVNICA ---
+        // ====================================================================
+        // SAGA 2: RAVNICA — IL LABIRINTO DELLE DIECI GILDE (6 CAPITOLI)
+        // ====================================================================
         ravnica_ch1: {
-            act: "Saga di Ravnica — Capitolo 1",
-            title: "I Sotterranei di Undercity",
-            text: "Nelle viscere di Ravnica affrontate gilde corrotte e automi ribelli.",
+            act: "Saga di Ravnica — Capitolo 1 di 6",
+            title: "Jace Beleren nella Decima Circoscrizione",
+            text: "Vi materializzate sulle terrazze piovose di Ravnica, la città-mondo governata dalle Dieci Gilde. Il Planeswalker telepate **Jace Beleren**, avvolto nel suo mantello blu del *Patto delle Gilde Vivente*, vi raggiunge in fretta:\n\n«Meno male che siete qui! Qualcuno ha sabotato il Labirinto Implicito: gli assassini di **Lazav** (Casa Dimir) e gli sciami di **Vraska** (Golgari) stanno dando l'assalto alla camera delle reliquie, mentre il drago **Niv-Mizzet** minaccia di incenerire l'intero distretto!»",
             choices: [
-                { text: "🔮 Decifra i codici della Camera delle Gilde (MAG CD 29)", type: "roll", stat: "mag", dc: 29, successNode: "ravnica_ch2", failNode: "ravnica_ch1", failDamage: 6, rewards: { exp: 150, gold: 90, addMana: "U" } },
-                { text: "⚔️ Sgombra la via con la forza bruta nell'Arena!", type: "combat", monster: "craw_wurm", winNode: "ravnica_ch2" }
+                { text: "⚔️ Sgomina la squadra di Sicari & Maghi Dimir nei vicoli nell'Arena!", type: "combat", monster: "bandit_rogues", winNode: "ravnica_izzet_lab" },
+                { text: "🧠 Collega la mente a Jace Beleren per leggere i pensieri delle spie (MAG CD 27)", type: "roll", stat: "mag", dc: 27, successNode: "ravnica_izzet_lab", failNode: "ravnica_dimir_ambush", failDamage: 6, failText: "Una trappola psichica di Lazav ti colpisce la mente!", rewards: { exp: 110, addMana: "U", gold: 45 } }
             ]
         },
+
+        ravnica_dimir_ambush: {
+            act: "Saga di Ravnica — Vicoli della Decima",
+            title: "Trappola della Casa Dimir!",
+            text: "I sicari di Lazav escono dalle ombre con lame avvelenate e contromagie pronte!",
+            choices: [
+                { text: "⚔️ Affronta i Sicari Dimir nell'Arena!", type: "combat", monster: "bandit_rogues", winNode: "ravnica_izzet_lab" }
+            ]
+        },
+
+        ravnica_izzet_lab: {
+            act: "Saga di Ravnica — Capitolo 2 di 6",
+            title: "Niv-Mizzet, la Mente di Fuoco",
+            text: "Salite in cima a Nivix, il pinnacolo della Lega Izzet. L'antico drago genio **Niv-Mizzet** vi scruta dall'alto tra enormi bobine di Mizzium:\n\n«Calcolo una probabilità del 74,8% che veniate disintegrati nell'Undercity», tuona il drago. «Ma se riuscite a calibrare il mio reattore elettrostatico o a sconfiggere il mio costrutto di guardia, vi doterò degli **Schinieri dei Fulmini (Lightning Greaves)**!»",
+            choices: [
+                { text: "⚡ Calibra il reattore di Niv-Mizzet (MAG o AGI CD 28)", type: "roll", stat: "mag", dc: 28, successNode: "ravnica_undercity_maze", failNode: "ravnica_rakdos_pit", failDamage: 7, failText: "Il reattore sovraccarica una botola che vi fa precipitare nelle fosse di Rakdos!", rewards: { loot: "lightning_greaves", exp: 130, gold: 50 } },
+                { text: "⚔️ Sfida il Costrutto Alato di Nivix nell'Arena!", type: "combat", monster: "serra_griffin", winNode: "ravnica_undercity_maze", rewards: { loot: "lightning_greaves" } }
+            ]
+        },
+
+        ravnica_rakdos_pit: {
+            act: "Saga di Ravnica — Trappola del Culto di Rakdos!",
+            title: "Caduti nel Carnarium del Demone Rakdos!",
+            text: "Siete precipitati nel circo infernale di Rix Maadi! Demoni giullari e cultisti urlanti vi lanciano catene infuocate: se non superate l'arena del sangue verrete ricacciati indietro all'inizio della Decima Circoscrizione!",
+            choices: [
+                { text: "⚔️ Sconfiggi il Demone del Carnarium nell'Arena per risalire nell'Undercity!", type: "combat", monster: "juzam_djinn", winNode: "ravnica_undercity_maze" },
+                { text: "⏪ Fuggi dai tunnel fognari tornando indietro al punto di partenza di Ravnica", type: "move", nextNode: "ravnica_ch1", rewards: { damage: 4 } }
+            ]
+        },
+
+        ravnica_undercity_maze: {
+            act: "Saga di Ravnica — Capitolo 4 di 6",
+            title: "La Città Sepolta di Vraska e lo Sciame Golgari",
+            text: "Scendete nelle gallerie muschiose dell'Undercity. La regina gorgone **Vraska** sbarra il ponte di pietra verso la Camera del Labirinto, affiancata da un mostruoso **Troll Rigenerante Golgari** e da un **Tarmogoyf delle Fogne**!",
+            choices: [
+                { text: "⚔️ Affronta il TARMOGOYF DELLE FOGNE per guadagnarti il rispetto di Vraska!", type: "combat", monster: "tarmogoyf", winNode: "ravnica_implicit_maze" },
+                { text: "⚔️ Abbatti il TROLL RIGENERANTE sul ponte dell'Undercity!", type: "combat", monster: "llanowar_troll", winNode: "ravnica_implicit_maze" },
+                { text: "🐍 Evita lo sguardo pietrificante di Vraska con i riflessi (AGI CD 29)", type: "roll", stat: "agi", dc: 29, successNode: "ravnica_implicit_maze", failNode: "ravnica_rakdos_pit", failDamage: 7, failText: "Per schivare lo sguardo di Vraska cadi dalla balconata finendo nel Carnarium Rakdos!", rewards: { exp: 130, addKeyword: "Tocco Letale" } }
+            ]
+        },
+
+        ravnica_implicit_maze: {
+            act: "Saga di Ravnica — Capitolo 5 di 6",
+            title: "Il Capolinea del Labirinto Implicito",
+            text: "Raggiungete la Sala del Foro di Azor insieme a Jace Beleren e ai campioni delle Dieci Gilde! Ma un colossale **Obliteratore Infiltrato** cerca di assorbire il potere convergente delle linee di forza cittadine!",
+            choices: [
+                { text: "⚔️ [BOSS DI RAVNICA] Distruggi l'Obliteratore nella Sala del Patto delle Gilde!", type: "combat", monster: "phyrexian_obliterator", winNode: "ravnica_ch2" }
+            ]
+        },
+
         ravnica_ch2: {
-            act: "Saga di Ravnica — Capitolo 2",
-            title: "La Lanterna Cromatica",
-            text: "Il Patto delle Gilde vi premia con la **Lanterna Cromatica** e 120 Monete d'Oro.",
+            act: "Saga di Ravnica — Capitolo Finale 6 di 6",
+            title: "La Benedizione delle Dieci Gilde",
+            text: "I simboli di tutte le Dieci Gilde s'illuminano nel cielo di Ravnica! Jace Beleren e Niv-Mizzet vi consegnano la suprema **Lanterna Cromatica** e il **Martello da Guerra Lossodonte** del Conclave di Selesnya!",
             choices: [
-                { text: "🌈 Raccogli la Lanterna e torna al Nexus Planare", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "chromatic_lantern", gold: 120, exp: 160, heal: 20 } }
+                { text: "🌈 Prendi la Lanterna Cromatica (+180 EXP, +110 Oro, Cura Totale) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "chromatic_lantern", exp: 180, gold: 110, heal: 50 } },
+                { text: "🔨 Prendi il Martello Lossodonte (+180 EXP, +110 Oro, Cura Totale) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "loxodon_warhammer", exp: 180, gold: 110, heal: 50 } }
             ]
         },
 
-        // --- KAMIGAWA ---
+        // ====================================================================
+        // SAGA 3: KAMIGAWA — TRA SPIRITI KAMI E LUCI AL NEON (5 CAPITOLI)
+        // ====================================================================
         kamigawa_ch1: {
-            act: "Saga di Kamigawa — Capitolo 1",
-            title: "I Tetti di Towashi",
-            text: "Duello all'ultimo sangue contro i ninja rinnegati e i Kami oscuri di Kamigawa.",
+            act: "Saga di Kamigawa — Capitolo 1 di 5",
+            title: "Kaito Shizuki e l'Imperatrice Viandante a Towashi",
+            text: "Atterrate tra i grattacieli illuminati al neon e i ciliegi in fiore della Sotto-Città di Towashi. Il ninja **Kaito Shizuki** e la fulminea **Imperatrice Viandante** stanno respingendo un attacco degli spietati Reckoner e dei Ninja del sindacato Futurist:\n\n«L'ogre-demone **Hidetsugu** e spiriti Kami corrotti vogliono bruciare l'albero sacro di **Boseiju**! Aiutateci a liberare i tetti di Towashi!»",
             choices: [
-                { text: "🥷 Affronta i ninja nei vicoli al neon (AGI CD 29)", type: "roll", stat: "agi", dc: 29, successNode: "kamigawa_ch2", failNode: "kamigawa_ch1", failDamage: 6, rewards: { exp: 150, gold: 90, addKeyword: "Attacco Improvviso" } },
-                { text: "⚔️ Sconfiggi i tagliagole nell'Arena!", type: "combat", monster: "bandit_rogues", winNode: "kamigawa_ch2" }
+                { text: "🥷 Combatti i Ninja e i Maghi cibernetici sui tetti di Towashi nell'Arena!", type: "combat", monster: "bandit_rogues", winNode: "kamigawa_oni_crucible" },
+                { text: "⚡ Corri lungo le insegne olografiche al fianco di Kaito (AGI CD 28)", type: "roll", stat: "agi", dc: 28, successNode: "kamigawa_oni_crucible", failNode: "kamigawa_ch1", failDamage: 6, failText: "Scivoli da un tetto bagnato dalla pioggia acida e devi risalire!", rewards: { exp: 120, addKeyword: "Imbloccabile", gold: 50 } }
             ]
         },
+
+        kamigawa_oni_crucible: {
+            act: "Saga di Kamigawa — Capitolo 2 di 5",
+            title: "Il Crogiolo di Sokenzan e Hidetsugu",
+            text: "Salendo verso i monti di Sokenzan, vi imbattete nel santuario di sangue di **Hidetsugu, lo Sciamano Ogre del Caos Tutto-Divorante**! Per passare verso la foresta di Jukai dovete superare la sua prova di dolore o sconfiggere il suo Oni Guardiano!",
+            choices: [
+                { text: "👹 Affronta l'Oni del Caos di Hidetsugu (Negatore) nell'Arena!", type: "combat", monster: "phyrexian_negator", winNode: "kamigawa_jukai_forest" },
+                { text: "🔥 Sopporta il Rito del Fuoco di Hidetsugu (COS CD 29)", type: "roll", stat: "con", dc: 29, successNode: "kamigawa_jukai_forest", failNode: "kamigawa_ch1", failDamage: 8, failText: "Il rito di Hidetsugu ti sopraffà e vieni rispedito indietro nei bassifondi di Towashi!", rewards: { exp: 135, addKeyword: "Attacco Improvviso", treasures: 2 } }
+            ]
+        },
+
+        kamigawa_jukai_forest: {
+            act: "Saga di Kamigawa — Capitolo 3 di 5",
+            title: "La Foresta di Jukai e le Pergamene di Tamiyo",
+            text: "Sotto le fronde verdi smeraldo di Jukai, la saggia Soratami **Tamiyo** (attraverso le sue pergamene viventi) vi guida verso le radici dell'albero-grattacielo di **Boseiju**, ma un colossale Kami-Wurm corrotto divora il sentiero!",
+            choices: [
+                { text: "⚔️ Abbatti il Kami-Wurm Corazzato nell'Arena di Jukai!", type: "combat", monster: "craw_wurm", winNode: "kamigawa_eiganjo_castle" },
+                { text: "📜 Leggi il Racconto della Luna di Tamiyo per pacificare la foresta (MAG CD 29)", type: "roll", stat: "mag", dc: 29, successNode: "kamigawa_eiganjo_castle", failNode: "kamigawa_jukai_forest", failDamage: 6, failText: "Le radici ti avvinghiano! Riprova!", rewards: { exp: 140, loot: "sensei_top" } }
+            ]
+        },
+
+        kamigawa_eiganjo_castle: {
+            act: "Saga di Kamigawa — Capitolo 4 di 5",
+            title: "La Difesa del Trono Celeste di Eiganjo",
+            text: "Prima di entrare nel cuore di Boseiju, aiutate l'Imperatrice Viandante a sconfiggere l'Avatar Alato della Guerra che minaccia il Castello Imperiale di Eiganjo!",
+            choices: [
+                { text: "⚔️ [BOSS DI KAMIGAWA] Sconfiggi l'Avatar Celeste di Eiganjo nell'Arena!", type: "combat", monster: "akroma_angel", winNode: "kamigawa_ch2" }
+            ]
+        },
+
         kamigawa_ch2: {
-            act: "Saga di Kamigawa — Capitolo 2",
-            title: "La Jitte di Umezawa",
-            text: "Lo Spirito Drago di Boseiju vi consegna la leggendaria **Jitte di Umezawa** e 130 Monete d'Oro.",
+            act: "Saga di Kamigawa — Capitolo Finale 5 di 5",
+            title: "Il Cuore di Boseiju, Chi Protegge Tutto",
+            text: "Sotto la chioma immortale di **Boseiju**, lo spirito drago **Kyodai** e l'Imperatrice Viandante s'inchinano alla vostra Compagnia: vi vengono consegnate la leggendaria **Jitte di Umezawa** e la **Cappa delle Profezie del Sensei**!",
             choices: [
-                { text: "🗡️ Prendi la Jitte e torna al Nexus Planare", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "umezawa_jitte", gold: 130, exp: 170, heal: 20 } }
+                { text: "🗡️ Impugna la Jitte di Umezawa (+190 EXP, +120 Oro, Cura Totale) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "umezawa_jitte", exp: 190, gold: 120, heal: 50 } },
+                { text: "🪖 Prendi la Cappa del Sensei (+190 EXP, +120 Oro, Cura Totale) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "sensei_top", exp: 190, gold: 120, heal: 50 } }
             ]
         },
 
-        // --- ZENDIKAR ---
+        // ====================================================================
+        // SAGA 4: ZENDIKAR — IL TORBIDO E GLI EDRI DI UGIN (5 CAPITOLI)
+        // ====================================================================
         zendikar_ch1: {
-            act: "Saga di Zendikar — Capitolo 1",
-            title: "Gli Edri Fluttuanti",
-            text: "Affrontate i mostri Eldrazi e i Wurm colossali tra le rocce fluttuanti di Zendikar.",
+            act: "Saga di Zendikar — Capitolo 1 di 5",
+            title: "Porta del Mare con Nissa Revane e Nahiri",
+            text: "Sbarcate sulle scogliere sospese di Zendikar, un mondo in costante mutamento scosso dal **Torbido (The Roil)**. L'elfa animista **Nissa Revane** e la litomante Kor **Nahiri** vi attendono presso il faro di Porta del Mare:\n\n«Gli Edri antichi stanno crollando nel continente di Bala Ged, risvegliando dinosauri colossali, Wurm e nidiate aliene! Aiutateci a raggiungere l'**Occhio di Ugin** sulle montagne di Akoum!»",
             choices: [
-                { text: "⚔️ Sconfiggi il Wurm Colossale di Bala Ged nell'Arena!", type: "combat", monster: "craw_wurm", winNode: "zendikar_ch2" },
-                { text: "🧗 Arrampicati sugli Edri instabili (AGI CD 29)", type: "roll", stat: "agi", dc: 29, successNode: "zendikar_ch2", failNode: "zendikar_ch1", failDamage: 6, rewards: { exp: 150, gold: 90 } }
+                { text: "🦖 Affronta la Fauce Terrificante (Colossal Dreadmaw 6/6) nella giungla!", type: "combat", monster: "colossal_dreadmaw", winNode: "zendikar_hedron_maze" },
+                { text: "🌿 Unisci il tuo mana a Nissa per cavalcare le radici viventi (MAG o FOR CD 28)", type: "roll", stat: "mag", dc: 28, successNode: "zendikar_hedron_maze", failNode: "zendikar_ch1", failDamage: 6, failText: "Una scossa del Torbido ti fa perdere l'equilibrio!", rewards: { exp: 130, addMana: "G", gold: 50 } }
             ]
         },
-        zendikar_ch2: {
-            act: "Saga di Zendikar — Capitolo 2",
-            title: "Le Reliquie di Zendikar",
-            text: "Trovate la **Spada di Fuoco e Ghiaccio** e 140 Monete d'Oro nascoste nell'Occhio di Ugin.",
+
+        zendikar_hedron_maze: {
+            act: "Saga di Zendikar — Capitolo 2 di 5",
+            title: "Il Labirinto degli Edri Fluttuanti nel Cielo",
+            text: "Per salire verso i picchi di Akoum dovete saltare di roccia in roccia lungo una catena di **Edri di Pietra** che fluttuano a centinaia di metri d'altezza! Un solo passo falso vi farà precipitare di nuovo nella giungla sottostante!",
             choices: [
-                { text: "⚔️ Raccogli la Spada e torna al Nexus Planare", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "sword_fire_ice", gold: 140, exp: 180, heal: 25 } }
+                { text: "🧗 Usa i rampini Kor con Nahiri per saltare tra gli Edri (AGI CD 29)", type: "roll", stat: "agi", dc: 29, successNode: "zendikar_akoum_peaks", failNode: "zendikar_roil_fall_setback", failDamage: 7, failText: "La corda si spezza durante una tempesta del Torbido e precipitate nel vuoto!", rewards: { exp: 140, loot: "trailblazer_boots" } },
+                { text: "🦅 [Volare] Vola direttamente oltre l'abisso degli Edri fino alla vetta!", type: "move", reqKeyword: "Volare", nextNode: "zendikar_akoum_peaks", rewards: { exp: 120 } }
+            ]
+        },
+
+        zendikar_roil_fall_setback: {
+            act: "Saga di Zendikar — Caduta nel Torbido!",
+            title: "Precipitati nella Fossa del Lhurgoyf!",
+            text: "Le liane attutiscono per miracolo la vostra caduta dal cielo, ma vi ritrovate **in fondo al canyon di Bala Ged**, faccia a faccia con un famelico **Lhurgoyf Ancestrale**!",
+            choices: [
+                { text: "⚔️ Sconfiggi il Lhurgoyf per poter risalire verso gli Edri Fluttuanti!", type: "combat", monster: "lhurgoyf_alpha", winNode: "zendikar_hedron_maze" },
+                { text: "⏪ Torna indietro a Porta del Mare per curarti", type: "move", nextNode: "zendikar_ch1" }
+            ]
+        },
+
+        zendikar_akoum_peaks: {
+            act: "Saga di Zendikar — Capitolo 4 di 5",
+            title: "L'Ingresso dell'Occhio di Ugin",
+            text: "Raggiungete la caverna mistica dell'**Occhio di Ugin**, dove millenni fa Sorin, Nahiri e lo spirito drago Ugin sigillarono i Titani Eldrazi. Un'orda di progenie aliena e Tramutanti mutati dal mana incolore difende il santuario interno!",
+            choices: [
+                { text: "⚔️ [BOSS DI ZENDIKAR] Sconfiggi la Regina della Nidiata nell'Occhio di Ugin!", type: "combat", monster: "sliver_queen", winNode: "zendikar_ch2" }
+            ]
+        },
+
+        zendikar_ch2: {
+            act: "Saga di Zendikar — Capitolo Finale 5 di 5",
+            title: "Il Tesoro delle Spade di Mirrodin e Zendikar",
+            text: "Stabilizzato il nodo dell'Occhio di Ugin, Nahiri apre per voi la forgiatura litomantica segreta: al suo interno risplendono la **Spada di Fuoco e Ghiaccio** e la **Spada di Abbondanza e Carestia**!",
+            choices: [
+                { text: "⚔️ Prendi la Spada di Fuoco e Ghiaccio (+200 EXP, +130 Oro, Cura Totale) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "sword_fire_ice", exp: 200, gold: 130, heal: 50 } },
+                { text: "🗡️ Prendi la Spada di Abbondanza e Carestia (+200 EXP, +130 Oro, Cura Totale) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "sword_feast_famine", exp: 200, gold: 130, heal: 50 } }
             ]
         },
 
         // ====================================================================
-        // ATTO V: FINALE DEL MULTIVERSO
+        // ATTO V: IL GRAN FINALE MULTIVERSALE (ELESH NORN, NICOL BOLAS & UGIN)
         // ====================================================================
-        finale_realm_gate: {
-            act: "Atto Finale — Il Cuore della Cieca Eternità",
-            title: "L'Assedio al Trono dell'Eternità",
-            textSolo: "Varchi la Frattura Finale. La Cittadella della Singolarità si erge davanti a te. È il momento dello scontro decisivo per salvare il Multiverso!",
-            textParty: "La Compagnia varca la Frattura Finale insieme! La Cittadella della Singolarità vi attende per l'ultima, epica battaglia che deciderà il destino di tutti i mondi!",
+        finale_planar_bridge: {
+            act: "Atto V — Il Ponte Planare e il Realmbreaker",
+            title: "La Soglia dell'Apocalisse",
+            textSolo: "Attraversi il vortice supremo della Cieca Eternità. Davanti a te i rami biomeccanici del *Frangireami (Realmbreaker)* di Nuova Phyrexia si intrecciano con le guglie d'ossidiana della **Cittadella di Nicol Bolas**! Per arrivare al Trono della Singolarità dovrai prima sfondare il blocco della Madre delle Macchine!",
+            textParty: "La vostra Compagnia di Planeswalker varca insieme il Ponte Planare! Davanti a voi si staglia l'incubo supremo del Multiverso: le legioni biomeccaniche di **Elesh Norn** e l'Esercito degli Eterni di **Nicol Bolas** presidiano la Cittadella della Singolarità! È l'inizio della Battaglia Finale!",
             choices: [
-                { text: "⚔️ [BATTAGLIA FINALE] Affronta l'Avatar Draconico Supremo nell'Arena!", type: "combat", monster: "shivan_dragon", winNode: "victory_epilogue" },
-                { text: "🔥 Scatena una Tempesta di Mana Totale con la Compagnia (MAG CD 34)", type: "roll", stat: "mag", dc: 34, successNode: "victory_epilogue", failNode: "finale_realm_gate", failDamage: 10, failText: "L'energia di Bolas vi respinge! Riprova l'assalto!", rewards: { exp: 400, gold: 300 } }
+                { text: "⚔️ [FASE 1 FINALE] Sfondate il Bastione Phyrexiano affrontando il COLOSSO DI BLIGHTSTEEL!", type: "combat", monster: "blightsteel_colossus", winNode: "finale_bolas_citadel" },
+                { text: "💿 Usa la scienza di Urza e il Disco di Nevinyrral per polverizzare il blocco (MAG CD 32)", type: "roll", stat: "mag", dc: 32, successNode: "finale_bolas_citadel", failNode: "finale_praetor_forced", failDamage: 9, failText: "Gli scudi dei Pretori resistono all'esplosione! Il Colosso carica!", rewards: { exp: 250, loot: "nevinyrral_disk" } },
+                { text: "⏪ Torna al Nexus Planare per fare gli ultimi acquisti dal Mercante", type: "move", nextNode: "planeswalker_nexus" }
+            ]
+        },
+
+        finale_praetor_forced: {
+            act: "Atto V — Il Bastione dei Pretori",
+            title: "L'Avanguardia di Nuova Phyrexia!",
+            text: "Il Colosso di Blightsteel cala il suo maglio infetto su di voi! Abbattetelo per entrare nella Cittadella!",
+            choices: [
+                { text: "⚔️ Combatti il Colosso di Blightsteel nell'Arena!", type: "combat", monster: "blightsteel_colossus", winNode: "finale_bolas_citadel" }
+            ]
+        },
+
+        finale_bolas_citadel: {
+            act: "Atto V — La Cittadella del Dio-Faraone",
+            title: "L'Alleanza con Ugin, il Drago Spirito",
+            text: "Superate le linee phyrexiane e salite la scalinata stellare della Cittadella. Nel cielo sopra di voi appare **Ugin, il Drago Spirito**, avvolto da fuoco spettrale incolore:\n\n«Campioni di Dominaria! Mio fratello **Nicol Bolas** ha fuso la sua essenza draconica con il nucleo della Singolarità. Vi dono la mia benedizione curativa: entrate nella Sala del Trono e spezzate per sempre il suo dominio!»",
+            choices: [
+                { text: "✨ Ricevi la Benedizione di Ugin (+40 PV a tutta la Compagnia, +2 Tesori 💎) ed entra nella Sala del Trono!", type: "move", nextNode: "finale_realm_gate", rewards: { heal: 40, treasures: 2, exp: 200 } }
+            ]
+        },
+
+        finale_realm_gate: {
+            act: "Atto V — Il Trono dell'Eternità",
+            title: "Lo Scontro Finale col Dio-Drago della Singolarità",
+            textSolo: "Le porte della Sala del Trono esplodono. Tra le corna dell'immenso **Avatar Draconico di Nicol Bolas** ruota la Gemma del Divinire mentre 4💧 Mana Blu brillano attorno ai suoi artigli per neutralizzare le tue magie. È il duello finale per il destino di ogni Piano!",
+            textParty: "La Compagnia irrompe nella Sala del Trono! L'**Avatar Draconico di Nicol Bolas** dispiega le sue ali colossali sopra l'abisso cosmico: dispone di 130 Punti Vita e 4💧 Mana Blu per contrastare i vostri incantesimi!\n\nImpugnate le vostre armi leggendarie, usate saggiamente la vostra Riserva di Mana e sconfiggetelo insieme!",
+            choices: [
+                { text: "⚔️ [BOSS FINALE DEL GIOCO] Affronta l'AVATAR DRACONICO DI BOLAS nell'Arena a Turni!", type: "combat", monster: "shivan_dragon", winNode: "finale_climax_strike" }
+            ]
+        },
+
+        finale_climax_strike: {
+            act: "Atto V — Il Crollo della Singolarità",
+            title: "L'Ultimo Sigillo dei Cinque Soli",
+            text: "Con un ruggito che scuote l'intera Cieca Eternità, l'Avatar Draconico precipita nel vuoto! Ugin lo incatena nel Reame della Meditazione, mentre a voi resta l'ultimo gesto eroico: sigillare la Frattura del Multiverso con la luce combinata delle vostre Scintille!",
+            choices: [
+                { text: "👑 Scatena il Raggio dei Cinque Colori di Mana e salva il Multiverso!", type: "move", nextNode: "victory_epilogue", rewards: { exp: 500, gold: 300, heal: 100, treasures: 5 } }
             ]
         },
 
         victory_epilogue: {
-            act: "🏆 EPILOGO — Leggende del Multiverso",
-            title: "I Custodi dell'Eternità",
-            textSolo: "Un'esplosione di luce dorata attraversa i Piani! La minaccia è debellata e il Multiverso è salvo.\n\n🏆 **HAI COMPLETATO LA CAMPAGNA DI DOMINARIA E DEI PIANI!**\nPuoi stampare la tua Scheda Personaggio definitiva come trofeo o continuare a esplorare il post-game!",
-            textParty: "La Compagnia ha salvato l'intero Multiverso! I vostri nomi sono leggenda in ogni piano esistente.\n\n🏆 **AVETE COMPLETATO IL GDR DI GRUPPO!**\nStampate le vostre schede eroiche e godetevi la gloria!",
+            act: "🏆 EPILOGO LEGGENDARIO — I Custodi del Multiverso",
+            title: "Gloria Eterna su Dominaria e Oltre i Piani",
+            textSolo: "Un'onda di luce dorata attraversa Dominaria, Innistrad, Ravnica, Kamigawa e Zendikar! A Nuova Benalia, Jhoira, Teferi e Karn innalzano un monumento in tuo onore.\n\n🏆 **COMPLIMENTI! HAI COMPLETATO L'INTERA CAMPAGNA GDR!**\nIl tuo eroe è entrato nella leggenda assoluta di Magic: The Gathering. Ora puoi stampare la tua **Scheda Personaggio in formato A4** con tutte le reliquie conquistate, oppure continuare a viaggiare liberamente nel Post-Game!",
+            textParty: "Un'onda di luce dorata guarisce le ferite di Dominaria, Innistrad, Ravnica, Kamigawa e Zendikar! A Nuova Benalia, Jhoira, Teferi, Karn e Ugin accolgono la vostra Compagnia come i più grandi salvatori che il Multiverso abbia mai conosciuto!\n\n🏆 **AVETE COMPLETATO LA MAXI-CAMPAGNA DI GRUPPO!**\nPotete ora aprire e stampare in A4 le **Schede Personaggio definitive** di tutta la compagnia come trofeo dell'avventura, sfidare il Super-Boss segreto **Marit Lage** nei ghiacci di Dark Depths o avviare una Nuova Partita+ mantenendo livelli, magie e artefatti!",
             choices: [
-                { text: "🌌 Torna al Crocevia Planare (Modalità Libera / Post-Game)", type: "move", nextNode: "planeswalker_nexus", rewards: { heal: 100 } }
+                { text: "🌌 Torna al Nexus Planare (Modalità Esplorazione Libera / Sfida Marit Lage)", type: "move", nextNode: "planeswalker_nexus", rewards: { heal: 100 } },
+                { text: "🔄 Avvia Nuova Partita+ dalla Locanda di Jhoira (Mantieni Livello, Oro, Magie e Black Lotus!)", type: "move", nextNode: "start", rewards: { heal: 100 } }
             ]
         }
     };
+
+    // ============================================================================
+    // UNIONE AUTOMATICA DI TUTTI I ~90 NODI DELLE 3 PARTI IN UN UNICO DATABASE!
+    // ============================================================================
+    const RPG_STORY_NODES = Object.assign(
+        {},
+        RPG_STORY_NODES_PART1,
+        RPG_STORY_NODES_PART2,
+        RPG_STORY_NODES_PART3
+    );
     
     // ============================================================================
     // --- PARTE 2: MOTORE GDR D&D + MAGIC COMPLETO (UI MOBILE FIX, 0 PV, OSTAGGI, ---
@@ -2322,17 +2828,8 @@
         };
 
         // BESTIARIO DI MAGIC (isHumanoid indica se possono catturare il gruppo come Ostaggi!)
-        const MTG_BESTIARY = {
-            goblin_pack: { name: "Orda di Goblin Predoni", isHumanoid: true, maxHP: 34, initBonus: 5, dc: 23, dmg: 6, blueMana: 0, exp: 55, gold: 20, treasures: 1, loot: "bonesplitter", desc: "Una banda feroce di Goblin pronta a derubarvi o catturarvi!" },
-            bandit_rogues: { name: "Sicari & Maghi Dimir", isHumanoid: true, maxHP: 42, initBonus: 7, dc: 25, dmg: 7, blueMana: 2, exp: 70, gold: 28, treasures: 1, loot: "hood_assassin", desc: "Assassini e maghi blu Dimir: possiedono 2💧 Mana Blu per Counterare e catturano ostaggi!" },
-            llanowar_troll: { name: "Troll di Thrun Rigenerante", isHumanoid: false, maxHP: 52, initBonus: 2, dc: 26, dmg: 8, blueMana: 0, exp: 90, gold: 25, treasures: 1, loot: "loxodon_warhammer", desc: "Un colosso muscoloso quasi impossibile da abbattere che rigenera +4 PV a ogni round!" },
-            craw_wurm: { name: "Wurm Corazzato delle Foreste (7/6)", isHumanoid: false, maxHP: 68, initBonus: 3, dc: 27, dmg: 10, blueMana: 0, exp: 115, gold: 35, treasures: 1, loot: "Swiftfoot_boots", desc: "Un gigantesco verme draconico i cui colpi possono mandare KO un avventuriero!" },
-            undead_lord: { name: "Signore dei Non Morti & Lich Blu", isHumanoid: true, maxHP: 64, initBonus: 4, dc: 27, dmg: 9, blueMana: 2, exp: 110, gold: 40, treasures: 1, loot: "whisper_cloak", desc: "Un negromante scortato da un Lich capace di usare Contromagia (2💧 Mana Blu)!" },
-            serra_griffin: { name: "Grifone d'Argento & Arcimago", isHumanoid: false, maxHP: 48, initBonus: 6, dc: 25, dmg: 8, blueMana: 2, exp: 85, gold: 30, treasures: 1, loot: "celestial_armor", desc: "Una fiera celeste protetta da scudi di contromagia astrale (2💧)!" },
-            phyrexian_obliterator: { name: "Obliteratore di Phyrexia (Boss)", isHumanoid: true, maxHP: 95, initBonus: 6, dc: 30, dmg: 12, blueMana: 2, exp: 180, gold: 70, treasures: 2, loot: "chromatic_lantern", isBoss: true, desc: "Un incubo biomeccanico letale protetto da droni Jin-Gitaxias (2💧 Mana Blu)!" },
-            shivan_dragon: { name: "Drago di Shiv & Avatar di Bolas (Boss)", isHumanoid: false, maxHP: 130, initBonus: 8, dc: 32, dmg: 14, blueMana: 4, exp: 300, gold: 140, treasures: 3, loot: "blackblade", isBoss: true, desc: "Signore supremo del fuoco e della magia Grixis: dispone di 4💧 Mana Blu!" }
-        };
-
+        const MTG_BESTIARY = typeof RPG_MONSTERS_DB !== "undefined" ? RPG_MONSTERS_DB : {};
+      
         // NODI SPECIALI INTEGRATI (Prigione Ostaggi & Locanda Reclutamento)
         const SPECIAL_DYNAMIC_NODES = {
             hostage_prison_node: {
