@@ -2181,8 +2181,8 @@
     };
     
     // ============================================================================
-    // --- PARTE 2: MOTORE GDR D&D + MAGIC COMPLETO (0 PV, DEATH SAVES, MANA POOL, ---
-    // --- ISTANTANEI/STREGONERIE ONE-SHOT, COUNTERSPELL NEMICO E MULTICLASSE)    ---
+    // --- PARTE 2: MOTORE GDR D&D + MAGIC COMPLETO (UI MOBILE FIX, 0 PV, OSTAGGI, ---
+    // --- INFIERIRE, TIMER 1m04s, GAME OVER TOTALE E SFIDA RECLUTAMENTO EROI)     ---
     // (100% Compatibile con Babel 6 - Zero Optional Chaining)
     // ============================================================================
     const RpgCharacterManager = ({ navigate }) => {
@@ -2196,19 +2196,24 @@
         const [pendingRollChoice, setPendingRollChoice] = useState(null);
         const [manualD20Input, setManualD20Input] = useState(10);
 
-        // Stati Magia, Cura D8, Tesori, Mercante e Multiclasse
+        // Stati Magia, Cura D8, Tesori, Mercante, Multiclasse, Timer 64s e Reclutamento
         const [treasureBoostActive, setTreasureBoostActive] = useState(false);
         const [giantGrowthActive, setGiantGrowthActive] = useState(false);
         const [teferiPhaseOut, setTeferiPhaseOut] = useState(false);
         const [counterspellShield, setCounterspellShield] = useState(false);
         const [showMerchant, setShowMerchant] = useState(false);
         const [showMulticlassModal, setShowMulticlassModal] = useState(false);
-        const [pendingHealSpell, setPendingHealSpell] = useState(null); // Per tiro D8 manuale/scelta bersaglio
+        const [pendingHealSpell, setPendingHealSpell] = useState(null);
+
+        // Timer Incoscienza 1 giorno e 4 ore (64 secondi) e Reclutamento Mercenario
+        const [dormantTimer, setDormantTimer] = useState(0);
+        const [showMercenaryModal, setShowMercenaryModal] = useState(false);
+        const [pendingMercenaryHero, setPendingMercenaryHero] = useState(null);
 
         // Stato Arena di Combattimento a Turni D&D
         const [combatState, setCombatState] = useState(null);
         const [pendingCombatAction, setPendingCombatAction] = useState(null);
-        const [pendingDeathSaveManual, setPendingDeathSaveManual] = useState(false);
+        const [pendingMonsterBehaviorManual, setPendingMonsterBehaviorManual] = useState(false);
 
         // Form Creazione Eroe
         const [name, setName] = useState("");
@@ -2237,11 +2242,8 @@
             { id: "G", name: "Verde (Natura, Ramp)", icon: "🌳", colorClass: "text-green-600", bgClass: "bg-green-100", borderClass: "border-green-600" }
         ];
 
-        // ============================================================================
-        // DATABASE INCANTESIMI E ABILITÀ DI MAGIC (ISTANTANEI, STREGONERIE, CURE D8, ONE-SHOT)
-        // ============================================================================
+        // DATABASE INCANTESIMI E ABILITÀ DI MAGIC
         const MTG_SPELLS_DB = {
-            // --- CURE D&D CON DADO D8 (ESCLUSIVA CHIERICI E SCIAMANI) ---
             cure_wounds_d8: {
                 id: "cure_wounds_d8", name: "Parola Guaritrice (1d8)", timing: "instant", costColor: "W", costAmount: 1, oneShot: false,
                 onlyHealers: true, effectType: "heal_d8", diceCount: 1,
@@ -2262,8 +2264,6 @@
                 onlyHealers: true, effectType: "resurrect",
                 desc: "Stregoneria ONE-SHOT (3☀️): Riporta in vita un compagno MORTO (💀) con metà dei suoi Punti Vita!"
             },
-
-            // --- ISTANTANEI D'ATTACCO E SUPPORTO (USABILI ANCHE FUORI TURNO!) ---
             lightning_bolt: {
                 id: "lightning_bolt", name: "Fulmine (Lightning Bolt)", timing: "instant", costColor: "R", costAmount: 1, oneShot: false,
                 effectType: "direct_dmg", dmg: 12,
@@ -2277,7 +2277,7 @@
             opt_cantrip: {
                 id: "opt_cantrip", name: "Predestinare (Opt & Dardo Blu)", timing: "instant", costColor: "U", costAmount: 1, oneShot: false,
                 effectType: "direct_dmg", dmg: 10,
-                desc: "Istantaneo (1💧): Dardo di puro mana blu che infligge 10 danni sicuri e studia il nemico."
+                desc: "Istantaneo (1💧): Dardo di puro mana blu che infligge 10 danni sicuri."
             },
             dark_drain: {
                 id: "dark_drain", name: "Risucchio d'Anima (Drain Life)", timing: "instant", costColor: "B", costAmount: 1, oneShot: false,
@@ -2289,27 +2289,25 @@
                 effectType: "shield_counter",
                 desc: "Istantaneo (2💧): Annulla il prossimo attacco o magia del Mostro in questo round!"
             },
-
-            // --- MAGIE LEGGENDARIE "ONE-SHOT" (SI USANO UNA SOLA VOLTA NELLA PARTITA!) ---
             teferis_protection: {
                 id: "teferis_protection", name: "Protezione di Teferi", timing: "instant", costColor: "W", costAmount: 2, oneShot: true,
                 effectType: "phase_out",
-                desc: "Istantaneo ONE-SHOT (2☀️): Tutta la compagnia va Fuori Fase (Phase Out)! Siete immuni a qualsiasi danno per l'intero round!"
+                desc: "Istantaneo ONE-SHOT (2☀️): Tutta la compagnia va Fuori Fase (Phase Out)! Siete immuni ai danni per il round!"
             },
             path_to_exile: {
                 id: "path_to_exile", name: "Sentiero dell'Esilio (Path to Exile)", timing: "instant", costColor: "W", costAmount: 1, oneShot: true,
                 effectType: "exile_strike", dmg: 45,
-                desc: "Istantaneo ONE-SHOT (1☀️): Esilia all'istante un mostro comune o infligge 45 danni puri a un Boss! (Usabile 1 volta per partita)."
+                desc: "Istantaneo ONE-SHOT (1☀️): Esilia all'istante un mostro comune o infligge 45 danni puri a un Boss!"
             },
             swords_to_plowshares: {
                 id: "swords_to_plowshares", name: "Da Spade a Spighe", timing: "instant", costColor: "W", costAmount: 1, oneShot: true,
                 effectType: "exile_strike", dmg: 45,
-                desc: "Istantaneo ONE-SHOT (1☀️): Esilia un nemico trasformandolo in linfa (+10 PV al gruppo) o infligge 45 danni a un Boss!"
+                desc: "Istantaneo ONE-SHOT (1☀️): Esilia un nemico (+10 PV al gruppo) o infligge 45 danni a un Boss!"
             },
             doom_blade: {
                 id: "doom_blade", name: "Lama del Fato (Doom Blade)", timing: "sorcery", costColor: "B", costAmount: 2, oneShot: true,
                 effectType: "exile_strike", dmg: 50,
-                desc: "Stregoneria ONE-SHOT (2💀): Distrugge una creatura non-nera all'istante (o infligge 50 danni a un Boss)!"
+                desc: "Stregoneria ONE-SHOT (2💀): Distrugge una creatura non-nera all'istante (o 50 danni a un Boss)!"
             },
             fireball_sorcery: {
                 id: "fireball_sorcery", name: "Palla di Fuoco Arcana (Fireball)", timing: "sorcery", costColor: "R", costAmount: 2, oneShot: false,
@@ -2323,22 +2321,45 @@
             }
         };
 
-        // BESTIARIO DI MAGIC CON MANA BLU VISIBILE (PER COUNTERSPELL NEMICO!) E DIFFICOLTÀ AUMENTATA
+        // BESTIARIO DI MAGIC (isHumanoid indica se possono catturare il gruppo come Ostaggi!)
         const MTG_BESTIARY = {
-            goblin_pack: { name: "Orda di Goblin Predoni", maxHP: 34, initBonus: 5, dc: 23, dmg: 6, blueMana: 0, exp: 55, gold: 20, treasures: 1, loot: "bonesplitter", desc: "Una banda feroce di Goblin armata di lame arrugginite e granate!" },
-            bandit_rogues: { name: "Sicari & Maghi Dimir", maxHP: 42, initBonus: 7, dc: 25, dmg: 7, blueMana: 2, exp: 70, gold: 28, treasures: 1, loot: "hood_assassin", desc: "Assassini e maghi blu Dimir: possiedono 2💧 Mana Blu e possono COUNTERARE le vostre magie!" },
-            llanowar_troll: { name: "Troll di Thrun Rigenerante", maxHP: 52, initBonus: 2, dc: 26, dmg: 8, blueMana: 0, exp: 90, gold: 25, treasures: 1, loot: "loxodon_warhammer", desc: "Un colosso muscoloso quasi impossibile da abbattere che rigenera +4 PV a ogni round!" },
-            craw_wurm: { name: "Wurm Corazzato delle Foreste (7/6)", maxHP: 68, initBonus: 3, dc: 27, dmg: 10, blueMana: 0, exp: 115, gold: 35, treasures: 1, loot: "Swiftfoot_boots", desc: "Un gigantesco verme draconico i cui colpi possono mandare KO un avventuriero!" },
-            undead_lord: { name: "Signore dei Non Morti & Lich Blu", maxHP: 64, initBonus: 4, dc: 27, dmg: 9, blueMana: 2, exp: 110, gold: 40, treasures: 1, loot: "whisper_cloak", desc: "Un negromante scortato da un Lich capace di usare Contromagia (2💧 Mana Blu)!" },
-            serra_griffin: { name: "Grifone d'Argento & Arcimago", maxHP: 48, initBonus: 6, dc: 25, dmg: 8, blueMana: 2, exp: 85, gold: 30, treasures: 1, loot: "celestial_armor", desc: "Una fiera celeste protetta da scudi di contromagia astrale (2💧)!" },
-            phyrexian_obliterator: { name: "Obliteratore di Phyrexia (Boss)", maxHP: 95, initBonus: 6, dc: 30, dmg: 12, blueMana: 2, exp: 180, gold: 70, treasures: 2, loot: "chromatic_lantern", isBoss: true, desc: "Un incubo biomeccanico letale protetto da droni Jin-Gitaxias (2💧 Mana Blu)!" },
-            shivan_dragon: { name: "Drago di Shiv & Avatar di Bolas (Boss)", maxHP: 130, initBonus: 8, dc: 32, dmg: 14, blueMana: 4, exp: 300, gold: 140, treasures: 3, loot: "blackblade", isBoss: true, desc: "Signore supremo del fuoco e della magia Grixis: dispone di 4💧 Mana Blu per neutralizzare i vostri incantesimi!" }
+            goblin_pack: { name: "Orda di Goblin Predoni", isHumanoid: true, maxHP: 34, initBonus: 5, dc: 23, dmg: 6, blueMana: 0, exp: 55, gold: 20, treasures: 1, loot: "bonesplitter", desc: "Una banda feroce di Goblin pronta a derubarvi o catturarvi!" },
+            bandit_rogues: { name: "Sicari & Maghi Dimir", isHumanoid: true, maxHP: 42, initBonus: 7, dc: 25, dmg: 7, blueMana: 2, exp: 70, gold: 28, treasures: 1, loot: "hood_assassin", desc: "Assassini e maghi blu Dimir: possiedono 2💧 Mana Blu per Counterare e catturano ostaggi!" },
+            llanowar_troll: { name: "Troll di Thrun Rigenerante", isHumanoid: false, maxHP: 52, initBonus: 2, dc: 26, dmg: 8, blueMana: 0, exp: 90, gold: 25, treasures: 1, loot: "loxodon_warhammer", desc: "Un colosso muscoloso quasi impossibile da abbattere che rigenera +4 PV a ogni round!" },
+            craw_wurm: { name: "Wurm Corazzato delle Foreste (7/6)", isHumanoid: false, maxHP: 68, initBonus: 3, dc: 27, dmg: 10, blueMana: 0, exp: 115, gold: 35, treasures: 1, loot: "Swiftfoot_boots", desc: "Un gigantesco verme draconico i cui colpi possono mandare KO un avventuriero!" },
+            undead_lord: { name: "Signore dei Non Morti & Lich Blu", isHumanoid: true, maxHP: 64, initBonus: 4, dc: 27, dmg: 9, blueMana: 2, exp: 110, gold: 40, treasures: 1, loot: "whisper_cloak", desc: "Un negromante scortato da un Lich capace di usare Contromagia (2💧 Mana Blu)!" },
+            serra_griffin: { name: "Grifone d'Argento & Arcimago", isHumanoid: false, maxHP: 48, initBonus: 6, dc: 25, dmg: 8, blueMana: 2, exp: 85, gold: 30, treasures: 1, loot: "celestial_armor", desc: "Una fiera celeste protetta da scudi di contromagia astrale (2💧)!" },
+            phyrexian_obliterator: { name: "Obliteratore di Phyrexia (Boss)", isHumanoid: true, maxHP: 95, initBonus: 6, dc: 30, dmg: 12, blueMana: 2, exp: 180, gold: 70, treasures: 2, loot: "chromatic_lantern", isBoss: true, desc: "Un incubo biomeccanico letale protetto da droni Jin-Gitaxias (2💧 Mana Blu)!" },
+            shivan_dragon: { name: "Drago di Shiv & Avatar di Bolas (Boss)", isHumanoid: false, maxHP: 130, initBonus: 8, dc: 32, dmg: 14, blueMana: 4, exp: 300, gold: 140, treasures: 3, loot: "blackblade", isBoss: true, desc: "Signore supremo del fuoco e della magia Grixis: dispone di 4💧 Mana Blu!" }
         };
 
-        // MERCANTE PLANARE BILANCIATO (Prezzi Alti e Requisiti di Livello per l'End-Game!)
+        // NODI SPECIALI INTEGRATI (Prigione Ostaggi & Locanda Reclutamento)
+        const SPECIAL_DYNAMIC_NODES = {
+            hostage_prison_node: {
+                act: "⛓️ Evento Speciale — Prigionieri nel Covo Nemico!",
+                title: "Presi in Ostaggio e Interrogati!",
+                textSolo: "Ti risvegli con 1 Punto Vita, i polsi legati da catene arrugginite dentro una grotta umida illuminata da torce. Il capo dei banditi ti punta una lama alla gola:\n\n«Siete sopravvissuti per miracolo! Dicci subito dove nascondete l'oro e gli artefatti della vostra missione, oppure marcirete in questa cella!»",
+                textParty: "Riprendete conoscenza tutti a 1 Punto Vita, legati schiena contro schiena nel covo dei vostri aguzzini! Il capobanda cammina davanti a voi battendo una mazza ferrata sul palmo:\n\n«Guardate chi si è svegliato! Sappiamo che siete in missione per conto dei saggi di Dominaria. Consegnateci il vostro oro e rivelateci dove sono i tesori di Koilos, o non uscirete vivi di qui!»",
+                choices: [
+                    { text: "🗝️ Spezza le catene o scassina la serratura di nascosto (FOR o AGI CD 22)", type: "roll", stat: "agi", dc: 22, successNode: "hostage_escape_success", failNode: "hostage_prison_node", failDamage: 1, failText: "La guardia sente il rumore delle catene e ti colpisce col calcio della lancia!", rewards: { exp: 60, loot: "hood_assassin" } },
+                    { text: "🔮 Inganna i carcerieri con una falsa mappa magica per fuggire (MAG CD 22)", type: "roll", stat: "mag", dc: 22, successNode: "hostage_escape_success", failNode: "hostage_prison_node", failDamage: 1, failText: "Il capobanda non abbocca al trucco!", rewards: { exp: 60, treasures: 1 } },
+                    { text: "🪙 Paga il Riscatto (Cedi 20 Monete d'Oro) per farti liberare e riprendere le armi", type: "move", nextNode: "crossroads_wilds", rewards: { gold: -20, heal: 10 } }
+                ]
+            },
+            hostage_escape_success: {
+                act: "⛓️ Fuga dal Covo",
+                title: "Liberi nella Notte!",
+                text: "Con uno scatto fulmineo vi liberate dalle catene, stordite i carcerieri recuperando il vostro equipaggiamento e persino una cassa di provviste dei banditi (+15 PV a tutta la compagnia e +30 Oro!).",
+                choices: [
+                    { text: "➔ Torna sul sentiero principale di Dominaria", type: "move", nextNode: "crossroads_wilds", rewards: { heal: 15, gold: 30, exp: 50 } }
+                ]
+            }
+        };
+
         const MERCHANT_SHOP = [
             { type: "token", id: "buy_food", name: "🍖 Pedina Cibo (Food Token)", cost: 25, minLvl: 1, desc: "Sacrifica per curare +6 PV (o rianimare da 0 PV)." },
             { type: "token", id: "buy_treasure", name: "💎 Pedina Tesoro (Treasure Token)", cost: 45, minLvl: 1, desc: "Sacrifica per ottenere +2 Mana di qualsiasi colore o +5 al Dado." },
+            { type: "spell", id: "angelic_resurrection", name: "📜 Pergamena: Resurrezione Angelica (One-Shot)", cost: 110, minLvl: 1, desc: "Riporta in vita un compagno MORTO (💀)!" },
             { type: "spell", id: "lightning_bolt", name: "📜 Pergamena: Fulmine (Lightning Bolt)", cost: 70, minLvl: 1, desc: "Impara l'Istantaneo Fulmine (1🔥: 12 danni certi)." },
             { type: "spell", id: "swords_to_plowshares", name: "📜 Pergamena: Da Spade a Spighe (One-Shot)", cost: 130, minLvl: 2, desc: "Impara l'Istantaneo One-Shot d'Esilio (1☀️)." },
             { type: "spell", id: "doom_blade", name: "📜 Pergamena: Lama del Fato (One-Shot)", cost: 140, minLvl: 2, desc: "Impara la Stregoneria One-Shot (2💀: Distrugge nemico)." },
@@ -2414,18 +2435,16 @@
             { id: "artefice", name: "Artefice", isCaster: true, strBonus: 1, agiBonus: 2, magBonus: 4, conBonus: 5, ability: "Mastro Forgiatore: Oggetti indistruttibili sull'1 critico e rapido accumulo Mana." }
         ];
 
-        // Assegna il 1° Slot Abilità iniziale in base alla Classe e al Colore di Mana
         const getInitialSpellsForClass = (classId, manaId) => {
-            if (classId === "chierico") return ["cure_wounds_d8"];
+            if (classId === "chierico") return ["cure_wounds_d8", "angelic_resurrection"];
             if (classId === "sciamano") return ["shaman_regen_d8"];
             if (classId === "mago" || classId === "necromante" || classId === "artefice") {
                 if (manaId === "R") return ["lightning_bolt"];
-                if (manaId === "U") return ["opt_cantrip"];
+                if (manaId === "U") return ["opt_cantrip", "counterspell_blue"];
                 if (manaId === "B") return ["dark_drain"];
                 if (manaId === "G") return ["giant_growth"];
                 return ["path_to_exile"];
             }
-            // Le classi marziali partono con 1 tecnica marziale nel 1° slot
             if (manaId === "G") return ["giant_growth"];
             return ["martial_rally"];
         };
@@ -2461,7 +2480,7 @@
 
             return {
                 ...char,
-                status: char.status || (char.currentHP <= 0 ? "unconscious" : "alive"), // "alive" | "unconscious" | "stabilized" | "dead"
+                status: char.status || (char.currentHP <= 0 ? "unconscious" : "alive"),
                 deathSuccesses: typeof char.deathSuccesses === "number" ? char.deathSuccesses : 0,
                 deathFailures: typeof char.deathFailures === "number" ? char.deathFailures : 0,
                 secondaryClassId: char.secondaryClassId || null,
@@ -2485,13 +2504,11 @@
             };
         };
 
-        // Verifica se un eroe può usare abilità di Cura (Solo Chierico o Sciamano come 1ª o 2ª classe!)
         const isHeroHealer = (char) => {
             if (!char) return false;
             return char.classId === "chierico" || char.classId === "sciamano" || char.secondaryClassId === "chierico" || char.secondaryClassId === "sciamano";
         };
 
-        // Verifica se un eroe è un incantatore rapido nell'accumulare Mana
         const isHeroCaster = (char) => {
             if (!char) return false;
             const c1 = CLASSES.find(c => c.id === char.classId);
@@ -2499,7 +2516,6 @@
             return (c1 && c1.isCaster) || (c2 && c2.isCaster);
         };
 
-        // Generazione Mana ad ogni Nodo (con Ramp del Verde e differenza Incantatori vs Marziali!)
         const generateManaForNode = (hero) => {
             let h = normalizeCharacterSlots(hero);
             if (h.status === "dead") return h;
@@ -2509,15 +2525,12 @@
 
             h.manaIdentity.forEach((col, idx) => {
                 if (caster) {
-                    // Incantatori: +1 mana ad ogni nodo sul colore principale, e ogni 2 nodi sui secondari
                     if (idx === 0 || tick % 2 === 0) pool[col] = Math.min(10, (pool[col] || 0) + 1);
                 } else {
-                    // Marziali (Guerrieri, Barbari, ecc.): accumulano mana lentamente (ogni 3 nodi)
                     if (tick % 3 === 0) pool[col] = Math.min(8, (pool[col] || 0) + 1);
                 }
             });
 
-            // RAMP DEL VERDE (G): In Magic il Verde rampa! Guadagna +1 Mana G extra ogni 2 nodi!
             if (h.manaIdentity.includes("G") && tick % 2 === 0) {
                 pool["G"] = Math.min(12, (pool["G"] || 0) + 1);
             }
@@ -2572,6 +2585,31 @@
             }
             return () => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); };
         }, []);
+
+        // GESTIONE TIMER INCOSCIENZA (1 Giorno e 4 Ore = 1 Minuto e 4 Secondi = 64s)
+        useEffect(() => {
+            if (dormantTimer <= 0) return;
+            const timerId = setInterval(() => {
+                setDormantTimer(prev => {
+                    if (prev <= 1) {
+                        clearInterval(timerId);
+                        // Risveglia tutti i personaggi stabilizzati a 1 PV!
+                        const awakenedParty = (party.length > 0 ? party : [character]).map(h => {
+                            if (h.status === "stabilized" || (h.status === "unconscious" && h.deathFailures < 3)) {
+                                return { ...h, currentHP: 1, status: "alive", deathSuccesses: 0, deathFailures: 0 };
+                            }
+                            return h;
+                        });
+                        savePartyState(awakenedParty);
+                        setCombatState(null);
+                        setEventBanner("🌅 Sono trascorse 1 giorno e 4 ore: i compagni stabilizzati riprendono conoscenza con **1 PV**! Potete ora usare poteri di resurrezione o recarvi al Bivacco dei Mercenari per sostituire gli eventuali caduti.");
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timerId);
+        }, [dormantTimer, party, character]);
 
         const savePartyState = (newParty) => {
             const norm = newParty.map(normalizeCharacterSlots);
@@ -2694,10 +2732,8 @@
             }
         };
 
-        // CREAZIONE PERSONAGGIO CON ECONOMIA HARDCORE E RISERVA DI MANA INIZIALE
-        const createCharacter = () => {
-            if (!name || !selectedRace || !selectedClass || !selectedMana) return alert("Compila tutti i campi!");
-            
+        // CREA UN OGGETTO EROE DAL FORM ATTUALE
+        const buildHeroFromForm = () => {
             const rData = RACES.find(r => r.id === selectedRace);
             const cData = CLASSES.find(c => c.id === selectedClass) || CLASSES[0];
             const mData = MANA_COLORS.find(m => m.id === selectedMana);
@@ -2717,9 +2753,9 @@
 
             const startPool = { W: 0, U: 0, B: 0, R: 0, G: 0 };
             startPool[mData.id] = cData.isCaster ? 3 : 1;
-            if (mData.id === "G") startPool["G"] += 1; // Ramp iniziale verde!
+            if (mData.id === "G") startPool["G"] += 1;
 
-            const newHero = {
+            return {
                 id: 'char-' + Date.now(),
                 name: name,
                 playMode: playMode,
@@ -2739,7 +2775,7 @@
                 usedOneShots: [],
                 level: 1,
                 exp: 0,
-                gold: cData.id === 'farabutto' ? 20 : 10, // Economia più difficile!
+                gold: cData.id === 'farabutto' ? 20 : 10,
                 treasures: cData.id === 'artefice' ? 2 : 1,
                 food: 1,
                 karma: 0,
@@ -2748,7 +2784,7 @@
                 status: "alive",
                 deathSuccesses: 0,
                 deathFailures: 0,
-                currentNode: "start",
+                currentNode: character ? character.currentNode : "start",
                 baseStats: {
                     str: rData.str + cData.strBonus,
                     agi: rData.agi + cData.agiBonus,
@@ -2761,10 +2797,13 @@
                 inventory: [],
                 equipped: startEquip
             };
+        };
 
+        const createCharacter = () => {
+            if (!name || !selectedRace || !selectedClass || !selectedMana) return alert("Compila tutti i campi!");
+            const newHero = buildHeroFromForm();
             const updatedParty = playMode === 'party' ? [...party, newHero] : [newHero];
             savePartyState(updatedParty);
-            
             setName(""); setSelectedRace(""); setSelectedClass("standard"); setSelectedMana(""); setCustomAvatar(null);
 
             if (playMode === 'solo') {
@@ -2774,6 +2813,71 @@
             }
         };
 
+        // RECLUTAMENTO NUOVO COMPAGNO IN SOSTITUZIONE DEI CADUTI (Con Scelta: Paga, Sfida a Duello o Convinci!)
+        const prepareMercenaryCandidate = () => {
+            if (!name || !selectedRace || !selectedClass || !selectedMana) return alert("Compila tutti i dati del nuovo eroe da incontrare alla Locanda!");
+            const candidate = buildHeroFromForm();
+            setPendingMercenaryHero(candidate);
+            setName(""); setSelectedRace(""); setSelectedClass("standard"); setSelectedMana(""); setCustomAvatar(null);
+        };
+
+        const resolveMercenaryRecruitment = (method) => {
+            if (!pendingMercenaryHero || !character) return;
+            let recruit = { ...pendingMercenaryHero, currentNode: character.currentNode };
+            let recruiter = { ...character };
+            let recruitMsg = "";
+
+            if (method === "pay") {
+                if ((recruiter.gold || 0) < 25) return alert("Non hai 25 Monete d'Oro! Scegli la Sfida a Duello o il Convincimento!");
+                recruiter.gold -= 25;
+                recruit.baseStats.con += 4;
+                recruit.currentHP += 4;
+                recruitMsg = `🪙 Hai pagato 25 Monete d'Oro a **${recruit.name}**! Soddisfatto del compenso, si unisce alla Compagnia con **+4 COS/Salute Bonus**!`;
+            } else if (method === "duel") {
+                const myRoll = Math.floor(Math.random() * 20) + 1 + Math.floor(getFinalStats(recruiter).str / 2);
+                const mercRoll = Math.floor(Math.random() * 20) + 1 + Math.floor(getFinalStats(recruit).str / 2);
+                if (myRoll >= mercRoll) {
+                    recruit.baseStats.str += 2;
+                    recruit.baseStats.mag += 2;
+                    recruiter.exp = (recruiter.exp || 0) + 30;
+                    recruitMsg = `⚔️ DUELLO VINTO (${myRoll} a ${mercRoll})! Hai battuto **${recruit.name}** in combattimento leale! Impressionato dalla tua forza, si unisce gratis con **+2 FOR/MAG** e tu guadagni **+30 EXP**!`;
+                } else {
+                    // Se perdi lo scontro per assoldarlo, lui prende un equipaggiamento/oro da te e un bonus alle statistiche!
+                    recruit.baseStats.str += 2;
+                    recruit.baseStats.agi += 2;
+                    recruit.baseStats.mag += 2;
+                    if (recruiter.inventory && recruiter.inventory.length > 0) {
+                        const stolenItem = recruiter.inventory[0];
+                        recruiter.inventory = recruiter.inventory.slice(1);
+                        recruit.inventory = [...recruit.inventory, adaptLootForCharacter(stolenItem, recruit)];
+                        recruitMsg = `💥 DUELLO PERSO (${myRoll} a ${mercRoll})! **${recruit.name}** ti atterra nella locanda, reclama il tuo oggetto **"${stolenItem.name}"** come trofeo (+2 Statistiche per lui) e, divertito dal tuo coraggio, decide comunque di unirsi alla Compagnia!`;
+                    } else {
+                        const takenGold = Math.min(recruiter.gold || 0, 15);
+                        recruiter.gold = (recruiter.gold || 0) - takenGold;
+                        recruit.gold = (recruit.gold || 0) + takenGold;
+                        recruitMsg = `💥 DUELLO PERSO (${myRoll} a ${mercRoll})! **${recruit.name}** vince la scommessa prendendosi **${takenGold} Oro** e **+2 Statistiche**, poi ti tende la mano e si unisce al gruppo!`;
+                    }
+                }
+            } else if (method === "persuade") {
+                const dipRoll = Math.floor(Math.random() * 20) + 1;
+                if (dipRoll >= 11) {
+                    recruitMsg = `🤝 DISCORSO EROICO (Dado ${dipRoll})! **${recruit.name}** abbraccia la vostra causa e si unisce gratuitamente alla Compagnia!`;
+                } else {
+                    recruit.currentHP = Math.max(5, recruit.currentHP - 5);
+                    recruiter.gold = Math.max(0, (recruiter.gold || 0) - 10);
+                    recruitMsg = `🍺 DISCORSO INCERTO (Dado ${dipRoll}): **${recruit.name}** accetta con riluttanza dopo essersi scolato 10 Monete d'Oro di birra (parte con -5 PV per i postumi!).`;
+                }
+            }
+
+            // Rimuovi i caduti morti (💀) sostituiti e aggiungi il nuovo eroe!
+            const livingMembers = party.filter(p => p.status !== "dead").map(p => p.id === recruiter.id ? recruiter : p);
+            const newPartyList = [...livingMembers, recruit];
+            savePartyState(newPartyList);
+            setPendingMercenaryHero(null);
+            setShowMercenaryModal(false);
+            setEventBanner(recruitMsg);
+        };
+
         const deleteParty = () => {
             if (window.confirm("Vuoi cancellare tutta la compagnia e ricominciare da zero?")) {
                 localStorage.removeItem('rpg_party');
@@ -2781,6 +2885,7 @@
                 setParty([]);
                 setCharacter(null);
                 setCombatState(null);
+                setDormantTimer(0);
                 setRpgView("create");
                 setLastRollInfo(null);
                 setEventBanner(null);
@@ -2806,9 +2911,6 @@
             }
         };
 
-        // ============================================================================
-        // GESTIONE PEDINE, MANA, INCANTESIMI (ISTANTANEI/STREGONERIE/CURE D8) E MULTICLASSE
-        // ============================================================================
         const sacrificeFoodToken = () => {
             if (character.status === "dead") return alert("Un personaggio morto (💀) non può mangiare cibo! Serve una Resurrezione Angelica.");
             const stats = getFinalStats(character);
@@ -2827,7 +2929,6 @@
             setEventBanner(`🍖 ${character.name} sacrifica una Pedina Cibo e recupera +6 Punti Vita!`);
         };
 
-        // Sacrifica 1 Tesoro per aggiungere +2 Mana di QUALSIASI colore (anche fuori dalla propria identità!)
         const crackTreasureForMana = (colorId) => {
             if ((character.treasures || 0) <= 0) return alert("Non hai Pedine Tesoro (💎) da sacrificare!");
             let pool = { ...(character.manaPool || { W: 0, U: 0, B: 0, R: 0, G: 0 }) };
@@ -2841,7 +2942,6 @@
             setEventBanner(`💎 ${character.name} tappa e sacrifica un Tesoro per aggiungere +2 Mana ${colorId} alla sua riserva!`);
         };
 
-        // Impara una nuova magia nel Grimorio (massimo 3 slot attivi: se pieno, sostituisce uno slot)
         const learnSpell = (hero, spellId) => {
             if (!MTG_SPELLS_DB[spellId]) return hero;
             let currentSpells = Array.isArray(hero.spells) ? [...hero.spells] : [];
@@ -2849,13 +2949,11 @@
             if (currentSpells.length < 3) {
                 currentSpells.push(spellId);
             } else {
-                // Mantiene lo slot 1 di classe e aggiorna lo slot 3
                 currentSpells[2] = spellId;
             }
             return { ...hero, spells: currentSpells };
         };
 
-        // SBLOCCA UNA SECONDA CLASSE A LIVELLO 1 (MULTICLASSE D&D!)
         const unlockSecondaryClass = (newClassId) => {
             if (!character) return;
             const cObj = CLASSES.find(c => c.id === newClassId);
@@ -2875,10 +2973,9 @@
             }
             saveCharState(updated);
             setShowMulticlassModal(false);
-            setEventBanner(`🏛️ MULTICLASSE SBLOCCATA! ${updated.name} ora possiede anche la classe **${cObj.name} (Liv. 1)** e ha appreso "${MTG_SPELLS_DB[newClassSpell] ? MTG_SPELLS_DB[newClassSpell].name : ""}"!`);
+            setEventBanner(`🏛️ MULTICLASSE SBLOCCATA! ${updated.name} ora possiede anche la classe **${cObj.name} (Liv. 1)**!`);
         };
 
-        // ESEGUE LA CURA CON DADO D8 (Chierico o Sciamano)
         const executeHealingSpellD8 = (spellObj, targetHeroId, d8RollValue) => {
             const caster = character;
             const classLvl = (caster.classId === "chierico" || caster.classId === "sciamano") ? caster.level : (caster.secondaryLevel || 1);
@@ -2917,7 +3014,6 @@
             }
         };
 
-        // LANCIO DI UN ISTANTANEO O DI UNA STREGONERIA DAL GRIMORIO (CON CONTROLLO COUNTERSPELL BLU NEMICO!)
         const castSpellFromSlot = (spellId) => {
             const spell = MTG_SPELLS_DB[spellId];
             if (!spell || !character) return;
@@ -2926,31 +3022,26 @@
                 return alert(`${character.name} è incosciente o morto e non può lanciare magie!`);
             }
 
-            // Controlla se è una magia One-Shot già usata in questa partita
             if (spell.oneShot && (character.usedOneShots || []).includes(spell.id)) {
                 return alert(`Hai già utilizzato "${spell.name}" in questa partita! Le magie che esiliano o distruggono sono One-Shot.`);
             }
 
-            // Controlla se è una Cura riservata a Chierico e Sciamano
             if (spell.onlyHealers && !isHeroHealer(character)) {
                 return alert("Solo i Chierici e gli Sciamani possono canalizzare incantesimi di Cura!");
             }
 
-            // Controlla il timing: le Stregonerie possono essere lanciate SOLO nel proprio turno!
             if (spell.timing === "sorcery" && combatState) {
                 const currentComb = combatState.turnOrder[combatState.currentTurnIdx];
                 if (!currentComb || currentComb.type !== "hero" || currentComb.id !== character.id) {
-                    return alert(`"${spell.name}" è una STREGONERIA: puoi lanciarla solo ed esclusivamente durante il turno di ${character.name}! (Gli Istantanei invece possono essere lanciati anche fuori turno).`);
+                    return alert(`"${spell.name}" è una STREGONERIA: puoi lanciarla solo durante il turno di ${character.name}!`);
                 }
             }
 
-            // Controlla il costo di Mana nella Riserva
             const currentMana = (character.manaPool && character.manaPool[spell.costColor]) ? character.manaPool[spell.costColor] : 0;
             if (currentMana < spell.costAmount) {
-                return alert(`Mana insufficiente! "${spell.name}" richiede ${spell.costAmount} Mana ${spell.costColor} (ne hai ${currentMana}). Avanza nei nodi o sacrifica un Tesoro (💎) per ottenere Mana ${spell.costColor}!`);
+                return alert(`Mana insufficiente! "${spell.name}" richiede ${spell.costAmount} Mana ${spell.costColor} (ne hai ${currentMana}).`);
             }
 
-            // Se è una Cura D8, apri il selettore del bersaglio / dado D8
             if (spell.effectType === "heal_d8" || spell.effectType === "heal_party_2d8") {
                 if (diceMode === "auto" && (party.length <= 1 || spell.effectType === "heal_party_2d8")) {
                     const d8 = (Math.floor(Math.random() * 8) + 1) + (spell.diceCount === 2 ? Math.floor(Math.random() * 8) + 1 : 0);
@@ -2961,7 +3052,6 @@
                 return;
             }
 
-            // Consuma il Mana e segna One-Shot se applicabile
             let newPool = { ...character.manaPool };
             newPool[spell.costColor] = currentMana - spell.costAmount;
             let newUsedOneShots = [...(character.usedOneShots || [])];
@@ -2973,7 +3063,6 @@
                 usedOneShots: newUsedOneShots
             };
 
-            // Resurrezione Angelica su un compagno morto 💀
             if (spell.effectType === "resurrect") {
                 const deadMate = party.find(p => p.status === "dead" || p.currentHP <= 0);
                 if (!deadMate) return alert("Nessun compagno è morto o incosciente in questo momento!");
@@ -2990,14 +3079,12 @@
                 return;
             }
 
-            // --- VERIFICA SE IL NEMICO HA MANA BLU PER LANCIARE COUNTERSPELL! ---
             if (combatState && (combatState.enemyBlueMana || 0) >= 2) {
-                // Il nemico spende 2 Mana Blu per counterare magie forti o con il 65% di probabilità!
                 const willCounter = spell.oneShot || spell.costAmount >= 2 || Math.random() < 0.65;
                 if (willCounter) {
                     const remainingBlue = combatState.enemyBlueMana - 2;
                     saveCharState(updatedCaster);
-                    const counterMsg = `💧🚫 CONTROMAGIA NEMICA (COUNTERSPELL)! ${combatState.name} spende 2💧 Mana Blu e NEUTRALIZZA "${spell.name}" di ${updatedCaster.name}! (Mana Blu nemico rimasto: ${remainingBlue}💧)`;
+                    const counterMsg = `💧🚫 CONTROMAGIA NEMICA (COUNTERSPELL)! ${combatState.name} spende 2💧 Mana Blu e NEUTRALIZZA "${spell.name}" di ${updatedCaster.name}!`;
                     setCombatState({
                         ...combatState,
                         enemyBlueMana: remainingBlue,
@@ -3008,11 +3095,10 @@
                 }
             }
 
-            // Applica gli effetti dell'Istantaneo o Stregoneria!
             if (spell.effectType === "phase_out") {
                 setTeferiPhaseOut(true);
                 saveCharState(updatedCaster);
-                const msg = `☀️⏳ PROTEZIONE DI TEFERI! Tutta la Compagnia va FUORI FASE (Phase Out): i vostri Punti Vita non possono cambiare e siete immuni agli attacchi per questo round!`;
+                const msg = `☀️⏳ PROTEZIONE DI TEFERI! Tutta la Compagnia va FUORI FASE (Phase Out): siete immuni ai danni per questo round!`;
                 setEventBanner(msg);
                 if (combatState) setCombatState({ ...combatState, log: [msg, ...combatState.log].slice(0, 8) });
                 return;
@@ -3021,7 +3107,7 @@
             if (spell.effectType === "shield_counter") {
                 setCounterspellShield(true);
                 saveCharState(updatedCaster);
-                const msg = `💧🛡️ ${updatedCaster.name} tiene pronta Contromagia: il prossimo attacco del mostro verrà neutralizzato!`;
+                const msg = `💧🛡️ ${updatedCaster.name} prepara Contromagia: il prossimo attacco del mostro verrà neutralizzato!`;
                 setEventBanner(msg);
                 if (combatState) setCombatState({ ...combatState, log: [msg, ...combatState.log].slice(0, 8) });
                 return;
@@ -3036,14 +3122,13 @@
                 return;
             }
 
-            // Magie di danno diretto o Esilio (in combattimento!)
             if (spell.effectType === "direct_dmg" || spell.effectType === "drain_dmg" || spell.effectType === "exile_strike") {
                 if (!combatState) {
                     return alert(`"${spell.name}" è una magia offensiva: usala durante uno scontro nell'Arena!`);
                 }
                 let spellDmg = spell.dmg || 12;
                 if (spell.effectType === "exile_strike" && !combatState.isBoss) {
-                    spellDmg = combatState.currentHP; // Esilia/Uccide sul colpo qualsiasi mostro non-boss!
+                    spellDmg = combatState.currentHP;
                 }
                 if (spell.effectType === "drain_dmg" || spell.id === "swords_to_plowshares") {
                     const max = getFinalStats(updatedCaster).maxHP;
@@ -3056,7 +3141,7 @@
                 let dmgMap = { ...(combatState.damageDealtByHero || {}) };
                 dmgMap[updatedCaster.id] = (dmgMap[updatedCaster.id] || 0) + spellDmg;
 
-                const hitMsg = `🔥✨ ${updatedCaster.name} lancia **${spell.name}** (${spell.timing === "instant" ? "Istantaneo" : "Stregoneria"}): colpo infallibile da **${spellDmg} danni** su ${combatState.name}!`;
+                const hitMsg = `🔥✨ ${updatedCaster.name} lancia **${spell.name}**: colpo infallibile da **${spellDmg} danni** su ${combatState.name}!`;
 
                 if (newMonsterHP <= 0) {
                     finishCombatVictory(updatedCaster, dmgMap, hitMsg);
@@ -3071,11 +3156,10 @@
             }
         };
 
-        // ACQUISTO DAL MERCANTE PLANARE (Con controllo Livello Minimo e Prezzi Hardcore)
         const buyFromMerchant = (shopEntry) => {
             const currentGold = character.gold || 0;
             if ((character.level || 1) < (shopEntry.minLvl || 1)) {
-                return alert(`Il Mercante scuote la testa: devi essere almeno di LIVELLO ${shopEntry.minLvl} per acquistare questo oggetto!`);
+                return alert(`Devi essere almeno di LIVELLO ${shopEntry.minLvl} per acquistare questo oggetto!`);
             }
             if (currentGold < shopEntry.cost) {
                 return alert(`Oro insufficiente! Ti servono ${shopEntry.cost} Monete d'Oro (ne hai ${currentGold}).`);
@@ -3108,7 +3192,7 @@
             const hasLantern = character.equipped && character.equipped.artifact && character.equipped.artifact.id === 'chromatic_lantern';
             if (item.reqMana && !character.manaIdentity.includes(item.reqMana) && !hasLantern) {
                 if ((character.treasures || 0) >= 2) {
-                    if (window.confirm(`Non possiedi il Mana ${item.reqMana} richiesto per "${item.name}". Vuoi sacrificare 2 Pedine Tesoro (💎) per sbloccare permanentemente il Mana ${item.reqMana}?`)) {
+                    if (window.confirm(`Non possiedi il Mana ${item.reqMana} richiesto per "${item.name}". Vuoi sacrificare 2 Pedine Tesoro (💎) per sbloccare il Mana ${item.reqMana}?`)) {
                         let unlockedChar = {
                             ...character,
                             treasures: character.treasures - 2,
@@ -3202,15 +3286,11 @@
             setEventBanner(`🪙 ${character.name} ha consegnato ${amount} Monete d'Oro a ${targetHero.name}!`);
         };
 
-        // ============================================================================
-        // GESTIONE RICOMPENSE, PASSAGGIO NODO (+1 PV AGLI STABILIZZATI, ACCUMULO MANA E ORO DIVISO)
-        // ============================================================================
         const applySingleHeroRewards = (hero, rewards, isActiveHero, nextNodeVal, partyCount) => {
             const nodeChanged = nextNodeVal && nextNodeVal !== hero.currentNode;
             let h = normalizeCharacterSlots({ ...hero, currentNode: nextNodeVal });
             let msgs = [];
 
-            // Se si passa al nodo successivo, genera Mana e i personaggi stabilizzati a 0 PV recuperano +1 PV!
             if (nodeChanged) {
                 h = generateManaForNode(h);
                 if ((h.status === "stabilized" || h.status === "unconscious") && h.currentHP <= 0) {
@@ -3220,24 +3300,22 @@
                     h.deathFailures = 0;
                     msgs.push(`🌅 Passaggio al nodo successivo: ${h.name} riprende conoscenza con **1 PV**!`);
                 }
-                // Conoscenza automatica di magie iconiche incontrando i personaggi di Magic!
                 if (nextNodeVal === "teferi_blessing") {
                     h = learnSpell(h, "teferis_protection");
-                    if (isActiveHero) msgs.push(`⏳ Teferi insegna alla compagnia l'Istantaneo leggendario **Protezione di Teferi**!`);
+                    if (isActiveHero) msgs.push(`⏳ Teferi insegna alla compagnia **Protezione di Teferi**!`);
                 }
                 if (nextNodeVal === "liliana_respect") {
                     h = learnSpell(h, "doom_blade");
-                    if (isActiveHero) msgs.push(`💀 Liliana Vess vi insegna la Stregoneria One-Shot **Lama del Fato (Doom Blade)**!`);
+                    if (isActiveHero) msgs.push(`💀 Liliana Vess vi insegna **Lama del Fato (Doom Blade)**!`);
                 }
                 if (nextNodeVal === "serra_blessing_done") {
                     h = learnSpell(h, "path_to_exile");
-                    if (isActiveHero) msgs.push(`☀️ L'Angelo di Serra vi insegna l'Istantaneo One-Shot **Sentiero dell'Esilio (Path to Exile)**!`);
+                    if (isActiveHero) msgs.push(`☀️ L'Angelo di Serra vi insegna **Sentiero dell'Esilio (Path to Exile)**!`);
                 }
             }
 
             if (!rewards) return { hero: h, msgs: msgs };
 
-            // Danni possono portare il personaggio a 0 PV (Stato Incosciente)!
             if (rewards.damage && isActiveHero && h.status !== "dead") {
                 h.currentHP = Math.max(0, h.currentHP - rewards.damage);
                 if (h.currentHP === 0) {
@@ -3255,7 +3333,6 @@
                 if (isActiveHero) msgs.push(`💥 Tutta la compagnia subisce ${rewards.partyDamage} danni!`);
             }
 
-            // ECONOMIA BILANCIATA: L'Oro viene DIVISO equamente tra i membri del Party!
             if (rewards.exp && h.status !== "dead") {
                 h.exp = (h.exp || 0) + rewards.exp;
                 const rawGold = rewards.gold || Math.max(6, Math.round(rewards.exp * 0.25));
@@ -3263,14 +3340,12 @@
                 h.gold = Math.max(0, (h.gold || 0) + splitGold);
                 if (isActiveHero) msgs.push(`🪙 Bottino diviso nel party: +${splitGold} Monete d'Oro a testa!`);
 
-                // Progressione livello proporzionale (150 EXP per livello)
                 const newLvl = Math.floor(h.exp / 150) + 1;
                 if (newLvl > h.level) {
                     h.level = newLvl;
                     const newMax = getFinalStats(h).maxHP;
                     if (h.currentHP > 0) h.currentHP = Math.min(newMax, h.currentHP + 6);
                     msgs.push(`🎉 ${h.name} sale al LIVELLO ${newLvl}! (+2 Statistiche, +6 PV)`);
-                    // Al livello 3 chierici e sciamani sbloccano anche la Preghiera 2d8 di gruppo!
                     if (newLvl >= 3 && (h.classId === "chierico" || h.classId === "sciamano")) {
                         h = learnSpell(h, "mass_prayer_2d8");
                     }
@@ -3390,7 +3465,7 @@
         };
 
         // ============================================================================
-        // MOTORE DI COMBATTIMENTO D&D + TIRI SALVEZZA CONTRO LA MORTE A 0 PV
+        // MOTORE DI COMBATTIMENTO D&D + GESTIONE COMPLETA 0 PV, INFIERIRE, OSTAGGI E FUGA MOSTRO
         // ============================================================================
         const buildTurnOrderAndStartBattle = (baseCombat, heroRollsMap) => {
             const activeParty = party.length > 0 ? party : [character];
@@ -3458,6 +3533,8 @@
             const baseCombat = {
                 key: monsterKey,
                 name: mTemplate.name,
+                isHumanoid: mTemplate.isHumanoid || false,
+                monsterFled: false,
                 maxHP: scaledHP,
                 currentHP: scaledHP,
                 dc: mTemplate.dc,
@@ -3480,7 +3557,7 @@
                 turnOrder: [],
                 currentTurnIdx: 0,
                 round: 1,
-                log: [`👹 ${mTemplate.name} (${scaledHP} PV${mTemplate.blueMana ? ` • 💧${mTemplate.blueMana} Mana Blu` : ""}) tira Iniziativa: D20 (${mD20}) + ${mInitBonus} = ${mInitTotal}!`]
+                log: [`👹 ${mTemplate.name} (${scaledHP} PV) tira Iniziativa: D20 (${mD20}) + ${mInitBonus} = ${mInitTotal}!`]
             };
 
             setLastRollInfo(null);
@@ -3517,7 +3594,36 @@
             }
         };
 
+        // Controlla se tutti gli eroi a 0 PV hanno terminato i tiri salvezza quando il mostro se n'è andato
+        const checkPostMonsterSurvivalResolution = (updatedCombat, updatedParty) => {
+            const anyAliveConscious = updatedParty.some(p => p.status === "alive" && p.currentHP > 0);
+            const anyStillRollingDeathSaves = updatedParty.some(p => p.status === "unconscious" && p.currentHP <= 0);
+            const anyStabilized = updatedParty.some(p => p.status === "stabilized" && p.currentHP <= 0);
+            const allDead = updatedParty.every(p => p.status === "dead");
+
+            if (allDead) {
+                setCombatState(null);
+                return true;
+            }
+
+            // Se il mostro se n'è andato e nessuno deve più tirare dadi contro la morte:
+            if (updatedCombat.monsterFled && !anyStillRollingDeathSaves) {
+                if (!anyAliveConscious && anyStabilized) {
+                    // Tutti i superstiti sono stabilizzati ma incoscienti a 0 PV -> Avvia il Timer di 1 giorno e 4 ore (64s)!
+                    setDormantTimer(64);
+                } else {
+                    setCombatState(null);
+                }
+                return true;
+            }
+            return false;
+        };
+
         const advanceToNextTurn = (updatedCombatState, updatedPartyList) => {
+            if (checkPostMonsterSurvivalResolution(updatedCombatState, updatedPartyList)) {
+                return;
+            }
+
             const order = updatedCombatState.turnOrder;
             let nextIdx = updatedCombatState.currentTurnIdx + 1;
             let nextRound = updatedCombatState.round;
@@ -3526,14 +3632,19 @@
             if (nextIdx >= order.length) {
                 nextIdx = 0;
                 nextRound += 1;
-                if (updatedCombatState.key === "llanowar_troll" && updatedCombatState.currentHP > 0) {
+                if (!updatedCombatState.monsterFled && updatedCombatState.key === "llanowar_troll" && updatedCombatState.currentHP > 0) {
                     updatedCombatState.currentHP = Math.min(updatedCombatState.maxHP, updatedCombatState.currentHP + 4);
                     extraLog.push(`🌿 Rigenerazione del Troll: ${updatedCombatState.name} recupera +4 PV a inizio Round ${nextRound}!`);
                 }
             }
 
+            // Se il mostro se n'è andato (`monsterFled: true`), salta automaticamente lo slot del mostro!
+            if (updatedCombatState.monsterFled && order[nextIdx] && order[nextIdx].type === "monster") {
+                nextIdx = (nextIdx + 1) % order.length;
+            }
+
             const nextCombatant = order[nextIdx];
-            if (nextCombatant.type === "hero") {
+            if (nextCombatant && nextCombatant.type === "hero") {
                 const foundHero = updatedPartyList.find(h => h.id === nextCombatant.id);
                 if (foundHero) {
                     setCharacter(foundHero);
@@ -3541,18 +3652,15 @@
                 }
             }
 
-            setPendingDeathSaveManual(false);
             setCombatState({
                 ...updatedCombatState,
                 currentTurnIdx: nextIdx,
                 round: nextRound,
-                log: [...extraLog, `👉 Tocca ora a: ${nextCombatant.name}!`, ...updatedCombatState.log].slice(0, 8)
+                log: [...extraLog, `👉 Tocca ora a: ${nextCombatant ? nextCombatant.name : "Compagnia"}!`, ...updatedCombatState.log].slice(0, 8)
             });
         };
 
-        // ESECUZIONE DEL TIRO SALVEZZA CONTRO LA MORTE (A 0 PV!)
-        // Regola esatta: 20 = Torna a 1 PV subito; 10-19 = 1 Successo; 2-9 = 1 Fallimento; 1 = 2 Fallimenti!
-        // 3 Successi = Stabilizzato (Incosciente a 0 PV, non rischia più di morire); 3 Fallimenti = MORTO (💀)!
+        // TIRO SALVEZZA CONTRO LA MORTE (1 = 2 Fallimenti, 2-9 = 1 Fallimento, 10-19 = 1 Successo, 20 = Torna a 1 PV!)
         const executeDeathSavingThrow = (d20Val) => {
             if (!character || !combatState) return;
             const roll = Math.max(1, Math.min(20, parseInt(d20Val) || 10));
@@ -3564,7 +3672,7 @@
                 h.status = "alive";
                 h.deathSuccesses = 0;
                 h.deathFailures = 0;
-                turnLog.unshift(`🌟 20 NATURALE SALVEZZA MORTE! **${h.name}** compie un miracolo, riapre gli occhi e si rialza immediatamente con **1 PV**!`);
+                turnLog.unshift(`🌟 20 NATURALE SALVEZZA MORTE! **${h.name}** riapre gli occhi e si rialza immediatamente con **1 PV**!`);
             } else if (roll === 1) {
                 h.deathFailures = (h.deathFailures || 0) + 2;
                 turnLog.unshift(`💀 1 NATURALE SALVEZZA MORTE! **${h.name}** subisce **2 Fallimenti**! (Successi: ${h.deathSuccesses}/3 | Fallimenti: ${h.deathFailures}/3)`);
@@ -3579,28 +3687,88 @@
             if (h.deathFailures >= 3) {
                 h.status = "dead";
                 h.currentHP = 0;
-                turnLog.unshift(`⚰️💀 TRAGEDIA SUL CAMPO DI BATTAGLIA: **${h.name}** ha raggiunto 3 Fallimenti ed è **MORTO**!`);
+                turnLog.unshift(`⚰️💀 **${h.name}** ha raggiunto 3 Fallimenti ed è **MORTO**!`);
             } else if (h.deathSuccesses >= 3 && h.status !== "alive") {
                 h.status = "stabilized";
                 h.currentHP = 0;
-                turnLog.unshift(`🛡️ **${h.name}** ha ottenuto 3 Successi! Ora è **STABILIZZATO (Incosciente a 0 PV)**: non rischia più di morire, ma dovrà essere curato o attendere il prossimo nodo!`);
+                turnLog.unshift(`🛡️ **${h.name}** ha ottenuto 3 Successi! Ora è **STABILIZZATO (Incosciente a 0 PV)**: non rischia più di morire!`);
             }
 
             const newParty = (party.length > 0 ? party : [h]).map(p => p.id === h.id ? h : p);
             savePartyState(newParty);
 
-            // Se tutta la compagnia è a 0 PV o morta, lo scontro termina con il soccorso d'emergenza
-            const anyConscious = newParty.some(p => p.status === "alive" && p.currentHP > 0);
-            if (!anyConscious) {
-                setCombatState(null);
-                setEventBanner(`⚠️ Tutta la Compagnia è caduta a 0 PV! I superstiti stabilizzati vengono trascinati in salvo fuori dal campo di battaglia.`);
-                return;
-            }
-
             advanceToNextTurn({ ...combatState, log: turnLog }, newParty);
         };
 
-        // TURNO DEL MOSTRO (Rispetta Teferi's Protection e Counterspell, e manda gli eroi a 0 PV!)
+        // DECISIONE DEL MOSTRO QUANDO TUTTA LA COMPAGNIA È A 0 PV (1-2 Infierisce, 3-4 Se ne va, 5-6 Prende in Ostaggio!)
+        const executeMonsterDecisionOnUnconsciousParty = (d6DecisionVal) => {
+            if (!combatState) return;
+            const currentPartyList = party.length > 0 ? [...party] : [{ ...character }];
+            let turnLog = [...combatState.log];
+            const d6 = Math.max(1, Math.min(6, parseInt(d6DecisionVal) || 3));
+
+            setPendingMonsterBehaviorManual(false);
+
+            // CASO 3: CATTURA COME OSTAGGI (5-6 se il nemico è intelligente/umanoide: Ladri, Banditi, Goblin, Dimir)
+            if (d6 >= 5 && combatState.isHumanoid) {
+                const hostageParty = currentPartyList.map(h => {
+                    if (h.status === "dead") return h;
+                    return {
+                        ...h,
+                        currentHP: 1,
+                        status: "alive",
+                        deathSuccesses: 0,
+                        deathFailures: 0,
+                        currentNode: "hostage_prison_node"
+                    };
+                });
+                savePartyState(hostageParty);
+                setCombatState(null);
+                setEventBanner(`⛓️ CATTURATI COME OSTAGGI (Dado Comportamento: ${d6})! **${combatState.name}** decide di non uccidervi: vi lega e vi trascina nelle sue prigioni per interrogarvi sui vostri tesori!`);
+                return;
+            }
+
+            // CASO 2: IL MOSTRO SE NE VA (3-4, oppure 5-6 se è una bestia non umanoide)
+            if (d6 >= 3) {
+                turnLog.unshift(`👣 **${combatState.name}** (Dado Comportamento: ${d6}) vi crede spacciati e **se ne va abbandonando il campo**! Continuate a tirare i Dadi Salvezza Morte a turno finché non viene decretata l'incoscienza stabile o la morte!`);
+                const updatedCombat = { ...combatState, monsterFled: true, log: turnLog };
+                advanceToNextTurn(updatedCombat, currentPartyList);
+                return;
+            }
+
+            // CASO 1: IL MOSTRO INFIERISCE SUI CORPI (Dado 1-2)!
+            // Lancia un D20 d'attacco per il mostro: se colpisce (>= 9), infligge +2 Fallimenti Salvezza Morte!
+            const unconsciousTargets = currentPartyList.filter(h => h.status !== "dead" && h.currentHP <= 0);
+            if (unconsciousTargets.length === 0) {
+                setCombatState(null);
+                return;
+            }
+            const victim = unconsciousTargets[Math.floor(Math.random() * unconsciousTargets.length)];
+            const attackRoll = Math.floor(Math.random() * 20) + 1;
+
+            if (attackRoll >= 9) {
+                const newFailures = (victim.deathFailures || 0) + 2;
+                const diedNow = newFailures >= 3;
+                const nextParty = currentPartyList.map(h => {
+                    if (h.id === victim.id) {
+                        return {
+                            ...h,
+                            deathFailures: newFailures,
+                            status: diedNow ? "dead" : "unconscious"
+                        };
+                    }
+                    return h;
+                });
+                savePartyState(nextParty);
+                turnLog.unshift(`🩸👹 CRUDELE FEROCIA (Dado Comportamento ${d6} ➔ Attacco Mostro D20: ${attackRoll} COLPITO!): **${combatState.name}** infierisce sul corpo inerme di **${victim.name}** infliggendogli **+2 FALLIMENTI CONTRO LA MORTE** (${newFailures}/3)!${diedNow ? ` 💀 **${victim.name} MUORE SUL COLPO!**` : " (È a un solo fallimento dalla morte!)"}`);
+                advanceToNextTurn({ ...combatState, log: turnLog }, nextParty);
+            } else {
+                turnLog.unshift(`🛡️👹 ${combatState.name} prova a infierire sul corpo di **${victim.name}** (Dado Comportamento ${d6}), ma **sbaglia l'attacco (D20: ${attackRoll})** colpendo la roccia! Ora tocca ai giocatori tirare i Dadi contro la Morte!`);
+                advanceToNextTurn({ ...combatState, log: turnLog }, currentPartyList);
+            }
+        };
+
+        // TURNO ORDINARIO DEL MOSTRO (Quando c'è almeno un eroe cosciente > 0 PV)
         const executeMonsterTurn = () => {
             if (!combatState || combatState.phase !== "battle") return;
             const currentPartyList = party.length > 0 ? [...party] : [{ ...character }];
@@ -3608,15 +3776,26 @@
 
             if (teferiPhaseOut) {
                 setTeferiPhaseOut(false);
-                turnLog.unshift(`☀️⏳ ${combatState.name} attacca a vuoto! Tutta la Compagnia è **Fuori Fase (Teferi's Protection)** e subisce **0 danni**!`);
+                turnLog.unshift(`☀️⏳ ${combatState.name} attacca a vuoto! Tutta la Compagnia è **Fuori Fase (Teferi's Protection)**!`);
                 advanceToNextTurn({ ...combatState, log: turnLog }, currentPartyList);
                 return;
             }
 
             if (counterspellShield) {
                 setCounterspellShield(false);
-                turnLog.unshift(`💧🛡️ Contromagia attiva! L'assalto letale di ${combatState.name} viene **neutralizzato** dal vostro scudo blu!`);
+                turnLog.unshift(`💧🛡️ Contromagia attiva! L'assalto di ${combatState.name} viene **neutralizzato**!`);
                 advanceToNextTurn({ ...combatState, log: turnLog }, currentPartyList);
+                return;
+            }
+
+            const consciousTargets = currentPartyList.filter(h => h.status === "alive" && h.currentHP > 0);
+            // Se tutti sono a 0 PV, usa il sistema di Decisione del Mostro (Infierire / Andarsene / Ostaggi)!
+            if (consciousTargets.length === 0) {
+                if (diceMode === "manual") {
+                    setPendingMonsterBehaviorManual(true);
+                } else {
+                    executeMonsterDecisionOnUnconsciousParty(Math.floor(Math.random() * 6) + 1);
+                }
                 return;
             }
 
@@ -3625,15 +3804,8 @@
             const isMiss = mRoll <= 4;
 
             if (isMiss) {
-                turnLog.unshift(`🛡️ ${combatState.name} sferra un colpo (Dado ${mRoll}), ma la Compagnia schiva l'attacco!`);
+                turnLog.unshift(`🛡️ ${combatState.name} sferra un colpo (Dado ${mRoll}), ma manca il bersaglio!`);
                 advanceToNextTurn({ ...combatState, log: turnLog }, currentPartyList);
-                return;
-            }
-
-            // Filtra i bersagli che sono ancora vivi e coscienti (> 0 PV)
-            const consciousTargets = currentPartyList.filter(h => h.status === "alive" && h.currentHP > 0);
-            if (consciousTargets.length === 0) {
-                setCombatState(null);
                 return;
             }
 
@@ -3662,7 +3834,7 @@
 
             savePartyState(nextParty);
 
-            turnLog.unshift(`👹 ${combatState.name} attacca **${chosenTarget.name}** (Dado ${mRoll}${isCrit ? " CRITICO!" : ""}) infliggendo **${dmg} danni**! (${chosenTarget.name}: ${newHP} PV)${fellUnconscious ? ` 🩸 **${chosenTarget.name} CADE INCOSCIENTE A 0 PV!**` : ""}`);
+            turnLog.unshift(`👹 ${combatState.name} attacca **${chosenTarget.name}** (Dado ${mRoll}${isCrit ? " CRITICO!" : ""}) infliggendo **${dmg} danni**! (${chosenTarget.name}: ${newHP} PV)${fellUnconscious ? ` 🩸 **${chosenTarget.name} CADE INCOSCIENTE A 0 PV! Non si esce dallo scontro: tirerà i Dadi contro la Morte al suo turno!**` : ""}`);
 
             advanceToNextTurn({ ...combatState, log: turnLog }, nextParty);
         };
@@ -3713,11 +3885,10 @@
                 currentUpdatedActive,
                 winRewards,
                 targetWinNode,
-                `${finalBlowMsg}\n🏆 VITTORIA CONTRO ${monsterName.toUpperCase()}!\n📊 Danni inflitti: ${dmgReportLines.join(" | ")}\n🥇 MVP dello Scontro: **${mvpHeroObj.name}** (+${bonusMvpExp} EXP extra, +${bonusMvpGold} 🪙 extra e +1 💎!)`
+                `${finalBlowMsg}\n🏆 VITTORIA CONTRO ${monsterName.toUpperCase()}!\n📊 Danni: ${dmgReportLines.join(" | ")}\n🥇 MVP: **${mvpHeroObj.name}** (+${bonusMvpExp} EXP, +${bonusMvpGold} 🪙 e +1 💎!)`
             );
         };
 
-        // ATTACCO STANDARD CON IL DADO NELL'ARENA (Formula Trasparente!)
         const resolveCombatTurn = (actionStat, d20Value) => {
             if (!combatState || combatState.phase !== "battle") return;
             const rawD20 = Math.max(1, Math.min(20, parseInt(d20Value) || 10));
@@ -3725,14 +3896,12 @@
             const baseStatVal = stats[actionStat] || 10;
 
             const humanBonus = character.raceId === 'umano' ? 1 : 0;
-            // Attacco Improvviso (+2) si applica SOLO su FOR e AGI, mai su MAG!
             const firstStrikeBonus = (actionStat !== "mag" && stats.keywords.includes("Attacco Improvviso")) ? 2 : 0;
             const treasureBonus = treasureBoostActive ? 5 : 0;
             const growthBonus = giantGrowthActive ? 6 : 0;
 
             const total = rawD20 + baseStatVal + humanBonus + firstStrikeBonus + treasureBonus + growthBonus;
 
-            // Costruisce la spiegazione trasparente del tiro!
             let breakdownParts = [`Dado (${rawD20})`, `${actionStat.toUpperCase()} (${baseStatVal})`];
             if (humanBonus) breakdownParts.push(`Umano (+1)`);
             if (firstStrikeBonus) breakdownParts.push(`Att.Improvviso (+2)`);
@@ -3805,17 +3974,15 @@
             }, updatedPartyList);
         };
 
-        // CALCOLO TIRO D20 NELLA STORIA CON FORMULA MATEMATICA TRASPARENTE AL 100%!
         const executeRollCalculation = (choice, d20Value) => {
             if (character.status !== "alive" || character.currentHP <= 0) {
-                return alert(`${character.name} è a 0 PV! Seleziona un compagno cosciente nella barra in alto per eseguire l'azione.`);
+                return alert(`${character.name} è a 0 PV! Seleziona un compagno cosciente nella barra in alto.`);
             }
             const rawD20 = Math.max(1, Math.min(20, parseInt(d20Value) || 10));
             const stats = getFinalStats(character);
             const baseStatVal = stats[choice.stat] || 10;
 
             const humanBonus = character.raceId === 'umano' ? 1 : 0;
-            // Attacco Improvviso vale solo su prove fisiche/agili, mai su MAG!
             const firstStrikeBonus = (choice.stat !== "mag" && stats.keywords.includes("Attacco Improvviso")) ? 2 : 0;
             const treasureBonus = treasureBoostActive ? 5 : 0;
             const growthBonus = giantGrowthActive ? 6 : 0;
@@ -3928,20 +4095,67 @@
         };
 
         const partyHasPlaneswalker = party.some(p => p.sparkIgnited) || (character && character.sparkIgnited);
+        const activePartyList = party.length > 0 ? party : (character ? [character] : []);
+        const isTotalPartyKill = activePartyList.length > 0 && activePartyList.every(p => p.status === "dead");
+        const hasDeadCompanions = activePartyList.some(p => p.status === "dead");
+        const allConsciousDown = activePartyList.length > 0 && activePartyList.every(p => p.status !== "alive" || p.currentHP <= 0);
 
         // ====================================================================
-        // VISTA A: STORIA INTERATTIVA + ARENA D&D/MAGIC + GRIMORIO 3 SLOT
+        // SCHERMATA DRAMMATICA DI GAME OVER TOTALE (SE MUOIONO TUTTI GLI EROI!)
+        // ====================================================================
+        if (character && isTotalPartyKill) {
+            return (
+                <div className="max-w-xl mx-auto p-6 mt-10 bg-gradient-to-b from-black via-red-950 to-black border-4 border-red-600 rounded-3xl shadow-[0_0_50px_rgba(220,38,38,0.8)] text-center space-y-6 animate-fade">
+                    <div className="text-8xl animate-bounce drop-shadow-[0_0_25px_rgba(255,0,0,0.9)]">💀</div>
+                    <h1 className="text-3xl sm:text-4xl font-black text-red-500 uppercase tracking-widest" style={{ fontFamily: "Georgia, serif" }}>
+                        La tua Avventura Viandante Finisce Qui
+                    </h1>
+                    <p className="text-gray-300 text-sm sm:text-base leading-relaxed italic">
+                        Tutti i membri della Compagnia hanno fallito le prove contro la morte. Le vostre armi giacciono silenziose nella polvere del Multiverso, in attesa che nuovi eroi raccolgano la vostra eredità.
+                    </p>
+                    <div className="bg-black/70 border border-red-800 rounded-xl p-3 space-y-1">
+                        <p className="text-xs font-black uppercase text-red-400">Eroi Caduti:</p>
+                        {activePartyList.map(h => (
+                            <p key={h.id} className="text-xs text-gray-300 font-bold">⚰️ {h.name} — {h.race} {h.classType || "Standard"} (Livello {h.level})</p>
+                        ))}
+                    </div>
+                    <button
+                        onClick={() => {
+                            localStorage.removeItem('rpg_party');
+                            localStorage.removeItem('rpg_character');
+                            setParty([]);
+                            setCharacter(null);
+                            setCombatState(null);
+                            setDormantTimer(0);
+                            setRpgView("create");
+                            setLastRollInfo(null);
+                            setEventBanner(null);
+                        }}
+                        className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 px-8 rounded-2xl shadow-[0_0_25px_rgba(239,68,68,0.8)] text-lg uppercase tracking-wider transition-all active:scale-95"
+                    >
+                        🔄 Forgia una Nuova Compagnia e Ricomincia
+                    </button>
+                </div>
+            );
+        }
+
+        // ====================================================================
+        // VISTA A: STORIA INTERATTIVA + ARENA D&D/MAGIC + TIMER 64s + LOCANDA MERCENARI
         // ====================================================================
         if (character && rpgView === "story") {
             const stats = getFinalStats(character);
-            const currentNodeObj = RPG_STORY_NODES[character.currentNode] || RPG_STORY_NODES["start"];
+            const currentNodeObj = SPECIAL_DYNAMIC_NODES[character.currentNode] || RPG_STORY_NODES[character.currentNode] || RPG_STORY_NODES["start"];
             const avatarSrc = getAvatarSrc(character.raceId, character.classId, character.customAvatar, character.ascensionForm);
             const storyText = (playMode === "party" && currentNodeObj.textParty) ? currentNodeObj.textParty : (currentNodeObj.textSolo || currentNodeObj.text);
-            const activeParty = party.length > 0 ? party : [character];
 
             const currentTurnCombatant = (combatState && combatState.phase === "battle" && combatState.turnOrder.length > 0)
                 ? combatState.turnOrder[combatState.currentTurnIdx]
                 : null;
+
+            const currentRaceMercObj = RACES.find(r => r.id === selectedRace);
+            const availableMercClasses = currentRaceMercObj
+                ? CLASSES.filter(c => currentRaceMercObj.allowedClasses.includes(c.id))
+                : CLASSES;
 
             return (
                 <div className="max-w-3xl mx-auto p-2 sm:p-4 animate-fade pb-24 space-y-4">
@@ -3966,12 +4180,20 @@
                             >
                                 ⚖️ Mercante ({character.gold || 0} 🪙)
                             </button>
+                            {(hasDeadCompanions || playMode === "party") && (
+                                <button
+                                    onClick={() => setShowMercenaryModal(!showMercenaryModal)}
+                                    className={`font-black px-3 py-2 rounded-lg text-xs shadow ${hasDeadCompanions ? "bg-emerald-600 text-white animate-pulse border border-white" : "bg-teal-800 text-teal-100"}`}
+                                >
+                                    🍻 {hasDeadCompanions ? "Sostituisci Caduto (Mercenari)" : "Locanda Mercenari"}
+                                </button>
+                            )}
                             {character.level >= 3 && !character.secondaryClassId && (
                                 <button
                                     onClick={() => setShowMulticlassModal(true)}
-                                    className="bg-purple-600 hover:bg-purple-500 text-white font-black px-3 py-2 rounded-lg text-xs shadow animate-pulse"
+                                    className="bg-purple-600 hover:bg-purple-500 text-white font-black px-3 py-2 rounded-lg text-xs shadow"
                                 >
-                                    🏛️ Sblocca 2ª Classe!
+                                    🏛️ 2ª Classe
                                 </button>
                             )}
                             {partyHasPlaneswalker && (
@@ -3979,7 +4201,7 @@
                                     onClick={() => applyRewardsAndMove(character, null, "planeswalker_nexus", "🌌 Viaggio Planare attivato!")}
                                     className="bg-gradient-to-r from-orange-500 to-amber-500 text-black font-black px-3 py-2 rounded-lg text-xs shadow"
                                 >
-                                    🌌 Viaggia nei Piani
+                                    🌌 Piani
                                 </button>
                             )}
                         </div>
@@ -3998,7 +4220,85 @@
                         </button>
                     </div>
 
-                    {/* SELETTORE RAPIDO DELL'EROE ATTIVO (CON INDICATORE STATO 0 PV / MORTO 💀) */}
+                    {/* TIMER DI INCOSCIENZA (1 GIORNO E 4 ORE = 1 MINUTO E 4 SECONDI = 64s) */}
+                    {dormantTimer > 0 && (
+                        <div className="bg-indigo-950 border-4 border-cyan-400 rounded-2xl p-5 text-center space-y-3 shadow-2xl animate-fade">
+                            <div className="text-4xl animate-pulse">🌙⏳</div>
+                            <h3 className="text-lg sm:text-xl font-black text-cyan-300 uppercase">
+                                Compagnia Stabilizzata ma Incosciente (0 PV)
+                            </h3>
+                            <p className="text-xs sm:text-sm text-gray-200">
+                                Il nemico si è allontanato. I sopravvissuti giacciono privi di sensi per **1 giorno e 4 ore** (simulati da **1 minuto e 4 secondi** reali) prima di risvegliarsi con **1 PV**!
+                            </p>
+                            <div className="text-3xl font-black text-white bg-black/60 border border-cyan-500 inline-block px-6 py-2 rounded-xl">
+                                ⏱️ {Math.floor(dormantTimer / 60)}m : {String(dormantTimer % 60).padStart(2, '0')}s
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODALE LOCANDA DEI MERCENARI (RECLUTAMENTO E SFIDA NUOVO COMPAGNO) */}
+                    {showMercenaryModal && (
+                        <div className="bg-gray-900 border-4 border-teal-400 rounded-2xl p-4 shadow-2xl animate-fade space-y-4">
+                            <div className="flex justify-between items-center border-b border-gray-700 pb-2">
+                                <div>
+                                    <h3 className="text-teal-300 font-black text-base uppercase">🍻 La Locanda dei Mercenari (Recluta o Sostituisci un Caduto)</h3>
+                                    <p className="text-xs text-gray-300">Forgia il nuovo avventuriero e scegli come convincerlo a entrare nella Compagnia!</p>
+                                </div>
+                                <button onClick={() => { setShowMercenaryModal(false); setPendingMercenaryHero(null); }} className="bg-gray-700 text-white text-xs font-bold px-3 py-1 rounded">Chiudi ✖</button>
+                            </div>
+
+                            {!pendingMercenaryHero ? (
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="Nome del nuovo eroe..." className="bg-gray-950 border border-gray-700 rounded-lg p-2.5 text-white font-bold text-xs" />
+                                        <select value={selectedMana} onChange={e=>setSelectedMana(e.target.value)} className="bg-gray-950 border border-gray-700 rounded-lg p-2.5 text-white font-bold text-xs">
+                                            <option value="">-- Colore Mana --</option>
+                                            {MANA_COLORS.map(m => <option key={m.id} value={m.id}>{m.icon} {m.name}</option>)}
+                                        </select>
+                                        <select value={selectedRace} onChange={e=>handleRaceChange(e.target.value)} className="bg-gray-950 border border-gray-700 rounded-lg p-2.5 text-white font-bold text-xs">
+                                            <option value="">-- Scegli Razza --</option>
+                                            {RACES.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                        </select>
+                                        <select value={selectedClass} onChange={e=>setSelectedClass(e.target.value)} disabled={!selectedRace} className="bg-gray-950 border border-gray-700 rounded-lg p-2.5 text-white font-bold text-xs">
+                                            {!selectedRace ? <option value="">-- Prima la Razza --</option> : availableMercClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <button
+                                        onClick={prepareMercenaryCandidate}
+                                        disabled={!name || !selectedRace || !selectedClass || !selectedMana}
+                                        className="w-full bg-teal-500 hover:bg-teal-400 disabled:opacity-40 text-black font-black py-2.5 rounded-xl text-xs shadow"
+                                    >
+                                        🛡️ Incontra questo Mercenario al Tavolo ➔
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="bg-gray-950 border border-teal-500 rounded-xl p-4 space-y-3 text-center">
+                                    <h4 className="text-white font-black text-base">
+                                        Davanti a voi siede <span className="text-teal-300">{pendingMercenaryHero.name}</span> ({pendingMercenaryHero.race} {pendingMercenaryHero.classType || "Standard"})!
+                                    </h4>
+                                    <p className="text-xs text-gray-300">
+                                        Come volete reclutarlo nella vostra Compagnia (sostituendo gli eventuali eroi morti 💀)?
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-left">
+                                        <button onClick={() => resolveMercenaryRecruitment("pay")} className="bg-yellow-900/70 hover:bg-yellow-800 border border-yellow-500 p-3 rounded-xl text-white text-xs">
+                                            <span className="font-black block text-yellow-300">🪙 1. Pagalo (25 Oro)</span>
+                                            <span className="text-[10px] text-gray-200">Si unisce subito fedele con **+4 Salute/COS Bonus**!</span>
+                                        </button>
+                                        <button onClick={() => resolveMercenaryRecruitment("duel")} className="bg-red-900/70 hover:bg-red-800 border border-red-500 p-3 rounded-xl text-white text-xs">
+                                            <span className="font-black block text-red-300">⚔️ 2. Sfidalo a Duello!</span>
+                                            <span className="text-[10px] text-gray-200">Se vinci entra con +2 Stat (+30 EXP a te). Se perdi si prende **1 tuo oggetto/oro** e +2 Stat prima di unirsi!</span>
+                                        </button>
+                                        <button onClick={() => resolveMercenaryRecruitment("persuade")} className="bg-indigo-900/70 hover:bg-indigo-800 border border-indigo-400 p-3 rounded-xl text-white text-xs">
+                                            <span className="font-black block text-indigo-300">🗣️ 3. Chiedigli di Unirsi</span>
+                                            <span className="text-[10px] text-gray-200">Prova D20: se riesci entra gratis, se fallisci beve a tue spese (-10 Oro e -5 PV iniziali).</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* SELETTORE RAPIDO DELL'EROE ATTIVO */}
                     {party.length > 1 && (
                         <div className="bg-purple-950/60 border border-purple-500 rounded-xl p-2.5 flex items-center gap-2 overflow-x-auto">
                             <span className="text-purple-300 font-black text-xs uppercase shrink-0">Compagnia:</span>
@@ -4023,16 +4323,13 @@
                         </div>
                     )}
 
-                    {/* MODALE TEMPIO MULTICLASSE (SECONDA CLASSE A LIVELLO 1) */}
+                    {/* MODALE TEMPIO MULTICLASSE */}
                     {showMulticlassModal && (
                         <div className="bg-purple-950 border-4 border-amber-400 rounded-2xl p-4 shadow-2xl animate-fade space-y-3">
                             <div className="flex justify-between items-center border-b border-purple-700 pb-2">
-                                <h3 className="text-amber-300 font-black text-base uppercase">🏛️ Santuario del Multiclasse (Scegli la 2ª Classe Liv. 1 per {character.name})</h3>
+                                <h3 className="text-amber-300 font-black text-base uppercase">🏛️ Santuario del Multiclasse (2ª Classe Liv. 1 per {character.name})</h3>
                                 <button onClick={() => setShowMulticlassModal(false)} className="text-xs text-gray-300 font-bold">Chiudi ✖</button>
                             </div>
-                            <p className="text-xs text-gray-200">
-                                Avendo raggiunto il Livello {character.level}, puoi affiancare alla tua classe principale (<b>{character.classType || "Standard"} Liv.{character.level}</b>) una **Seconda Classe di Livello 1**, sbloccandone le abilità magiche o di cura!
-                            </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 {CLASSES.filter(c => c.id !== "standard" && c.id !== character.classId).map(c => (
                                     <button
@@ -4051,7 +4348,6 @@
                     {/* MINI-SCHEDA EROE + RISERVA DI MANA + GRIMORIO 3 SLOT MAGIE */}
                     <div className="bg-gray-900/95 border-2 border-amber-600/60 rounded-xl p-3 shadow-xl space-y-3">
                         <div className="flex items-center gap-3">
-                            {/* IMMAGINE CON FILTRO SCURO E TESCHIO SE MORTO 💀 O INCOSCIENTE */}
                             <div className="relative w-16 h-24 rounded-lg overflow-hidden border-2 border-amber-500 shrink-0">
                                 <img
                                     src={avatarSrc}
@@ -4119,7 +4415,6 @@
                                 </div>
                             </div>
 
-                            {/* CONVERSIONE TESORI IN MANA DI QUALSIASI COLORE O +5 DADO */}
                             {(character.treasures || 0) > 0 && (
                                 <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-gray-800 text-[10px]">
                                     <span className="text-cyan-300 font-black">💎 Sacrifica 1 Tesoro ({character.treasures} disp.) per:</span>
@@ -4143,10 +4438,10 @@
                             )}
                         </div>
 
-                        {/* GRIMORIO A 3 SLOT ABILITÀ / MAGIE DI MAGIC (ISTANTANEI, STREGONERIE, CURE D8 E ONE-SHOT) */}
+                        {/* GRIMORIO A 3 SLOT ABILITÀ / MAGIE DI MAGIC */}
                         <div className="space-y-1.5">
                             <p className="text-[10px] font-black uppercase text-indigo-300 tracking-wider">
-                                📖 Grimorio Abilità & Magie (3 Slot — ⚡ Istantanei usabili anche fuori turno | 🔥 Stregonerie solo nel tuo turno):
+                                📖 Grimorio Abilità & Magie (3 Slot — ⚡ Istantanei anche fuori turno | 🔥 Stregonerie nel tuo turno):
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                 {[0, 1, 2].map(slotIdx => {
@@ -4229,7 +4524,7 @@
                         </div>
                     )}
 
-                    {/* BOTTEGA DEL MERCANTE PLANARE (CON REQUISITI DI LIVELLO E PREZZI HARDCORE) */}
+                    {/* BOTTEGA DEL MERCANTE PLANARE */}
                     {showMerchant && (
                         <div className="bg-gray-900 border-4 border-yellow-500 rounded-2xl p-4 shadow-2xl animate-fade space-y-3">
                             <div className="flex justify-between items-center border-b border-gray-700 pb-2">
@@ -4270,41 +4565,66 @@
                     )}
 
                     {/* ==================================================================== */}
-                    {/* ARENA DI COMBATTIMENTO CON INIZIATIVA, MANA BLU NEMICO E DEATH SAVES */}
+                    {/* ARENA DI COMBATTIMENTO (LAYOUT MOBILE CORRETTO SENZA SCRITTE TAGLIATE) */}
                     {/* ==================================================================== */}
-                    {combatState && (
-                        <div className="bg-gradient-to-b from-red-950 via-gray-900 to-gray-950 border-4 border-red-500 rounded-2xl p-5 shadow-[0_0_30px_rgba(239,68,68,0.4)] animate-fade space-y-4">
-                            <div className="flex justify-between items-start gap-2 border-b border-red-800 pb-3">
-                                <div>
-                                    <span className="bg-red-600 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded">
-                                        {combatState.phase === "initiative" ? "🎲 FASE 1: TIRO DI INIZIATIVA D&D" : `⚔️ ROUND ${combatState.round} — COMBATTIMENTO A TURNI`}
+                    {combatState && dormantTimer === 0 && (
+                        <div className="bg-gradient-to-b from-red-950 via-gray-900 to-gray-950 border-4 border-red-500 rounded-2xl p-4 sm:p-5 shadow-[0_0_30px_rgba(239,68,68,0.4)] animate-fade space-y-4 overflow-hidden">
+                            {/* INTESTAZIONE IMPILATA CHE NON ESCE MAI DALLA PAGINA! */}
+                            <div className="flex flex-col gap-2 border-b border-red-800 pb-3">
+                                <div className="flex flex-wrap justify-between items-center gap-1">
+                                    <span className="bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded">
+                                        {combatState.phase === "initiative" ? "🎲 FASE 1: TIRO DI INIZIATIVA D&D" :
+                                         combatState.monsterFled ? "👣 IL MOSTRO SE N'È ANDATO — TIRI CONTRO LA MORTE" :
+                                         `⚔️ ROUND ${combatState.round} — COMBATTIMENTO A TURNI`}
                                     </span>
-                                    <h2 className="text-2xl font-black text-white mt-1">{combatState.name}</h2>
-                                    <p className="text-xs text-gray-300 italic">{combatState.desc}</p>
+                                    {combatState.isHumanoid && (
+                                        <span className="bg-amber-900/70 border border-amber-500 text-amber-200 text-[9px] font-bold px-2 py-0.5 rounded">
+                                            ⛓️ Può catturare ostaggi
+                                        </span>
+                                    )}
                                 </div>
-                                <div className="text-right shrink-0 space-y-0.5">
-                                    <p className="text-xs font-bold text-red-300">Difesa: <b className="text-white">CD {combatState.dc}</b></p>
-                                    <p className="text-xs font-bold text-amber-300">Attacco: <b className="text-white">{combatState.dmg} PV</b></p>
-                                    {/* INDICATORE MANA BLU DEL NEMICO PER COUNTERSPELL! */}
-                                    <p className={`text-xs font-black px-2 py-0.5 rounded ${combatState.enemyBlueMana >= 2 ? "bg-blue-900 text-cyan-200 border border-cyan-400" : "bg-gray-800 text-gray-400"}`}>
-                                        💧 Mana Blu Nemico: {combatState.enemyBlueMana || 0}/{combatState.maxEnemyBlueMana || 0} {combatState.enemyBlueMana >= 2 ? "(Counter Attivo!)" : "(Scarico)"}
-                                    </p>
+
+                                <h2 className="text-xl sm:text-2xl font-black text-white leading-tight break-words">
+                                    {combatState.name}
+                                </h2>
+                                <p className="text-xs text-gray-300 italic leading-snug">
+                                    {combatState.desc}
+                                </p>
+
+                                {/* GRIGLIA COMPATTA A 3 COLONNE SEMPRE DENTRO LO SCHERMO! */}
+                                <div className="grid grid-cols-3 gap-1.5 pt-1 text-center">
+                                    <div className="bg-gray-900/90 border border-red-700/70 rounded-lg p-1.5">
+                                        <span className="text-[9px] text-red-300 font-bold uppercase block">🛡️ Difesa</span>
+                                        <span className="text-xs sm:text-sm font-black text-white">CD {combatState.dc}</span>
+                                    </div>
+                                    <div className="bg-gray-900/90 border border-amber-700/70 rounded-lg p-1.5">
+                                        <span className="text-[9px] text-amber-300 font-bold uppercase block">⚔️ Attacco</span>
+                                        <span className="text-xs sm:text-sm font-black text-white">{combatState.dmg} PV</span>
+                                    </div>
+                                    <div className={`rounded-lg p-1.5 border ${combatState.enemyBlueMana >= 2 ? "bg-blue-950/90 border-cyan-400" : "bg-gray-900/90 border-gray-700"}`}>
+                                        <span className="text-[9px] text-cyan-300 font-bold uppercase block">💧 Mana Blu</span>
+                                        <span className="text-xs sm:text-sm font-black text-white">
+                                            {combatState.enemyBlueMana || 0}/{combatState.maxEnemyBlueMana || 0} {combatState.enemyBlueMana >= 2 ? "⚡" : ""}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* BARRA SALUTE DEL MOSTRO */}
-                            <div>
-                                <div className="flex justify-between text-xs font-black text-red-200 mb-1">
-                                    <span>❤️ PUNTI VITA NEMICO</span>
-                                    <span>{combatState.currentHP} / {combatState.maxHP} PV</span>
+                            {!combatState.monsterFled && (
+                                <div>
+                                    <div className="flex justify-between text-xs font-black text-red-200 mb-1">
+                                        <span>❤️ PUNTI VITA NEMICO</span>
+                                        <span>{combatState.currentHP} / {combatState.maxHP} PV</span>
+                                    </div>
+                                    <div className="w-full h-5 bg-gray-800 rounded-full overflow-hidden border border-red-500 p-0.5">
+                                        <div 
+                                            className="h-full bg-gradient-to-r from-red-600 to-orange-500 rounded-full transition-all duration-300"
+                                            style={{ width: `${Math.max(0, Math.min(100, Math.round((combatState.currentHP / combatState.maxHP) * 100)))}%` }}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="w-full h-5 bg-gray-800 rounded-full overflow-hidden border border-red-500 p-0.5">
-                                    <div 
-                                        className="h-full bg-gradient-to-r from-red-600 to-orange-500 rounded-full transition-all duration-300"
-                                        style={{ width: `${Math.max(0, Math.min(100, Math.round((combatState.currentHP / combatState.maxHP) * 100)))}%` }}
-                                    />
-                                </div>
-                            </div>
+                            )}
 
                             {/* FASE 1: INIZIATIVA */}
                             {combatState.phase === "initiative" && (
@@ -4313,7 +4633,7 @@
                                         👹 {combatState.name} ha tirato Iniziativa Automatica: <b className="text-white text-sm">{combatState.monsterInitTotal}</b>
                                     </p>
                                     <h3 className="text-base font-black text-white">
-                                        🎲 Tira il Dado D20 di Iniziativa per: <span className="text-emerald-400 underline">{activeParty[combatState.initHeroIndex].name}</span>
+                                        🎲 Tira il Dado D20 di Iniziativa per: <span className="text-emerald-400 underline">{activePartyList[combatState.initHeroIndex].name}</span>
                                     </h3>
                                     <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
                                         {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20].map(n => (
@@ -4328,23 +4648,25 @@
                             {/* FASE 2: COMBATTIMENTO A TURNI */}
                             {combatState.phase === "battle" && (
                                 <div className="space-y-4">
+                                    {/* ORDINE DI PRIORITÀ CON FLEX-WRAP COSÌ NON TAGLIA NULLA A SINISTRA O DESTRA! */}
                                     <div className="bg-gray-950 border border-gray-700 rounded-xl p-2.5">
                                         <p className="text-[10px] font-black uppercase text-gray-400 mb-1.5">⚡ Ordine di Priorità Turno (Iniziativa D&D):</p>
-                                        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                                        <div className="flex flex-wrap items-center gap-1.5">
                                             {combatState.turnOrder.map((comb, idx) => {
+                                                if (combatState.monsterFled && comb.type === "monster") return null;
                                                 const isCurrent = idx === combatState.currentTurnIdx;
                                                 const heroDmg = comb.type === "hero" ? (combatState.damageDealtByHero[comb.id] || 0) : 0;
                                                 return (
                                                     <div
                                                         key={idx}
-                                                        className={`px-3 py-1.5 rounded-lg text-xs font-black shrink-0 border transition-all ${
+                                                        className={`px-2.5 py-1 rounded-lg text-xs font-black border transition-all ${
                                                             isCurrent
-                                                                ? (comb.type === "monster" ? "bg-red-600 text-white border-white scale-105 shadow-lg" : "bg-amber-500 text-black border-white scale-105 shadow-lg")
+                                                                ? (comb.type === "monster" ? "bg-red-600 text-white border-white shadow-md" : "bg-amber-500 text-black border-white shadow-md")
                                                                 : "bg-gray-800 text-gray-400 border-gray-700"
                                                         }`}
                                                     >
                                                         {idx + 1}° {comb.type === "monster" ? "👹 " : "🛡️ "}{comb.name} (Init {comb.initTotal})
-                                                        {comb.type === "hero" && <span className="block text-[9px] font-normal opacity-80">Danni: {heroDmg}</span>}
+                                                        {comb.type === "hero" && <span className="ml-1 text-[9px] opacity-80">[{heroDmg} dmg]</span>}
                                                     </div>
                                                 );
                                             })}
@@ -4352,23 +4674,56 @@
                                     </div>
 
                                     {/* SE È IL TURNO DEL MOSTRO */}
-                                    {currentTurnCombatant && currentTurnCombatant.type === "monster" ? (
+                                    {currentTurnCombatant && currentTurnCombatant.type === "monster" && !combatState.monsterFled ? (
                                         <div className="bg-red-950/90 border-2 border-red-400 rounded-xl p-4 text-center space-y-3 animate-fade">
-                                            <h4 className="text-lg font-black text-white">
+                                            <h4 className="text-base sm:text-lg font-black text-white">
                                                 👹 È IL TURNO DI {combatState.name.toUpperCase()}!
                                             </h4>
-                                            <p className="text-xs text-red-200">
-                                                Puoi ancora lanciare un **⚡ Istantaneo** dal Grimorio qui sopra prima che il mostro colpisca!
-                                            </p>
-                                            <button
-                                                onClick={executeMonsterTurn}
-                                                className="w-full sm:w-auto bg-red-600 hover:bg-red-500 text-white font-black py-3 px-8 rounded-xl shadow-[0_0_20px_rgba(239,68,68,0.6)] text-base transition-all active:scale-95"
-                                            >
-                                                🎲 Esegui Attacco del Mostro ➔
-                                            </button>
+                                            {allConsciousDown ? (
+                                                <div className="space-y-3">
+                                                    <p className="text-xs text-amber-200 font-bold">
+                                                        🩸 Tutta la Compagnia è a terra a **0 PV**! Lancia il **Dado Comportamento (1d6)** per scoprire cosa fa il nemico:
+                                                    </p>
+                                                    <p className="text-[11px] text-gray-300">
+                                                        **1-2:** Infierisce sui corpi (+2 Fallimenti Morte se colpisce!) | **3-4:** Se ne va lasciandovi ai tiri salvezza | **5-6:** {combatState.isHumanoid ? "Vi cattura come OSTAGGI nel suo covo!" : "Abbandona la preda e se ne va!"}
+                                                    </p>
+                                                    {diceMode === "manual" || pendingMonsterBehaviorManual ? (
+                                                        <div className="grid grid-cols-6 gap-2 max-w-xs mx-auto">
+                                                            {[1,2,3,4,5,6].map(d6 => (
+                                                                <button
+                                                                    key={d6}
+                                                                    onClick={() => executeMonsterDecisionOnUnconsciousParty(d6)}
+                                                                    className="bg-gray-900 hover:bg-red-600 text-white font-black py-2.5 rounded-lg border border-red-400 text-sm"
+                                                                >
+                                                                    🎲 {d6}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => executeMonsterDecisionOnUnconsciousParty(Math.floor(Math.random() * 6) + 1)}
+                                                            className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-black font-black py-3 px-6 rounded-xl shadow text-sm"
+                                                        >
+                                                            🎲 Tira Dado Comportamento Mostro (1d6)
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    <p className="text-xs text-red-200">
+                                                        Puoi ancora lanciare un **⚡ Istantaneo** dal Grimorio qui sopra prima che il mostro colpisca!
+                                                    </p>
+                                                    <button
+                                                        onClick={executeMonsterTurn}
+                                                        className="w-full sm:w-auto bg-red-600 hover:bg-red-500 text-white font-black py-3 px-8 rounded-xl shadow-[0_0_20px_rgba(239,68,68,0.6)] text-base transition-all active:scale-95"
+                                                    >
+                                                        🎲 Esegui Attacco del Mostro ➔
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
-                                        /* SE È IL TURNO DI UN EROE: CONTROLLA SE È A 0 PV (DEATH SAVES) O ATTIVO! */
+                                        /* SE È IL TURNO DI UN EROE */
                                         <div className="space-y-3">
                                             {character.status === "dead" ? (
                                                 <div className="bg-black border-2 border-red-700 rounded-xl p-4 text-center space-y-2">
@@ -4392,16 +4747,16 @@
                                                     {character.status === "stabilized" ? (
                                                         <div className="space-y-2">
                                                             <p className="text-xs text-emerald-300 font-bold">
-                                                                🛡️ {character.name} ha superato i 3 dadi ed è **STABILIZZATO**! Non rischia più di morire, ma resta incosciente finché non viene curato o fino al prossimo nodo.
+                                                                🛡️ {character.name} ha ottenuto 3 Successi ed è **STABILIZZATO (Incosciente a 0 PV)**! Non rischia più di morire.
                                                             </p>
                                                             <button onClick={() => advanceToNextTurn(combatState, party)} className="bg-amber-500 text-black font-black text-xs px-5 py-2 rounded-lg">
-                                                                Passa al prossimo turno ➔
+                                                                Continua ➔
                                                             </button>
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-2">
                                                             <p className="text-xs text-orange-200">
-                                                                Regola D&D: **1** = 2 Fallimenti | **2-9** = 1 Fallimento | **10-19** = 1 Successo | **20** = Rialzati subito con **1 PV**!
+                                                                Tira il Dado Salvezza Morte: **1** = 2 Fallimenti | **2-9** = 1 Fallimento | **10-19** = 1 Successo | **20** = Rialzati subito con **1 PV**!
                                                             </p>
                                                             {diceMode === "manual" ? (
                                                                 <div className="grid grid-cols-5 sm:grid-cols-10 gap-1">
@@ -4423,7 +4778,7 @@
                                                     )}
                                                 </div>
                                             ) : (
-                                                /* TURNO D'ATTACCO NORMALE DELL'EROE COSCIENTE */
+                                                /* TURNO D'ATTACCO DELL'EROE COSCIENTE */
                                                 <div className="space-y-3">
                                                     {pendingCombatAction && (
                                                         <div className="bg-indigo-950 border-2 border-emerald-400 rounded-xl p-3 text-center space-y-2">
@@ -4506,7 +4861,6 @@
                         </div>
                     )}
 
-                    {/* BOX RISULTATO TIRO D20 CON DETTAGLIO MATEMATICO TRASPARENTE! */}
                     {lastRollInfo && !combatState && (
                         <div className={`p-4 rounded-xl border-2 shadow-2xl animate-fade text-center space-y-2 ${lastRollInfo.passed ? "bg-emerald-950/90 border-emerald-500" : "bg-red-950/90 border-red-500"}`}>
                             <p className="text-xs font-black uppercase tracking-widest text-gray-300">
@@ -4522,7 +4876,7 @@
                         </div>
                     )}
 
-                    {!combatState && (
+                    {!combatState && dormantTimer === 0 && (
                         <div 
                             className="bg-gray-900 border-2 border-amber-700/80 rounded-2xl p-5 sm:p-6 shadow-2xl bg-cover bg-center relative overflow-hidden"
                             style={{ backgroundImage: "linear-gradient(rgba(10, 15, 25, 0.82), rgba(10, 15, 25, 0.90)), url('./rpg_bg.png')" }}
@@ -4590,6 +4944,7 @@
 
                             <div className="flex flex-wrap gap-2 pt-2 border-t border-purple-800/60">
                                 <button onClick={() => setShowMulticlassModal(true)} className="bg-purple-700 hover:bg-purple-600 text-white text-xs font-black px-2.5 py-1.5 rounded shadow">🏛️ Dai 2ª Classe</button>
+                                <button onClick={() => setShowMercenaryModal(true)} className="bg-teal-700 hover:bg-teal-600 text-white text-xs font-black px-2.5 py-1.5 rounded shadow">🍻 Recluta Mercenario</button>
                                 <button onClick={() => applyRewardsAndMove(character, { heal: 5 }, character.currentNode)} className="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold px-2.5 py-1.5 rounded shadow">+5 PV Gruppo</button>
                                 <select value={masterLootId} onChange={e => setMasterLootId(e.target.value)} className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white text-xs flex-1">
                                     {Object.values(RPG_ITEMS_DB).map(it => <option key={it.id} value={it.id}>{it.name}</option>)}
@@ -4705,7 +5060,7 @@
         }
 
         // ====================================================================
-        // VISTA B: SCHEDA PERSONAGGIO STAMPABILE (CON STATO MORTE/TESCHIO E 3 SLOT MAGIE)
+        // VISTA B: SCHEDA PERSONAGGIO STAMPABILE
         // ====================================================================
         if (character && rpgView === "sheet") {
             const stats = getFinalStats(character);
@@ -4785,7 +5140,6 @@
 
                     <div id="print-area" className={`${mainMana.bgClass} text-black border-[6px] border-gray-900 rounded-2xl p-4 shadow-2xl relative`} style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/aged-paper.png')" }}>
                         
-                        {/* INTESTAZIONE CARTA MAGIC */}
                         <div className="bg-white/90 border-2 border-gray-900 rounded-xl px-4 py-1.5 mb-2.5 flex justify-between items-center shadow-sm">
                             <h1 className="text-2xl font-black tracking-wide text-gray-900 truncate" style={{ fontFamily: "Georgia, serif" }}>{character.name}</h1>
                             <div className="flex gap-1 shrink-0">
@@ -4796,7 +5150,6 @@
                             </div>
                         </div>
 
-                        {/* ILLUSTRAZIONE VERTICALE NATIVA 2:3 CON SOVRAIMPRESSIONE TESCHIO SE MORTO 💀 */}
                         <div id="print-art-box" className="w-full bg-gray-950 border-4 border-gray-900 rounded-xl overflow-hidden mb-2.5 shadow-inner relative" style={{ aspectRatio: "2 / 3" }}>
                             <img 
                                 src={avatarSrc} 
@@ -4822,7 +5175,6 @@
                             </div>
                         </div>
 
-                        {/* 5 STATISTICHE VISIBILI */}
                         <div className="grid grid-cols-5 gap-1.5 mb-2 text-center">
                             <div className="bg-white/90 border-2 border-gray-800 rounded-lg p-1 shadow-sm">
                                 <p className="text-[9px] font-black uppercase text-gray-600">Forza</p>
@@ -4846,7 +5198,6 @@
                             </div>
                         </div>
 
-                        {/* ORACLE TEXT: PAROLE CHIAVE, TRATTI E I 3 SLOT MAGIE */}
                         <div className="bg-white/90 border-2 border-gray-800 rounded-xl p-2.5 mb-2 shadow-inner space-y-1">
                             {stats.keywords.length > 0 && (
                                 <p className="font-black text-indigo-900 text-[11px] border-b border-gray-300 pb-0.5">
@@ -4861,7 +5212,6 @@
                             </div>
                         </div>
 
-                        {/* EQUIPAGGIAMENTO A 6 SLOT */}
                         <div className="bg-white/80 p-2.5 rounded-xl border-2 border-gray-800 space-y-1">
                             <h3 className="font-black text-gray-900 border-b border-gray-500 pb-0.5 text-[10px] uppercase">Equipaggiamento Attivo (6 Slot GDR)</h3>
                             <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] font-bold text-gray-900">
@@ -4920,7 +5270,7 @@
                         <div className="space-y-1.5">
                             {party.map((hero, idx) => (
                                 <div key={idx} className="bg-purple-900/80 text-purple-100 border border-purple-400 text-xs font-bold px-3 py-2 rounded-lg flex justify-between items-center shadow">
-                                    <span>🛡️ {hero.name} ({hero.race} {hero.classType || "Standard"})</span>
+                                    <span>{hero.status === "dead" ? "💀 " : "🛡️ "}{hero.name} ({hero.race} {hero.classType || "Standard"})</span>
                                     <button onClick={() => { setCharacter(hero); setRpgView("sheet"); }} className="bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-black px-2 py-1 rounded shadow">
                                         🪪 Scheda
                                     </button>
