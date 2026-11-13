@@ -3560,16 +3560,49 @@
         planeswalker_nexus: {
             act: "Atto IV — La Cieca Eternità",
             title: "Il Nexus dei Planeswalker",
-            textSolo: "Fluttui tra i flussi stellati della Cieca Eternità. La tua Scintilla vibra in risonanza con i mondi del Multiverso. Da qui puoi viaggiare verso i quattro grandi Piani minacciati, tornare nelle terre di Dominaria per completare i dungeon segreti, sfidare i ghiacci proibiti di Dark Depths o varcare il Ponte Planare per la Battaglia Finale!",
-            textParty: "La vostra Compagnia viaggia attraverso la Cieca Eternità! Davanti a voi brillano le coordinate dimensionali di quattro grandi Piani, il ghiacciaio proibito di Marit Lage e il vortice oscuro del Ponte Planare. Quale mondo volete esplorare?",
+            textSolo: "Fluttui tra i flussi stellati della Cieca Eternità. La tua Scintilla vibra in risonanza con i mondi del Multiverso. Da qui puoi viaggiare verso i quattro grandi Piani minacciati, abbordare il Vascello Abissale del Capitano N'ghathrod, sfidare i ghiacci proibiti di Dark Depths o varcare il Ponte Planare per la Battaglia Finale!",
+            textParty: "La vostra Compagnia viaggia attraverso la Cieca Eternità! Davanti a voi brillano le coordinate dimensionali di quattro grandi Piani, il Vascello Abissale del Mind Flayer N'ghathrod, il ghiacciaio proibito di Marit Lage e il vortice oscuro del Ponte Planare. Quale mondo volete esplorare?",
             choices: [
                 { text: "🦇 Viaggia su INNISTRAD (Campagna Gotica in 14 Capitoli: Thalia, Sorin & Avacyn)", type: "move", nextNode: "innistrad_ch1" },
                 { text: "🏛️ Viaggia su RAVNICA (Campagna delle 10 Gilde in 16 Capitoli: Jace, Niv-Mizzet & Vraska)", type: "move", nextNode: "ravnica_ch1" },
                 { text: "⛩️ Viaggia su KAMIGAWA (Campagna Cyber-Feudale in 15 Capitoli: Kaito, Imperatrice & Boseiju)", type: "move", nextNode: "kamigawa_ch1" },
                 { text: "💎 Viaggia su ZENDIKAR (Campagna Selvaggia in 16 Capitoli: Nissa, Nahiri & Occhio di Ugin)", type: "move", nextNode: "zendikar_ch1" },
+                { text: "🐙🧠 [CAPITOLO SPECIALE TELEPATICO] Abborda il Vascello Abissale del CAPITANO N'GHATHROD (Mind Flayer)!", type: "move", nextNode: "nghathrod_ghost_ship" },
                 { text: "❄️ [SUPER-BOSS SEGRETO] Esplora i Ghiacci Eterni di DARK DEPTHS (Marit Lage 20/20!)", type: "move", nextNode: "dark_depths_entry" },
                 { text: "🌍 Torna su DOMINARIA (Al Grande Crocevia dei Continenti)", type: "move", nextNode: "crossroads_wilds" },
                 { text: "🌌 [ATTO FINALE DEL GIOCO] Assalta il Ponte Planare e la Cittadella della Singolarità!", type: "move", nextNode: "finale_planar_bridge" }
+            ]
+        },
+
+        // ====================================================================
+        // CAPITOLO SPECIALE: IL VASCELLO ABISSALE DEL CAPITANO N'GHATHROD
+        // ====================================================================
+        nghathrod_ghost_ship: {
+            act: "🐙 Capitolo Segreto — Le Nebbie Psichiche",
+            title: "Il Vascello Fantasma «Orrori degli Abissi»",
+            text: "Attraversando una faglia nebbiosa della Cieca Eternità, la vostra Compagnia atterra sul ponte fradicio di un galeone spettrale incrostato di coralli neri e tentacoli luminescenti.\n\nAl timone d'osso si volta lentamente una figura con la testa di piovra e gli occhi bianchi privi di pupille: è il **Capitano N'ghathrod**, il temuto pirata **Mind Flayer (Illithid)**!\n\nPrima ancora che possiate estrarre le armi, la sua voce risuona direttamente dentro il vostro cranio:\n*«Fermi dove siete, mortali... Ho già letto ogni singolo vostro ricordo, ogni vostra vittoria passata e persino il modo in cui lanciate i vostri dadi!»*",
+            choices: [
+                { text: "🧠 Resisti allo scandaglio mentale di N'ghathrod con la Magia (MAG CD 28)", type: "roll", stat: "mag", dc: 28, successNode: "nghathrod_boss_duel", failNode: "nghathrod_boss_duel", failDamage: 7, failText: "I tentacoli psichici di N'ghathrod vi provocano un'emicrania lancinante prima dello scontro!", rewards: { exp: 120, gold: 60, treasures: 1 }, oncePerCampaignLoot: "nghathrod_mind_resist" },
+                { text: "⚔️ Tappati le orecchie e carica direttamente il Capitano N'ghathrod!", type: "move", nextNode: "nghathrod_boss_duel" },
+                { text: "⏪ Fuggi dal galeone fantasma e torna al Nexus", type: "move", nextNode: "planeswalker_nexus" }
+            ]
+        },
+
+        nghathrod_boss_duel: {
+            act: "🐙 Capitolo Segreto — Il Ponte della Telepatia",
+            title: "Lo Scontro con il Capitano N'ghathrod (Boss Telepate)!",
+            text: "Il **Capitano N'ghathrod** solleva la sua sciabola incrostata di cirripedi e attiva 4💧 Mana Blu mentre entra nella vostra mente per prevedere ogni vostro colpo!\n\n*(Consiglio: appena entri in battaglia, leggi cosa ti dice nel riquadro viola e usa il bottone **🔌 Trucco Porta 2** per mandare in tilt la sua telepatia e abbassargli la Difesa di -5 CD!)*",
+            choices: [
+                { text: "🐙🧠 [BOSS TELEPATE] Affronta il CAPITANO N'GHATHROD nell'Arena!", type: "combat", monster: "mind_flayer_nghathrod", winNode: "nghathrod_victory" }
+            ]
+        },
+
+        nghathrod_victory: {
+            act: "🐙 Trionfo sul Galeone Abissale",
+            title: "Il Forziere del Divoratore di Menti",
+            text: "Spezzato il legame psichico, il **Capitano N'ghathrod** cade in ginocchio e svanisce in una nube d'inchiostro astrale! Nella cabina del capitano aprite il forziere delle menti rubate e conquistate il leggendario **Elmo delle Moltitudini (Helm of the Host)** (+3 FOR, +3 AGI, +3 MAG, +4 COS, Cautela, Attacco Improvviso e Doppio Attacco)!",
+            choices: [
+                { text: "🪖 Reclama l'Elmo delle Moltitudini (+220 EXP, +110 Oro, +2 Tesori, +40 PV) e torna al Nexus", type: "move", nextNode: "planeswalker_nexus", rewards: { loot: "helm_of_the_host", exp: 220, gold: 110, treasures: 2, heal: 40 }, oncePerCampaignLoot: "nghathrod_helm_claim" }
             ]
         },
 
