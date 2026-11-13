@@ -1797,7 +1797,8 @@
         gix_yawgmoth_praetor: { name: "Gix, Antico Pretore di Yawgmoth (Boss)", isHumanoid: true, maxHP: 94, initBonus: 8, dc: 29, dmg: 13, blueMana: 2, exp: 165, gold: 75, treasures: 2, loot: "skullclamp", isBoss: true, desc: "Il demoniaco Pretore della Settima Caverna di Koilos che guidò la prima invasione contro i Thran (2💧 Mana Blu)!" },
         kaldra_avatar: { name: "Avatar di Kaldra Risvegliato (4/4 Indistruttibile)", isHumanoid: false, maxHP: 96, initBonus: 7, dc: 29, dmg: 14, blueMana: 0, exp: 170, gold: 70, treasures: 2, loot: "kaldra_helm", isBoss: true, desc: "Il leggendario costrutto generato dall'unione di Spada, Scudo ed Elmo di Kaldra: esilia ciò che tocca!" },
         viashino_heretic_lord: { name: "Signore della Guerra Viashino & Draghi Cuccioli", isHumanoid: true, maxHP: 88, initBonus: 7, dc: 28, dmg: 13, blueMana: 0, exp: 145, gold: 65, treasures: 2, loot: "pyromancer_goggles", isBoss: false, desc: "Feroce clan di uomini-lucertola delle gole laviche di Shiv affiancato da giovani draghi sputafuoco!" },
-        darigaaz_reincarnated: { name: "Darigaaz il Rinato, Drago Primordiale (Boss)", isHumanoid: false, maxHP: 112, initBonus: 8, dc: 30, dmg: 15, blueMana: 2, exp: 210, gold: 95, treasures: 3, loot: "sword_fire_ice", isBoss: true, desc: "Uno dei cinque Draghi Primordiali di Dominaria risorto dal suo uovo vulcanico nella caldera di Shiv (2💧)!" }
+        darigaaz_reincarnated: { name: "Darigaaz il Rinato, Drago Primordiale (Boss)", isHumanoid: false, maxHP: 112, initBonus: 8, dc: 30, dmg: 15, blueMana: 2, exp: 210, gold: 95, treasures: 3, loot: "sword_fire_ice", isBoss: true, desc: "Uno dei cinque Draghi Primordiali di Dominaria risorto dal suo uovo vulcanico nella caldera di Shiv (2💧)!" },
+        mind_flayer_nghathrod: { name: "Capitano N'ghathrod, Divoratore di Menti (Boss Telepate)", isHumanoid: true, maxHP: 98, initBonus: 9, dc: 27, dmg: 14, blueMana: 4, exp: 220, gold: 110, treasures: 3, loot: "helm_of_the_host", isBoss: true, desc: "Orrore Illithid degli Abissi che legge la memoria della vostra partita e prevede le mosse del vostro Leader (4💧)!" }
     };
 
     const RPG_STORY_NODES_PART1 = {
@@ -6506,6 +6507,178 @@
             });
         };
 
+        // ============================================================================
+        // --- INIZIO PASSO 3: MOTORE TELEPATICO "PSYCHO MANTIS" & SALVATAGGI ---
+        // ============================================================================
+        const [showSaveModal, setShowSaveModal] = useState(false);
+        const [importCodeText, setImportCodeText] = useState("");
+
+        const generateMindFlayerReading = () => {
+            const activeParty = party.length > 0 ? party : (character ? [character] : []);
+            if (activeParty.length === 0) return "«La vostra mente è un foglio bianco...»";
+
+            let phrases = [];
+
+            // 1. Legge la modalità Dadi e il dispositivo (Effetto 4a Parete Metal Gear!)
+            const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent || "");
+            phrases.push(
+                `👁️ «Non cercate di nascondervi... sento le vostre dita sullo schermo di questo ${isMobile ? "dispositivo mobile" : "computer"}, e vedo che vi affidate ai **Dadi ${diceMode === "manual" ? "Fisici sul tavolo (Modalità Manuale)" : "Digitali (Modalità Automatica)"}**!»`
+            );
+
+            // 2. Legge le imprese passate dalla Cronaca (Chi ha dato il colpo di grazia e chi è stato MVP!)
+            try {
+                const rawChronicle = localStorage.getItem('rpg_chronicle');
+                if (rawChronicle) {
+                    const chron = JSON.parse(rawChronicle);
+                    if (chron.kills && chron.kills.length > 0) {
+                        const lastBoss = chron.kills.find(k => k.isBoss) || chron.kills[0];
+                        phrases.push(
+                            `🧠 «Ho scrutato nei vostri ricordi: ho visto **${lastBoss.killerName}** vibrare il colpo fatale contro **${lastBoss.monsterName}**, mentre **${lastBoss.mvpName}** infieriva con ben **${lastBoss.mvpDmg} danni** in ${lastBoss.rounds} round!»`
+                        );
+                    }
+                }
+            } catch (e) {}
+
+            // 3. Legge chi è il più ricco (Avidità) e che arma impugna il Leader
+            let richestHero = activeParty[0];
+            activeParty.forEach(h => {
+                if ((h.gold || 0) > (richestHero.gold || 0)) richestHero = h;
+            });
+
+            if (richestHero && (richestHero.gold || 0) >= 40) {
+                phrases.push(
+                    `🪙 «Sento il tintinnio dell'avarizia nella mente di **${richestHero.name}**... custodisce gelosamente **${richestHero.gold} Monete d'Oro**!»`
+                );
+            }
+
+            if (character && character.equipped && character.equipped.weapon) {
+                phrases.push(
+                    `⚔️ «Credi davvero che la tua **${character.equipped.weapon.name}**, **${character.name}**, possa scalfire chi conosce già ogni tua mossa?»`
+                );
+            }
+
+            // 4. Legge se c'è un'Eredità Roguelite (compagni morti in precedenza!)
+            try {
+                const rawLeg = localStorage.getItem('rpg_roguelite_legacy');
+                if (rawLeg) {
+                    const leg = JSON.parse(rawLeg);
+                    if (leg && leg.fallenHeroNames) {
+                        phrases.push(
+                            `⚰️ «Sento ancora le urla dei vostri predecessori caduti (**${leg.fallenHeroNames}**)... farete la loro stessa fine!»`
+                        );
+                    }
+                }
+            } catch (e) {}
+
+            phrases.push(
+                `🎮 **[SEGRETO TELEPATICO]:** Finché il Boss è sintonizzato sulla vostra mente, prevede i vostri colpi! Clicca su **"🔌 Trucco Porta 2 (Spezza Telepatia)"** qui sopra per cambiare frequenza ai dadi e abbassare la sua Difesa di **-5 CD**!`
+            );
+
+            return phrases.join("\n\n");
+        };
+
+        const triggerPsychoMantisPortSwitch = () => {
+            if (!combatState) return;
+            if (combatState.mindShieldBroken) {
+                return alert("Hai già spezzato la sintonizzazione telepatica del Boss!");
+            }
+            const nextMode = diceMode === "auto" ? "manual" : "auto";
+            setDiceMode(nextMode);
+            const newDC = Math.max(16, combatState.dc - 5);
+            const msg = `🎮🔌 CAMBIO PORTA DEL CONTROLLER! Passando i dadi in modalità ${nextMode.toUpperCase()}, **${combatState.name}** perde il contatto telepatico: «COSA?! Non riesco più a leggere i vostri movimenti!» (-5 alla CD del Boss!)`;
+            setCombatState({
+                ...combatState,
+                dc: newDC,
+                mindShieldBroken: true,
+                puzzleArmorActive: false,
+                log: [msg, ...combatState.log].slice(0, 8)
+            });
+            setEventBanner(msg);
+        };
+
+        const generateTransferCode = () => {
+            try {
+                const payload = {
+                    v: 1,
+                    ts: Date.now(),
+                    rpg_character: JSON.parse(localStorage.getItem('rpg_character') || "null"),
+                    rpg_party: JSON.parse(localStorage.getItem('rpg_party') || "[]"),
+                    rpg_play_mode: localStorage.getItem('rpg_play_mode') || "solo",
+                    rpg_chronicle: JSON.parse(localStorage.getItem('rpg_chronicle') || "null"),
+                    rpg_roguelite_legacy: JSON.parse(localStorage.getItem('rpg_roguelite_legacy') || "null"),
+                    rpg_claimed_loot: JSON.parse(localStorage.getItem('rpg_claimed_loot') || "{}")
+                };
+                const jsonStr = JSON.stringify(payload);
+                return btoa(unescape(encodeURIComponent(jsonStr)));
+            } catch (e) {
+                return "";
+            }
+        };
+
+        const copyTransferCodeToClipboard = () => {
+            const code = generateTransferCode();
+            if (!code) return alert("Errore nella generazione del codice di salvataggio.");
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code).then(() => {
+                    alert("✅ CODICE SALVATAGGIO COPIATO!\n\nIncollalo su WhatsApp, Telegram o per email per continuare la partita su un altro telefono o PC!");
+                }).catch(() => {
+                    prompt("Copia questo codice di salvataggio:", code);
+                });
+            } else {
+                prompt("Copia questo codice di salvataggio:", code);
+            }
+        };
+
+        const downloadSaveFileJson = () => {
+            try {
+                const code = generateTransferCode();
+                const jsonStr = decodeURIComponent(escape(atob(code)));
+                const blob = new Blob([jsonStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                const heroName = (character && character.name) ? character.name.replace(/\s+/g, "_") : "Compagnia";
+                a.href = url;
+                a.download = `Salvataggio_GDR_${heroName}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } catch (e) {
+                alert("Impossibile scaricare il file JSON: usa il pulsante Copia Codice Testuale!");
+            }
+        };
+
+        const restoreFromTransferCode = (rawInput) => {
+            const cleaned = (rawInput || "").trim();
+            if (!cleaned) return alert("Incolla prima un Codice di Salvataggio valido!");
+            try {
+                let jsonStr = cleaned;
+                if (cleaned.charAt(0) !== "{") {
+                    jsonStr = decodeURIComponent(escape(atob(cleaned)));
+                }
+                const data = JSON.parse(jsonStr);
+                if (!data || (!data.rpg_character && (!data.rpg_party || data.rpg_party.length === 0))) {
+                    return alert("❌ Codice non valido o corrotto!");
+                }
+                if (data.rpg_character) localStorage.setItem('rpg_character', JSON.stringify(data.rpg_character));
+                if (data.rpg_party) localStorage.setItem('rpg_party', JSON.stringify(data.rpg_party));
+                if (data.rpg_play_mode) localStorage.setItem('rpg_play_mode', data.rpg_play_mode);
+                if (data.rpg_chronicle) localStorage.setItem('rpg_chronicle', JSON.stringify(data.rpg_chronicle));
+                if (data.rpg_roguelite_legacy) localStorage.setItem('rpg_roguelite_legacy', JSON.stringify(data.rpg_roguelite_legacy));
+                if (data.rpg_claimed_loot) localStorage.setItem('rpg_claimed_loot', JSON.stringify(data.rpg_claimed_loot));
+
+                if (data.rpg_character) setCharacter(data.rpg_character);
+                if (data.rpg_party) setParty(data.rpg_party);
+                if (data.rpg_play_mode) setPlayMode(data.rpg_play_mode);
+                setShowSaveModal(false);
+                setEventBanner("📲✨ SALVATAGGIO RIPRISTINATO CON SUCCESSO! La vostra Compagnia e la memoria storica sono state caricate su questo dispositivo!");
+            } catch (e) {
+                alert("❌ Errore nel caricamento del codice! Assicurati di aver copiato l'intero testo.");
+            }
+        };
+        // ============================================================================
+        // --- FINE PASSO 3 ---
+        // ============================================================================
+
         const startMonsterEncounter = (monsterKey, customWinNode = null) => {
             const mTemplate = MTG_BESTIARY[monsterKey] || MTG_BESTIARY["goblin_pack"];
             const activeParty = party.length > 0 ? party : [character];
@@ -6993,6 +7166,27 @@
             const plunderBanner = (plunderGold > 0 || plunderTreasures > 0 || plunderFood > 0)
                 ? `\n🗡️💰 BOTTINO EXTRA STREGONERIA FURTIVA: **+${plunderGold} Oro 🪙, +${plunderTreasures} Tesori 💎, +${plunderFood} Cibi 🍖**!`
                 : "";
+
+            // --- PASSO 2: REGISTRAZIONE MEMORIA STORICA PER IL BOSS TELEPATE (PSYCHO MANTIS EFFECT) ---
+            try {
+                const rawChronicle = localStorage.getItem('rpg_chronicle');
+                let chronicle = rawChronicle ? JSON.parse(rawChronicle) : { kills: [], totalBattles: 0 };
+                chronicle.totalBattles = (chronicle.totalBattles || 0) + 1;
+                chronicle.kills.unshift({
+                    monsterKey: combatState.key,
+                    monsterName: combatState.name,
+                    isBoss: combatState.isBoss || false,
+                    killerName: lastActiveHero.name,
+                    mvpName: mvpHeroObj.name,
+                    mvpDmg: maxDmgDealt,
+                    rounds: combatState.round || 1,
+                    diceUsed: diceMode
+                });
+                chronicle.kills = chronicle.kills.slice(0, 15);
+                localStorage.setItem('rpg_chronicle', JSON.stringify(chronicle));
+            } catch (e) {}
+            // ------------------------------------------------------------------------------------------
+
             setCombatState(null);
 
             const currentUpdatedActive = partyWithMvp.find(h => h.id === lastActiveHero.id) || partyWithMvp[0];
@@ -7003,6 +7197,7 @@
                 `${finalBlowMsg}\n🏆 VITTORIA CONTRO ${monsterName.toUpperCase()}!\n📊 Danni: ${dmgReportLines.join(" | ")}\n🥇 MVP: **${mvpHeroObj.name}** (+${bonusMvpExp} EXP, +${bonusMvpGold} 🪙 e +1 💎!)${plunderBanner}${rogueliteRecoveryBanner}`
             );
         };
+      
         // CALCOLO SINGOLO COLPO CON TUTTE LE KEYWORDS MAGIC (Volare, Travolgere, Tocco Letale, Attacco Improvviso, Infettare)
         const calculateSingleStrikeOutcome = (heroChar, actionStat, rawD20, currentMonsterHP, isSecondStrike = false) => {
             const stats = getFinalStats(heroChar);
@@ -7714,12 +7909,18 @@
                             >
                                 ⚖️ Mercante ({character.gold || 0} 🪙)
                             </button>
+                            <button
+                                onClick={() => setShowSaveModal(!showSaveModal)}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-black font-black px-3 py-2 rounded-lg text-xs shadow"
+                            >
+                                📲 Salva / Trasferisci
+                            </button>
                             {(hasDeadCompanions || playMode === "party") && (
                                 <button
                                     onClick={() => setShowMercenaryModal(!showMercenaryModal)}
                                     className={`font-black px-3 py-2 rounded-lg text-xs shadow ${hasDeadCompanions ? "bg-emerald-600 text-white animate-pulse border border-white" : "bg-teal-800 text-teal-100"}`}
-                                >
-                                    🍻 {hasDeadCompanions ? "Sostituisci Caduto (Mercenari)" : "Locanda Mercenari"}
+                                >    
+                                  🍻 {hasDeadCompanions ? "Sostituisci Caduto (Mercenari)" : "Locanda Mercenari"}
                                 </button>
                             )}
                             {character.level >= 3 && !character.secondaryClassId && (
@@ -8214,7 +8415,57 @@
                             </div>
                         </div>
                     )}
-                    {/* ==================================================================== */}
+
+                    {/* PANNELLO TRASFERIMENTO SALVATAGGIO TRA DISPOSITIVI */}
+                    {showSaveModal && (
+                        <div className="bg-slate-900/95 border-2 border-emerald-500 rounded-xl p-4 mb-4 shadow-2xl">
+                            <div className="flex justify-between items-center mb-2">
+                                <h4 className="font-bold text-emerald-400 text-sm uppercase tracking-wider">
+                                    📲 Pergamena di Trasferimento Planare (Cross-Device Save)
+                                </h4>
+                                <button onClick={() => setShowSaveModal(false)} className="text-xs text-slate-400 hover:text-white">✖ Chiudi</button>
+                            </div>
+                            <p className="text-xs text-slate-300 mb-3">
+                                Copia il codice della tua partita per inviarlo su WhatsApp/Telegram e continuare a giocare su un altro smartphone, tablet o PC senza perdere Eroi, Oggetti e Cronaca dei Boss!
+                            </p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                                <button
+                                    onClick={copyTransferCodeToClipboard}
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-2 rounded-lg shadow"
+                                >
+                                    📋 Copia Codice Salvataggio (Per WhatsApp)
+                                </button>
+                                <button
+                                    onClick={downloadSaveFileJson}
+                                    className="bg-cyan-700 hover:bg-cyan-600 text-white font-bold text-xs px-3 py-2 rounded-lg shadow"
+                                >
+                                    💾 Scarica File .JSON
+                                </button>
+                            </div>
+                            <div className="border-t border-slate-700 pt-3 mt-2">
+                                <label className="block text-xs text-amber-300 font-bold mb-1">
+                                    📥 Carica Partita da un altro Dispositivo (Incolla il Codice qui sotto):
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={importCodeText}
+                                        onChange={(e) => setImportCodeText(e.target.value)}
+                                        placeholder="Incolla qui il codice di salvataggio ricevuto..."
+                                        className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white"
+                                    />
+                                    <button
+                                        onClick={() => restoreFromTransferCode(importCodeText)}
+                                        className="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-xs px-4 py-1.5 rounded-lg"
+                                    >
+                                        ⚡ Carica
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                  
+                   {/* ==================================================================== */}
                     {/* ARENA DI COMBATTIMENTO (LAYOUT MOBILE CORRETTO SENZA SCRITTE TAGLIATE) */}
                     {/* ==================================================================== */}
                     {combatState && dormantTimer === 0 && (
@@ -8240,6 +8491,37 @@
                                 <p className="text-xs text-gray-300 italic leading-snug">
                                     {combatState.desc}
                                 </p>
+
+                                {/* EFFETTO PSYCHO MANTIS: SOLO PER I BOSS TELEPATI SCELTI NELLA LISTA! */}
+                                {[
+                                    "mind_flayer_nghathrod",
+                                    "lazav_multifarious",
+                                    "jin_gitaxias_augur",
+                                    "memnarch_mad_warden",
+                                    "kozilek_distortion",
+                                    "sliver_queen",
+                                    "chainer_nightmare",
+                                    "ixidor_sculptor",
+                                    "elesh_norn_mother",
+                                    "nicol_bolas_dragon_god"
+                                ].includes(combatState.key) && (
+                                    <div className="bg-purple-950/90 border-2 border-purple-400 rounded-xl p-3 mt-1 text-xs text-purple-100 space-y-2 shadow-lg">
+                                        <div className="font-black text-purple-300 uppercase flex flex-wrap items-center justify-between gap-2">
+                                            <span>🧠 Telepatia del Boss (Lettura Memoria della Partita):</span>
+                                            {!combatState.mindShieldBroken && (
+                                                <button
+                                                    onClick={triggerPsychoMantisPortSwitch}
+                                                    className="bg-amber-500 hover:bg-amber-400 text-black font-black px-2.5 py-1 rounded-lg text-[11px] shadow animate-pulse"
+                                                >
+                                                    🔌 Trucco Porta 2 (Spezza Telepatia -5 CD!)
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="whitespace-pre-line italic text-[11px] text-purple-100 leading-relaxed">
+                                            {generateMindFlayerReading()}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* GRIGLIA COMPATTA A 3 COLONNE SEMPRE DENTRO LO SCHERMO! */}
                                 <div className="grid grid-cols-3 gap-1.5 pt-1 text-center">
