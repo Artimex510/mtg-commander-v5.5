@@ -1800,6 +1800,7 @@
         darigaaz_reincarnated: { name: "Darigaaz il Rinato, Drago Primordiale (Boss)", isHumanoid: false, maxHP: 112, initBonus: 8, dc: 30, dmg: 15, blueMana: 2, exp: 210, gold: 95, treasures: 3, loot: "sword_fire_ice", isBoss: true, desc: "Uno dei cinque Draghi Primordiali di Dominaria risorto dal suo uovo vulcanico nella caldera di Shiv (2💧)!" }
     };
 
+    const RPG_STORY_NODES_PART1 = {
     // ====================================================================
         // BLOCCO 1 DI 6: ATTO I ESPANSO — NUOVA BENALIA, ROVINE THRAN E KELD (30 NODI)
         // ====================================================================
@@ -7286,7 +7287,7 @@
                         setParty(corrupted);
                         localStorage.setItem('rpg_party', JSON.stringify(corrupted));
                     }
-                    if (corrupted[0]) character = corrupted[0];
+                    if (corrupted[0]) setCharacter(corrupted[0]);
                 }
                 if (choice.rewards._alreadyClaimed) {
                     setEventBanner("⚠️ Reliquia o ricompensa unica già riscossa in precedenza (Anti-Farming attivo)!");
