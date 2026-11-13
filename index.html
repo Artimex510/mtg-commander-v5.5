@@ -4832,6 +4832,7 @@
         ];
 
         // DATABASE INCANTESIMI E ABILITÀ DI MAGIC
+        // DATABASE INCANTESIMI E STREGONERIE DI CLASSE/COLORE (100% COMPATIBILE BABEL 6)
         const MTG_SPELLS_DB = {
             cure_wounds_d8: {
                 id: "cure_wounds_d8", name: "Parola Guaritrice (1d8)", timing: "instant", costColor: "W", costAmount: 1, oneShot: false,
@@ -4907,6 +4908,90 @@
                 id: "martial_rally", name: "Grido di Battaglia Eroico", timing: "instant", costColor: "R", costAmount: 1, oneShot: false,
                 effectType: "buff_growth",
                 desc: "Istantaneo (1🔥): Carica l'arma per ottenere +6 al tiro d'attacco e +8 danni!"
+            },
+
+            // ================================================================
+            // 15 STREGONERIE SPECIFICHE PER CLASSE E COLORE DI MANA (COSTO 2)
+            // ================================================================
+            // --- GRUPPO A: FURTIVI (Farabutto, Assassino, Ninja) ---
+            rogue_sorcery_W: {
+                id: "rogue_sorcery_W", name: "Decima Smothering (Smothering Tithe)", timing: "sorcery", costColor: "W", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", shieldSelf: true, plunderGold: 25, plunderTreasures: 1,
+                desc: "Stregoneria Furtiva (2☀️): Eviti il prossimo attacco del mostro e riscuoti +25 Oro 🪙 e +1 Tesoro 💎 extra a fine scontro!"
+            },
+            rogue_sorcery_U: {
+                id: "rogue_sorcery_U", name: "Furto Palese (Blatant Thievery)", timing: "sorcery", costColor: "U", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", dmg: 8, drainEnemyBlue: 1, plunderGold: 25, plunderTreasures: 1,
+                desc: "Stregoneria Furtiva (2💧): Infligge 8 danni, ruba 1💧 Mana Blu al nemico e trafuga +25 Oro 🪙 e +1 Tesoro 💎 a fine scontro!"
+            },
+            rogue_sorcery_B: {
+                id: "rogue_sorcery_B", name: "Sussurri della Notte (Night's Whisper)", timing: "sorcery", costColor: "B", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", selfDmg: 3, dmg: 10, plunderGold: 35, plunderTreasures: 1, plunderFood: 1,
+                desc: "Stregoneria Furtiva (2💀): Subisci 3 danni, infliggi 10 danni d'ombra e rubi +35 Oro 🪙, +1 Tesoro 💎 e +1 Cibo 🍖 a fine scontro!"
+            },
+            rogue_sorcery_R: {
+                id: "rogue_sorcery_R", name: "Spoliazione di Ragavan (Seize the Spoils)", timing: "sorcery", costColor: "R", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", buffGrowth: true, plunderGold: 25, plunderTreasures: 1,
+                desc: "Stregoneria Furtiva (2🔥): Ottieni +6 al tiro D20, +8 Danni e saccheggi +25 Oro 🪙 e +1 Tesoro 💎 extra a fine battaglia!"
+            },
+            rogue_sorcery_G: {
+                id: "rogue_sorcery_G", name: "Trovata del Bracconiere (Poacher's Bounty)", timing: "sorcery", costColor: "G", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", healSelf: 6, addPoison: 2, plunderGold: 20, plunderFood: 2,
+                desc: "Stregoneria Furtiva (2🌳): Ti cura di +6 PV, applica +2 Veleno al mostro e ricava +20 Oro 🪙 e +2 Cibi 🍖 a fine scontro!"
+            },
+
+            // --- GRUPPO B: MILIZIA & TATTICI (Guerriero, Soldato, Cavaliere, Standard) ---
+            militia_sorcery_W: {
+                id: "militia_sorcery_W", name: "Onore dei Puri (Honor of the Pure)", timing: "sorcery", costColor: "W", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", healSelf: 8, shieldSelf: true, buffGrowth: true,
+                desc: "Stregoneria Milizia (2☀️): Cura +8 PV, blocca il prossimo attacco nemico e conferisce +6 al D20 e +8 Danni!"
+            },
+            militia_sorcery_U: {
+                id: "militia_sorcery_U", name: "Forma Acquatica (Aqueous Form)", timing: "sorcery", costColor: "U", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", dmg: 10, drainEnemyBlue: 2, buffGrowth: true,
+                desc: "Stregoneria Milizia (2💧): Infligge 10 danni, drena 2💧 Mana Blu al mostro e conferisce +6 al D20 e +8 Danni!"
+            },
+            militia_sorcery_B: {
+                id: "militia_sorcery_B", name: "Comando Profano (Profane Command)", timing: "sorcery", costColor: "B", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", selfDmg: 2, dmg: 14, addPoison: 2,
+                desc: "Stregoneria Milizia (2💀): Paghi 2 PV per infliggere 14 danni necrotici certi e applicare +2 Segnalini Veleno!"
+            },
+            militia_sorcery_R: {
+                id: "militia_sorcery_R", name: "Assalto Aggravato (Aggravated Assault)", timing: "sorcery", costColor: "R", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", dmg: 10, buffGrowth: true,
+                desc: "Stregoneria Milizia (2🔥): Carica travolgente che infligge 10 danni immediati e conferisce +6 al D20 e +8 Danni!"
+            },
+            militia_sorcery_G: {
+                id: "militia_sorcery_G", name: "Sopraffare (Overrun)", timing: "sorcery", costColor: "G", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", healSelf: 6, dmg: 6, buffGrowth: true,
+                desc: "Stregoneria Milizia (2🌳): Rigenera +6 PV, infligge 6 danni e conferisce +6 al tiro D20 e +8 Danni!"
+            },
+
+            // --- GRUPPO C: FURIA BERSERKER (Barbaro) ---
+            barbarian_sorcery_W: {
+                id: "barbarian_sorcery_W", name: "Giusto Furore (Righteous Fury)", timing: "sorcery", costColor: "W", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", dmg: 14, healSelf: 8,
+                desc: "Stregoneria Barbaro (2☀️): Carica fanatica che infligge 14 danni immediati e ti rigenera di +8 PV!"
+            },
+            barbarian_sorcery_U: {
+                id: "barbarian_sorcery_U", name: "Rabbia della Tempesta (Storm's Wrath)", timing: "sorcery", costColor: "U", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", dmg: 15, lowerMonsterDc: 2,
+                desc: "Stregoneria Barbaro (2💧): Scarica un tuono da 15 danni e riduce permanentemente la Difesa (CD) del mostro di -2!"
+            },
+            barbarian_sorcery_B: {
+                id: "barbarian_sorcery_B", name: "Frenesia Sanguinaria (Blood Frenzy)", timing: "sorcery", costColor: "B", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", selfDmg: 4, dmg: 22,
+                desc: "Stregoneria Barbaro (2💀): Subisci 4 danni in preda alla furia cieca per infliggere 22 danni brutali immediati!"
+            },
+            barbarian_sorcery_R: {
+                id: "barbarian_sorcery_R", name: "Pestaggio Selvaggio (Savage Beating)", timing: "sorcery", costColor: "R", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", dmg: 14, buffGrowth: true,
+                desc: "Stregoneria Barbaro (2🔥): Infligge 14 danni immediati e potenzia la tua arma con +6 al D20 e +8 Danni!"
+            },
+            barbarian_sorcery_G: {
+                id: "barbarian_sorcery_G", name: "Rivolta di Garruk (Garruk's Uprising)", timing: "sorcery", costColor: "G", costAmount: 2, oneShot: false,
+                effectType: "class_tactical", healSelf: 6, dmg: 12, addPoison: 2,
+                desc: "Stregoneria Barbaro (2🌳): Cura +6 PV, infligge 12 danni selvaggi e applica +2 Segnalini Veleno!"
             }
         };
 
@@ -5000,35 +5085,51 @@
         ];
 
         const CLASSES = [
-            { id: "standard", name: "Avventuriero Standard", isCaster: false, strBonus: 2, agiBonus: 2, magBonus: 2, conBonus: 5, ability: "Istinto dell'Avventuriero: +1 a FOR, AGI e MAG." },
-            { id: "guerriero", name: "Guerriero", isCaster: false, strBonus: 4, agiBonus: 1, magBonus: 0, conBonus: 8, ability: "Furia Bellica: +2 a tutte le prove di Forza." },
-            { id: "soldato", name: "Soldato", isCaster: false, strBonus: 3, agiBonus: 2, magBonus: 0, conBonus: 8, ability: "Disciplina Militare: Parte con 'Cautela' (+2 in difesa)." },
-            { id: "cavaliere", name: "Cavaliere", isCaster: false, strBonus: 4, agiBonus: 2, magBonus: 1, conBonus: 7, ability: "Carica Eroica: Parte con 'Attacco Improvviso'." },
-            { id: "barbaro", name: "Barbaro", isCaster: false, strBonus: 6, agiBonus: 1, magBonus: -2, conBonus: 10, ability: "Rabbia Inarrestabile: Parte con 'Travolgere'." },
+            { id: "standard", name: "Avventuriero Standard", isCaster: false, strBonus: 2, agiBonus: 2, magBonus: 2, conBonus: 5, ability: "Istinto dell'Avventuriero: +1 a FOR, AGI e MAG e Stregoneria Tattica del proprio colore." },
+            { id: "guerriero", name: "Guerriero", isCaster: false, strBonus: 4, agiBonus: 1, magBonus: 0, conBonus: 8, ability: "Furia Bellica: +2 a tutte le prove di Forza e Stregoneria Milizia del proprio colore." },
+            { id: "soldato", name: "Soldato", isCaster: false, strBonus: 3, agiBonus: 2, magBonus: 0, conBonus: 8, ability: "Disciplina Militare: Parte con 'Cautela' (-50% danni) e Stregoneria Milizia del proprio colore." },
+            { id: "cavaliere", name: "Cavaliere", isCaster: false, strBonus: 4, agiBonus: 2, magBonus: 1, conBonus: 7, ability: "Carica Eroica: Parte con 'Attacco Improvviso' e Stregoneria Milizia del proprio colore." },
+            { id: "barbaro", name: "Barbaro", isCaster: false, strBonus: 6, agiBonus: 1, magBonus: -2, conBonus: 10, ability: "Rabbia Inarrestabile: Parte con 'Travolgere', 'Rapidità' e Stregoneria Furia del proprio colore." },
             { id: "mago", name: "Mago", isCaster: true, strBonus: 0, agiBonus: 1, magBonus: 6, conBonus: 2, ability: "Arcanista: +2 MAG, accumula Mana rapidamente e lancia Istantanei/Stregonerie." },
             { id: "necromante", name: "Necromante", isCaster: true, strBonus: 0, agiBonus: 1, magBonus: 5, conBonus: 4, ability: "Signore dei Morti: Parte con 'Tocco Letale' e Magia Nera." },
             { id: "chierico", name: "Chierico", isCaster: true, strBonus: 1, agiBonus: 0, magBonus: 4, conBonus: 7, ability: "Guaritore Sacro: Unico (con lo Sciamano) a lanciare Cure 1d8 spendendo Mana." },
             { id: "sciamano", name: "Sciamano", isCaster: true, strBonus: 2, agiBonus: 2, magBonus: 4, conBonus: 5, ability: "Voce del Piano: Può lanciare Cure 1d8 con il Mana e armonizza FOR e MAG (+1)." },
-            { id: "farabutto", name: "Farabutto (Rogue)", isCaster: false, strBonus: 1, agiBonus: 5, magBonus: 1, conBonus: 3, ability: "Passo d'Ombra: +2 AGI e +10 Oro iniziale." },
-            { id: "assassino", name: "Assassino", isCaster: false, strBonus: 3, agiBonus: 5, magBonus: 0, conBonus: 2, ability: "Lama Letale: Parte con 'Attacco Improvviso' e +2 AGI." },
-            { id: "ninja", name: "Ninja", isCaster: false, strBonus: 2, agiBonus: 6, magBonus: 2, conBonus: 2, ability: "Ninjutsu: Parte con 'Imbloccabile'." },
+            { id: "farabutto", name: "Farabutto (Rogue)", isCaster: false, strBonus: 1, agiBonus: 5, magBonus: 1, conBonus: 3, ability: "Passo d'Ombra: +2 AGI, +10 Oro iniziale e Stregoneria Furtiva per rubare bottino extra." },
+            { id: "assassino", name: "Assassino", isCaster: false, strBonus: 3, agiBonus: 5, magBonus: 0, conBonus: 2, ability: "Lama Letale: Parte con 'Attacco Improvviso', +2 AGI e Stregoneria Furtiva del proprio colore." },
+            { id: "ninja", name: "Ninja", isCaster: false, strBonus: 2, agiBonus: 6, magBonus: 2, conBonus: 2, ability: "Ninjutsu: Parte con 'Imbloccabile' e Stregoneria Furtiva del proprio colore." },
             { id: "artefice", name: "Artefice", isCaster: true, strBonus: 1, agiBonus: 2, magBonus: 4, conBonus: 5, ability: "Mastro Forgiatore: Oggetti indistruttibili sull'1 critico e rapido accumulo Mana." }
         ];
 
+        // ASSEGNAZIONE GRIMORIO IN BASE A CLASSE E COLORE DI MANA SCELTO!
         const getInitialSpellsForClass = (classId, manaId) => {
+            const col = ["W", "U", "B", "R", "G"].includes(manaId) ? manaId : "R";
+
+            // 1. Guaritori (Chierico / Sciamano)
             if (classId === "chierico") return ["cure_wounds_d8", "angelic_resurrection"];
             if (classId === "sciamano") return ["shaman_regen_d8"];
-            if (classId === "mago" || classId === "necromante" || classId === "artefice") {
-                if (manaId === "R") return ["lightning_bolt"];
-                if (manaId === "U") return ["opt_cantrip", "counterspell_blue"];
-                if (manaId === "B") return ["dark_drain"];
-                if (manaId === "G") return ["giant_growth"];
-                return ["path_to_exile"];
-            }
-            if (manaId === "G") return ["giant_growth"];
-            return ["martial_rally"];
-        };
 
+            // 2. Incantatori puri (Mago, Necromante, Artefice)
+            if (classId === "mago" || classId === "necromante" || classId === "artefice") {
+                if (col === "R") return ["lightning_bolt", "fireball_sorcery"];
+                if (col === "U") return ["opt_cantrip", "counterspell_blue"];
+                if (col === "B") return ["dark_drain", "doom_blade"];
+                if (col === "G") return ["giant_growth"];
+                return ["path_to_exile", "swords_to_plowshares"];
+            }
+
+            // 3. Furtivi (Farabutto, Assassino, Ninja) -> Stregoneria Furtiva del proprio Colore (2 Mana)
+            if (classId === "farabutto" || classId === "assassino" || classId === "ninja") {
+                return ["rogue_sorcery_" + col];
+            }
+
+            // 4. Berserker (Barbaro) -> Stregoneria Furia del proprio Colore (2 Mana)
+            if (classId === "barbaro") {
+                return ["barbarian_sorcery_" + col];
+            }
+
+            // 5. Milizia & Tattici (Guerriero, Soldato, Cavaliere, Standard) -> Stregoneria Milizia del proprio Colore (2 Mana)
+            return ["militia_sorcery_" + col];
+        };
         const getStartingEquipment = (classId) => {
             const body = { id: "start_body", name: "Veste da Viaggio Rinforzata (+2 COS)", slot: "body", str: 0, agi: 0, mag: 0, con: 2 };
             const feet = { id: "start_feet", name: "Stivali di Cuoio (+1 AGI)", slot: "feet", str: 0, agi: 1, mag: 0, con: 0 };
