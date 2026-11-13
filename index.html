@@ -5850,27 +5850,40 @@
             if (spell.timing === "sorcery" && combatState) {
                 const currentComb = combatState.turnOrder[combatState.currentTurnIdx];
                 if (!currentComb || currentComb.type !== "hero" || currentComb.id !== character.id) {
-                    return alert(`"${spell.name}" è una STREGONERIA: puoi lanciarla solo durante il turno di ${character.name}!`);
+                    if (combatState.hasteOverrideHeroId !== character.id) {
+                        return alert(`"${spell.name}" è una STREGONERIA: puoi lanciarla solo durante il turno di ${character.name}!`);
+                    }
                 }
             }
 
-            const currentMana = (character.manaPool && character.manaPool[spell.costColor]) ? character.manaPool[spell.costColor] : 0;
+            // Per i Guaritori di qualsiasi colore, permette di pagare la cura 1d8 anche col proprio Mana principale!
+            let effectiveColor = spell.costColor;
+            let currentMana = (character.manaPool && character.manaPool[effectiveColor]) ? character.manaPool[effectiveColor] : 0;
+            if (spell.onlyHealers && currentMana < spell.costAmount && character.manaIdentity && character.manaIdentity.length > 0) {
+                const mainCol = character.manaIdentity[0];
+                if (((character.manaPool && character.manaPool[mainCol]) || 0) >= spell.costAmount) {
+                    effectiveColor = mainCol;
+                    currentMana = character.manaPool[mainCol];
+                }
+            }
+
             if (currentMana < spell.costAmount) {
-                return alert(`Mana insufficiente! "${spell.name}" richiede ${spell.costAmount} Mana ${spell.costColor} (ne hai ${currentMana}).`);
+                return alert(`Mana insufficiente! "${spell.name}" richiede ${spell.costAmount} Mana ${effectiveColor} (ne hai ${currentMana}).`);
             }
 
             if (spell.effectType === "heal_d8" || spell.effectType === "heal_party_2d8") {
+                const adjustedSpell = Object.assign({}, spell, { costColor: effectiveColor });
                 if (diceMode === "auto" && (party.length <= 1 || spell.effectType === "heal_party_2d8")) {
                     const d8 = (Math.floor(Math.random() * 8) + 1) + (spell.diceCount === 2 ? Math.floor(Math.random() * 8) + 1 : 0);
-                    executeHealingSpellD8(spell, character.id, d8);
+                    executeHealingSpellD8(adjustedSpell, character.id, d8);
                 } else {
-                    setPendingHealSpell(spell);
+                    setPendingHealSpell(adjustedSpell);
                 }
                 return;
             }
 
             let newPool = { ...character.manaPool };
-            newPool[spell.costColor] = currentMana - spell.costAmount;
+            newPool[effectiveColor] = currentMana - spell.costAmount;
             let newUsedOneShots = [...(character.usedOneShots || [])];
             if (spell.oneShot) newUsedOneShots.push(spell.id);
 
@@ -5910,6 +5923,105 @@
                     setEventBanner(counterMsg);
                     return;
                 }
+            }
+
+            // ================================================================
+            // GESTIONE DELLE 15 NUOVE STREGONERIE TATTICHE DI CLASSE E COLORE!
+            // ================================================================
+            if (spell.effectType === "class_tactical") {
+                let notes = [];
+                const maxHp = getFinalStats(updatedCaster).maxHP;
+
+                if (spell.selfDmg) {
+                    updatedCaster.currentHP = Math.max(1, updatedCaster.currentHP - spell.selfDmg);
+                    notes.push(`-${spell.selfDmg} PV pagati col sangue`);
+                }
+                if (spell.healSelf) {
+                    updatedCaster.currentHP = Math.min(maxHp, updatedCaster.currentHP + spell.healSelf);
+                    notes.push(`+${spell.healSelf} PV curati`);
+                }
+                if (spell.buffGrowth) {
+                    setGiantGrowthActive(true);
+                    notes.push(`+6 al D20 e +8 Danni al prossimo attacco`);
+                }
+                if (spell.shieldSelf) {
+                    setCounterspellShield(true);
+                    notes.push(`Evita il prossimo attacco del mostro`);
+                }
+
+                saveCharState(updatedCaster);
+
+                if (combatState) {
+                    let nextMHP = combatState.currentHP;
+                    let nextBlue = combatState.enemyBlueMana || 0;
+                    let nextPoison = combatState.poisonCounters || 0;
+                    let nextDC = combatState.dc;
+                    let nextArmor = combatState.puzzleArmorActive;
+                    let nextPlunderGold = (combatState.bonusPlunderGold || 0) + (spell.plunderGold || 0);
+                    let nextPlunderTreasures = (combatState.bonusPlunderTreasures || 0) + (spell.plunderTreasures || 0);
+                    let nextPlunderFood = (combatState.bonusPlunderFood || 0) + (spell.plunderFood || 0);
+                    let dmgMap = { ...(combatState.damageDealtByHero || {}) };
+
+                    if (spell.drainEnemyBlue && nextBlue > 0) {
+                        const drained = Math.min(nextBlue, spell.drainEnemyBlue);
+                        nextBlue -= drained;
+                        notes.push(`-${drained}💧 Mana Blu rubato al mostro`);
+                    }
+                    if (spell.addPoison) {
+                        nextPoison += spell.addPoison;
+                        notes.push(`+${spell.addPoison}☣️ Veleno`);
+                    }
+                    if (spell.lowerMonsterDc) {
+                        nextDC = Math.max(14, nextDC - spell.lowerMonsterDc);
+                        notes.push(`-${spell.lowerMonsterDc}🛡️ Difesa CD del mostro`);
+                    }
+                    // Le Stregonerie di Classe infrangono anche la Corazza Puzzle dei Boss!
+                    if (nextArmor) {
+                        nextArmor = false;
+                        nextDC = Math.max(14, nextDC - 2);
+                        notes.push(`🧩 CORAZZA DEL BOSS INFRANTA (-2 CD)!`);
+                    }
+                    if (spell.plunderGold || spell.plunderTreasures || spell.plunderFood) {
+                        notes.push(`💰 Bottino Extra prenotato a fine scontro (+${spell.plunderGold || 0}🪙, +${spell.plunderTreasures || 0}💎, +${spell.plunderFood || 0}🍖)`);
+                    }
+                    if (spell.dmg) {
+                        let d = spell.dmg;
+                        notes.push(`${d} danni inflitti`);
+                        nextMHP = Math.max(0, nextMHP - d);
+                        dmgMap[updatedCaster.id] = (dmgMap[updatedCaster.id] || 0) + d;
+                    }
+
+                    const tacMsg = `🔥🗡️ ${updatedCaster.name} lancia la Stregoneria di Classe **${spell.name}**: ${notes.join(" • ")}!`;
+                    setEventBanner(tacMsg);
+
+                    if (nextMHP <= 0) {
+                        combatState.bonusPlunderGold = nextPlunderGold;
+                        combatState.bonusPlunderTreasures = nextPlunderTreasures;
+                        combatState.bonusPlunderFood = nextPlunderFood;
+                        finishCombatVictory(updatedCaster, dmgMap, tacMsg);
+                    } else {
+                        setCombatState({
+                            ...combatState,
+                            currentHP: nextMHP,
+                            enemyBlueMana: nextBlue,
+                            poisonCounters: nextPoison,
+                            dc: nextDC,
+                            puzzleArmorActive: nextArmor,
+                            bonusPlunderGold: nextPlunderGold,
+                            bonusPlunderTreasures: nextPlunderTreasures,
+                            bonusPlunderFood: nextPlunderFood,
+                            damageDealtByHero: dmgMap,
+                            log: [tacMsg, ...combatState.log].slice(0, 8)
+                        });
+                    }
+                } else {
+                    if (spell.plunderGold) {
+                        updatedCaster.gold = (updatedCaster.gold || 0) + Math.floor(spell.plunderGold / 2);
+                        saveCharState(updatedCaster);
+                    }
+                    setEventBanner(`✨ ${updatedCaster.name} canalizza **${spell.name}**: ${notes.join(" • ")}!`);
+                }
+                return;
             }
 
             if (spell.effectType === "phase_out") {
@@ -6117,7 +6229,7 @@
                     h.deathFailures = 0;
                     msgs.push(`🌅 Passaggio al nodo successivo: ${h.name} riprende conoscenza con **1 PV**!`);
                 }
-                if (nextNodeVal === "teferi_blessing") {
+                if (nextNodeVal === "teferi_blessing" || nextNodeVal === "teferi_blessing_sanctum") {
                     h = learnSpell(h, "teferis_protection");
                     if (isActiveHero) msgs.push(`⏳ Teferi insegna alla compagnia **Protezione di Teferi**!`);
                 }
@@ -6132,6 +6244,22 @@
             }
 
             if (!rewards) return { hero: h, msgs: msgs };
+
+            if (rewards.unlockSpell) {
+                const mappedSpell = rewards.unlockSpell === "teferi_protection"
+                    ? "teferis_protection"
+                    : (rewards.unlockSpell === "drain_life" ? "dark_drain" : rewards.unlockSpell);
+                if (MTG_SPELLS_DB[mappedSpell]) {
+                    h = learnSpell(h, mappedSpell);
+                    if (isActiveHero) msgs.push(`📖 La compagnia impara l'incantesimo **${MTG_SPELLS_DB[mappedSpell].name}**!`);
+                }
+            }
+
+            if ((rewards.food || rewards.foods) && isActiveHero) {
+                const fAdd = rewards.food || rewards.foods;
+                h.food = (h.food || 0) + fAdd;
+                msgs.push(`🍖 +${fAdd} Pedina Cibo ottenuta!`);
+            }
 
             if (rewards.damage && isActiveHero && h.status !== "dead") {
                 h.currentHP = Math.max(0, h.currentHP - rewards.damage);
@@ -6262,6 +6390,7 @@
                 lotus_sanctum_victory: "lotus_gauntlet_1",
                 otaria_mirari_victory: "urborg_entry",
                 serra_blessing_done: "urborg_entry",
+                otaria_karona_double_victory: "urborg_entry",
                 dark_depths_victory: "dark_depths_entry",
                 innistrad_ch2: "innistrad_ch1",
                 ravnica_ch2: "ravnica_ch1",
@@ -6273,19 +6402,15 @@
             let sharedCompletedArcs = Array.isArray(charState.completedArcs) ? [...charState.completedArcs] : [];
             let sharedVisitedNodes = Array.isArray(charState.visitedNodes) ? [...charState.visitedNodes] : [];
 
-            // Se stiamo entrando in un nodo di vittoria finale di un arco, registralo come completato!
             if (VICTORY_NODE_TO_ARC[requestedNode] && !sharedCompletedArcs.includes(VICTORY_NODE_TO_ARC[requestedNode])) {
                 sharedCompletedArcs.push(VICTORY_NODE_TO_ARC[requestedNode]);
             }
 
-            // Se il giocatore prova a rientrare nell'inizio di una regione GIÀ COMPLETATA (es. Tolaria dopo aver battuto la Sliver Queen),
-            // devialo automaticamente al nodo "Regione Pacificata"!
             if (CLEARED_ARC_REDIRECT[requestedNode] && sharedCompletedArcs.includes(requestedNode)) {
                 requestedNode = CLEARED_ARC_REDIRECT[requestedNode];
                 allMessages.push("🧭 Avete già sconfitto il Boss e completato la storia principale di questa regione: entrate nella zona pacificata!");
             }
 
-            // Anti-Farming: se questo nodo della storia aveva già dato ricompense (EXP/Oro/Loot), non darle una seconda volta!
             const alreadyClaimedNode = sharedVisitedNodes.includes(requestedNode);
             let effectiveRewards = rewards;
             if (alreadyClaimedNode && rewards && requestedNode !== charState.currentNode) {
@@ -6328,7 +6453,8 @@
         };
 
         // ============================================================================
-        // MOTORE DI COMBATTIMENTO D&D + GESTIONE COMPLETA 0 PV, INFIERIRE, OSTAGGI E FUGA MOSTRO
+        // MOTORE DI COMBATTIMENTO D&D + GESTIONE COMPLETA 0 PV, INFIERIRE, OSTAGGI,
+        // CORAZZE PUZZLE DEI BOSS E EREDITÀ ROGUELITE DEI CADUTI
         // ============================================================================
         const buildTurnOrderAndStartBattle = (baseCombat, heroRollsMap) => {
             const activeParty = party.length > 0 ? party : [character];
@@ -6427,6 +6553,20 @@
                 scaledDmg = mTemplate.dmg + Math.round((avgPartyLvl - 1) * 2.2);
             }
 
+            // MECCANICA ROGUELITE: Se la precedente Compagnia era caduta contro questo mostro, il mostro porta una Cicatrice Permanente (-20% PV, -2 CD)!
+            let rogueliteScarNote = "";
+            try {
+                const rawLegacy = localStorage.getItem('rpg_roguelite_legacy');
+                if (rawLegacy) {
+                    const legacyObj = JSON.parse(rawLegacy);
+                    if (legacyObj && legacyObj.monsterKey === monsterKey) {
+                        scaledHP = Math.max(20, Math.round(scaledHP * 0.8));
+                        scaledDC = Math.max(15, scaledDC - 2);
+                        rogueliteScarNote = ` ⚰️ [CICATRICE ROGUELITE: Indebolito dal sacrificio dei vostri predecessori (-20% PV, -2 CD)!]`;
+                    }
+                }
+            } catch (e) {}
+
             const mD20 = Math.floor(Math.random() * 20) + 1;
             const mInitBonus = (mTemplate.initBonus || 4) + (isBossMob ? Math.floor(avgPartyLvl * 1.5) : 0);
             const mInitTotal = mD20 + mInitBonus;
@@ -6446,10 +6586,14 @@
                 currentHP: scaledHP,
                 dc: scaledDC,
                 dmg: scaledDmg,
+                puzzleArmorActive: isBossMob,
+                bonusPlunderGold: 0,
+                bonusPlunderTreasures: 0,
+                bonusPlunderFood: 0,
                 poisonCounters: 0,
-                actedThisRound: [], // Traccia chi ha già attaccato nel round (es. usando Rapidità!)
-                hasteOverrideHeroId: null, // Se un eroe usa Rapidità per attaccare prima del compagno!
-                doubleStrikePendingSecondRoll: null, // Per il 2° dado manuale di Doppio Attacco
+                actedThisRound: [],
+                hasteOverrideHeroId: null,
+                doubleStrikePendingSecondRoll: null,
                 enemyBlueMana: mTemplate.blueMana || 0,
                 maxEnemyBlueMana: mTemplate.blueMana || 0,
                 exp: mTemplate.exp,
@@ -6458,7 +6602,7 @@
                 loot: mTemplate.loot,
                 isBoss: isBossMob,
                 winNode: customWinNode || character.currentNode,
-                desc: mTemplate.desc,
+                desc: mTemplate.desc + (isBossMob ? " 🧩 [Boss Puzzle: Spezza la sua guardia con una Stregoneria di Classe o un Critico per ridurne la CD!]" : "") + rogueliteScarNote,
                 monsterInitD20: mD20,
                 monsterInitTotal: mInitTotal,
                 damageDealtByHero: initialDamageMap,
@@ -6468,7 +6612,7 @@
                 turnOrder: [],
                 currentTurnIdx: 0,
                 round: 1,
-                log: [`👹 ${mTemplate.name} (${scaledHP} PV • CD ${scaledDC} • Danno ${scaledDmg}${flyingMonster ? " • 🦅 Volante" : " • 🐾 Terrestre"}) tira Iniziativa: ${mInitTotal}!`]
+                log: [`👹 ${mTemplate.name} (${scaledHP} PV • CD ${scaledDC} • Danno ${scaledDmg}${flyingMonster ? " • 🦅 Volante" : " • 🐾 Terrestre"}) tira Iniziativa: ${mInitTotal}!${rogueliteScarNote}`]
             };
 
             setLastRollInfo(null);
@@ -6512,6 +6656,16 @@
             const allDead = updatedParty.every(p => p.status === "dead");
 
             if (allDead) {
+                // SALVA L'EREDITÀ ROGUELITE PER LA PROSSIMA COMPAGNIA!
+                try {
+                    const fallenGold = updatedParty.reduce((acc, h) => acc + Math.floor((h.gold || 0) * 0.5), 25);
+                    localStorage.setItem('rpg_roguelite_legacy', JSON.stringify({
+                        monsterKey: updatedCombat.key,
+                        monsterName: updatedCombat.name,
+                        fallenHeroNames: updatedParty.map(h => h.name).join(", "),
+                        legacyGold: fallenGold
+                    }));
+                } catch (e) {}
                 setCombatState(null);
                 return true;
             }
@@ -6539,11 +6693,9 @@
             let actedList = [...(updatedCombatState.actedThisRound || [])];
             let extraLog = [];
 
-            // Funzione interna per gestire l'inizio di un nuovo Round
             const handleNewRoundEffects = () => {
-                actedList = []; // A inizio nuovo round tutti possono agire di nuovo (inclusa Rapidità!)
+                actedList = [];
                 if (!updatedCombatState.monsterFled && updatedCombatState.currentHP > 0) {
-                    // Danni da Veleno / Infettare a inizio round!
                     if ((updatedCombatState.poisonCounters || 0) > 0) {
                         const poisonDmg = updatedCombatState.poisonCounters * 3;
                         updatedCombatState.currentHP = Math.max(1, updatedCombatState.currentHP - poisonDmg);
@@ -6556,7 +6708,6 @@
                 }
             };
 
-            // Cerca il prossimo combattente valido che non abbia già agito tramite Rapidità in questo round!
             let safetyLoop = 0;
             while (safetyLoop < order.length + 2) {
                 safetyLoop++;
@@ -6715,7 +6866,7 @@
 
             if (counterspellShield) {
                 setCounterspellShield(false);
-                turnLog.unshift(`💧🛡️ Contromagia attiva! L'assalto di ${combatState.name} viene **neutralizzato**!`);
+                turnLog.unshift(`💧🛡️ Difesa/Evasione attiva! L'assalto di ${combatState.name} viene **completamente evitato**!`);
                 advanceToNextTurn({ ...combatState, log: turnLog }, currentPartyList);
                 return;
             }
@@ -6746,7 +6897,6 @@
             let rawDmg = combatState.dmg + (isCrit ? 5 : 0);
             if (chosenTarget.raceId === 'nano') rawDmg = Math.max(1, rawDmg - 2);
 
-            // REGOLA CAUTELA (Vigilance): Il personaggio non tappa per attaccare, quindi resta in guardia e DIMEZZA i danni subiti!
             let vigilanceNote = "";
             let finalDmg = rawDmg;
             if (targetStats.keywords.includes("Cautela")) {
@@ -6796,12 +6946,36 @@
             const bonusMvpExp = Math.round(combatState.exp * 0.25);
             const bonusMvpGold = Math.round((combatState.gold || 20) * 0.4);
 
+            // Bottino Extra rubato dalle Stregonerie Furtive (Farabutto / Assassino / Ninja)!
+            let plunderGold = combatState.bonusPlunderGold || 0;
+            const plunderTreasures = combatState.bonusPlunderTreasures || 0;
+            const plunderFood = combatState.bonusPlunderFood || 0;
+
+            // Recupero Eredità Roguelite se avevate perso una compagnia contro questo stesso Boss!
+            let rogueliteRecoveryBanner = "";
+            try {
+                const rawLegacy = localStorage.getItem('rpg_roguelite_legacy');
+                if (rawLegacy) {
+                    const legacyObj = JSON.parse(rawLegacy);
+                    if (legacyObj && legacyObj.monsterKey === combatState.key) {
+                        plunderGold += (legacyObj.legacyGold || 30);
+                        rogueliteRecoveryBanner = `\n⚰️✨ EREDITÀ DEI CADUTI RECUPERATA: Avete vendicato (${legacyObj.fallenHeroNames}) recuperando **+${legacyObj.legacyGold || 30} Oro 🪙**!`;
+                        localStorage.removeItem('rpg_roguelite_legacy');
+                    }
+                }
+            } catch (e) {}
+
             const partyWithMvp = currentPartyList.map(h => {
                 let updatedH = h.id === lastActiveHero.id ? { ...lastActiveHero } : { ...h };
                 if (updatedH.id === mvpHeroId && updatedH.status !== "dead") {
                     updatedH.exp = (updatedH.exp || 0) + bonusMvpExp;
                     updatedH.gold = (updatedH.gold || 0) + bonusMvpGold;
                     updatedH.treasures = (updatedH.treasures || 0) + 1;
+                }
+                if (updatedH.id === lastActiveHero.id && (plunderGold > 0 || plunderTreasures > 0 || plunderFood > 0)) {
+                    updatedH.gold = (updatedH.gold || 0) + plunderGold;
+                    updatedH.treasures = (updatedH.treasures || 0) + plunderTreasures;
+                    updatedH.food = (updatedH.food || 0) + plunderFood;
                 }
                 return updatedH;
             });
@@ -6816,6 +6990,9 @@
 
             const targetWinNode = combatState.winNode;
             const monsterName = combatState.name;
+            const plunderBanner = (plunderGold > 0 || plunderTreasures > 0 || plunderFood > 0)
+                ? `\n🗡️💰 BOTTINO EXTRA STREGONERIA FURTIVA: **+${plunderGold} Oro 🪙, +${plunderTreasures} Tesori 💎, +${plunderFood} Cibi 🍖**!`
+                : "";
             setCombatState(null);
 
             const currentUpdatedActive = partyWithMvp.find(h => h.id === lastActiveHero.id) || partyWithMvp[0];
@@ -6823,10 +7000,9 @@
                 currentUpdatedActive,
                 winRewards,
                 targetWinNode,
-                `${finalBlowMsg}\n🏆 VITTORIA CONTRO ${monsterName.toUpperCase()}!\n📊 Danni: ${dmgReportLines.join(" | ")}\n🥇 MVP: **${mvpHeroObj.name}** (+${bonusMvpExp} EXP, +${bonusMvpGold} 🪙 e +1 💎!)`
+                `${finalBlowMsg}\n🏆 VITTORIA CONTRO ${monsterName.toUpperCase()}!\n📊 Danni: ${dmgReportLines.join(" | ")}\n🥇 MVP: **${mvpHeroObj.name}** (+${bonusMvpExp} EXP, +${bonusMvpGold} 🪙 e +1 💎!)${plunderBanner}${rogueliteRecoveryBanner}`
             );
         };
-
         // CALCOLO SINGOLO COLPO CON TUTTE LE KEYWORDS MAGIC (Volare, Travolgere, Tocco Letale, Attacco Improvviso, Infettare)
         const calculateSingleStrikeOutcome = (heroChar, actionStat, rawD20, currentMonsterHP, isSecondStrike = false) => {
             const stats = getFinalStats(heroChar);
